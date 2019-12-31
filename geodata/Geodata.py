@@ -94,16 +94,6 @@ Provide place lookup gazeteer based on files from geonames.org
             GeoUtil.Result code   
         """
 
-        """
-        Search Mechanism
-        1) place.parse_place: Parse the location into <prefix>, city, admin2, admin1, country.  Scan from right and fill in Country and Admin1 only
-           if those items are found in DB
-        2) geodb.lookup_place: look up in the place dictionary: a) as parsed, b) then with Prefix as city, then Admin2  as city, then
-            c) try City as Admin2.  Each DB lookup tries key lookup, and wildcard and Soundex.
-            All matches are returned.
-        3) Process place - Update place with -- lat, lon, district, city, country_iso, result code
-        Geofinder then calls geodata.build_list which removes duplicates and ranks the items
-        """
         if plain_search:
             # Don't do wildcard searches
             self.geo_files.geodb.db.use_wildcards = False
@@ -626,7 +616,7 @@ default = ["ADM1", "ADM2", "ADM3", "ADM4", "ADMF", "CH", "CSTL", "CMTY", "EST ",
 
 # If there are 2 identical entries, we only add the one with higher feature priority.  Highest value is for large city or capital
 # These scores are also used for match ranking score
-# Note: PP1M, P1HK, P10K do not exist in Geonames and are created by geofinder
+# Note: PP1M, P1HK, P10K do not exist in Geonames and are created by geodata.geodatafiles
 feature_priority = {
     'PP1M': 90, 'ADM1': 88, 'PPLA': 88, 'PPLC': 88, 'PP1K': 75, 'PPLA2': 85, 'P10K': 81, 'P1HK': 85,
     'PPL': 50, 'PPLA3': 65, 'ADMF': 65, 'PPLA4': 63, 'ADMX': 60, 'PAL': 40, 'ISL': 50,

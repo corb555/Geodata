@@ -39,7 +39,9 @@ class GeodataFiles:
     geoname files: allCountries.txt,  alternateNamesV2.txt
 
     The geoname file is filtered to only include the countries and feature codes specified in the country_list,
-      the feature_list, and the language list
+      the feature_list, and the language list.  This also creates new Feature codes PP1M, P1HK, and P10K using   
+     geoname population data.   
+
     """
 
     def __init__(self, directory: str, progress_bar, enable_spell_checker,

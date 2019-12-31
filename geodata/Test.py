@@ -15,7 +15,7 @@ def display_modules(cls):
             print(f'{item[0]}\n' )
             print(f'{module.__doc__}\n' )
             
-base_dir = '/Users/mikeherbert/Documents/GeoFinder'
+base_dir = '/Users/mikeherbert/Documents/'  
             
 for package in os.listdir(base_dir):   #os.getcwd()):
     package_path = os.path.join(base_dir, package)
