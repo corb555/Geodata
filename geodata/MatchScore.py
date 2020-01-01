@@ -21,7 +21,8 @@ import copy
 import logging
 import re
 
-from geodata import GeoUtil, Geodata, Loc, Normalize
+from geodata import GeoUtil, Loc, Normalize, Geodata
+
 
 class Score:
     VERY_GOOD = 19
@@ -154,11 +155,11 @@ class MatchScore:
         score: float = self.in_score * self.input_weight + self.out_score * self.result_weight + feature_score * self.feature_weight + \
                        wildcard_penalty + prefix_penalty * self.prefix_weight + parse_penalty
 
-        #self.logger.debug(f'SCORE {score:.1f} res=[{result_place.original_entry}] pref=[{target_place.prefix}]\n'
+        # self.logger.debug(f'SCORE {score:.1f} res=[{result_place.original_entry}] pref=[{target_place.prefix}]\n'
         #                  f'inp=[{",".join(target_tokens)}]  outSc={self.out_score * self.out_weight:.1f}% '
         #                  f'inSc={self.in_score * self.in_weight:.1f}% feat={feature_score * self.feature_weight:.1f} {result_place.feature}  '
         #                  f'wild={wildcard_penalty} pref={prefix_penalty * self.prefix_weight:.1f}')
-        #self.logger.debug(f'{self.score_diags}\n')
+        # self.logger.debug(f'{self.score_diags}\n')
 
         return score
 
@@ -204,7 +205,7 @@ class MatchScore:
 
         return in_score + match_bonus + 10
 
-    def _calculate_output_score(self, unmatched_result: str, original_result:str) -> float:
+    def _calculate_output_score(self, unmatched_result: str, original_result: str) -> float:
         """
         Calculate score for output (DB result).
         :param unmatched_result: The text of the DB result that didnt match the user's input
@@ -220,7 +221,7 @@ class MatchScore:
         if orig_res_len > 0:
             # number of chars of DB RESULT text that matched target - scaled from 0 (20 or more matched) to 100 (0 matched)
             out_score_1 = (20.0 - min((orig_res_len - len(unmatched)), 20.0)) * 5.0
-            #self.logger.debug(f'matched {orig_res_len - len(unmatched)} [{unmatched}]')
+            # self.logger.debug(f'matched {orig_res_len - len(unmatched)} [{unmatched}]')
 
             # Percent of unmatched
             out_score_2 = 100.0 * len(unmatched) / orig_res_len

@@ -29,8 +29,7 @@ from datetime import timedelta
 from operator import itemgetter
 from tkinter import messagebox
 
-from geodata import QueryList
-from geodata import GeoUtil, Loc, Country, MatchScore, Normalize, DB
+from geodata import GeoUtil, Loc, Country, MatchScore, Normalize, DB, QueryList
 from geodata.GeoUtil import Query, Result, Entry, get_soundex
 #from util import SpellCheck
 
