@@ -87,9 +87,9 @@ def _phrase_normalize(text: str) -> str:
     text = re.sub(r' co\.', ' county', text)  # Normalize County
     text = re.sub(r'united states of america', 'usa', text)  # Normalize to USA
     text = re.sub(r'united states', 'usa', text)  # Normalize to USA
-    text = re.sub(r'town of ', '', text)  #  - remove town of
-    text = re.sub(r'city of ', '', text)  #  - remove city of
-    text = re.sub(r'near ', ' ', text)  #  - remove near
+    text = re.sub(r'town of ', '', text)  # - remove town of
+    text = re.sub(r'city of ', '', text)  # - remove city of
+    text = re.sub(r'near ', ' ', text)  # - remove near
 
     if 'amt' not in text:
         text = re.sub(r'^mt ', 'mount ', text)
@@ -106,9 +106,9 @@ def _phrase_normalize(text: str) -> str:
     text = re.sub(r',palace', ' palace', text)  # - palace  - remove extra comma
     text = re.sub(r',cathedral', ' cathedral', text)  # - palace  - remove extra comma
 
-    text = re.sub(r'battle of ', 'battle of ,', text)  #  - battle of - add comma
-    text = re.sub(r'k. at ', ' ', text)  #  - killed at  - remove extra comma
-    text = re.sub(r'killed ', ' ', text)  #  - killed at  - remove extra comma
+    text = re.sub(r'battle of ', 'battle of ,', text)  # - battle of - add comma
+    text = re.sub(r'k. at ', ' ', text)  # - killed at  - remove extra comma
+    text = re.sub(r'killed ', ' ', text)  # - killed at  - remove extra comma
     return text
 
 
@@ -138,9 +138,9 @@ def _remove_noise_words(text: str):
     text = re.sub(r' du ', ' ', text)
     text = re.sub(r' of ', ' ', text)
     text = re.sub(r' departement', ' ', text)
-    text = re.sub(r'battle of ', 'battle of ,', text)  #  - battle of - add comma
-    text = re.sub(r'k. at ', ' ', text)  #  - killed at  - remove extra comma
-    text = re.sub(r'killed ', ' ', text)  #  - killed at  - remove extra comma
+    text = re.sub(r'battle of ', 'battle of ,', text)  # - battle of - add comma
+    text = re.sub(r'k. at ', ' ', text)  # - killed at  - remove extra comma
+    text = re.sub(r'killed ', ' ', text)  # - killed at  - remove extra comma
     text = re.sub(r'royal borough of windsor and maidenhead', 'berkshire', text)
 
     return text
@@ -189,7 +189,7 @@ alias_list = {
     'rhone alpes': ('auvergne rhone alpes', 'fr', 'ADM1'),
 
     'breconshire': ('sir powys', 'gb', 'ADM2'),
-}
+    }
 
 
 def add_aliases_to_database(geo_files: GeodataFiles):
@@ -265,11 +265,14 @@ def admin1_normalize(admin1_name: str, iso):
 
 def admin2_normalize(admin2_name: str, iso) -> (str, bool):
     """
-    Normalize historic or colloquial Admin2 names to standard
-    :param admin2_name:
-    :return: (result, modified)
-    result - new string
-    modified - True if modified
+        Normalize historic or colloquial Admin2 names to standard
+
+    Args:
+        admin2_name: 
+        iso: 
+
+    Returns: (result, modified) - result is new string, modified - True if modified
+
     """
     mod = False
 
@@ -306,7 +309,7 @@ def country_normalize(country_name) -> (str, bool):
         'suisse': 'switzerland',
         'schweiz': 'switzerland',
 
-    }
+        }
     if natural_names.get(country_name):
         country_name = natural_names.get(country_name)
         return country_name.strip(' '), True

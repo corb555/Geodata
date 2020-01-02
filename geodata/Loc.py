@@ -42,7 +42,7 @@ place_type_name_dict = {
     PlaceType.ADMIN2: 'COUNTY',
     PlaceType.CITY: ' ',
     PlaceType.ADVANCED_SEARCH: ' '
-}
+    }
 
 
 class Loc:
@@ -78,7 +78,7 @@ class Loc:
         self.feature: str = ''  # Geoname feature code
         self.place_type: int = PlaceType.COUNTRY  # Is this a Country , Admin1 ,admin2 or city?
         self.target: str = ''  # Target for lookup
-        self.geoid: str = ''    # Geoname GEOID
+        self.geoid: str = ''  # Geoname GEOID
         self.prefix_commas: str = ''
         self.id = ''
         self.enclosed_by = ''
@@ -108,8 +108,8 @@ class Loc:
         self.original_entry = place_name
 
         # Convert open-brace and open-paren to comma.  close brace/paren will be stripped by normalize()
-        res = re.sub('\[', ',', place_name)
-        res = re.sub('\(', ',', res)
+        res = re.sub(r'\[', ',', place_name)
+        res = re.sub(r'\(', ',', res)
 
         tokens = res.split(",")
         if len(tokens[-1]) == 0:
@@ -205,7 +205,7 @@ class Loc:
 
         self.prefix = self.prefix.strip(',')
 
-        #self.logger.debug(f"    ======= PARSE: {place_name} City [{self.city1}] Adm2 [{self.admin2_name}]"
+        # self.logger.debug(f"    ======= PARSE: {place_name} City [{self.city1}] Adm2 [{self.admin2_name}]"
         #                  f" Adm1 [{self.admin1_name}] adm1_id [{self.admin1_id}] Cntry [{self.country_name}] Pref=[{self.prefix}]"
         #                  f" type_id={self.place_type}")
         return
@@ -257,7 +257,7 @@ class Loc:
         self.admin2_name = str(self.admin2_name)
         self.prefix = str(self.prefix)
 
-    def format_term(self, txt)->str:
+    def format_term(self, txt) -> str:
         if txt == '':
             if self.need_commas:
                 return ', '
@@ -267,7 +267,7 @@ class Loc:
             self.need_commas = True
             return f'{txt}, '
 
-    def get_long_name(self, replace_dct)->str:
+    def get_long_name(self, replace_dct) -> str:
         """
         Take the fields in a Place and build full name.  e.g.  city,adm2,adm1,country name   
         Prefix is NOT included.  Text also has replacements from dictionary applied   
@@ -298,7 +298,7 @@ class Loc:
 
         # normalize prefix
         self.prefix = Normalize.normalize_for_search(self.prefix, self.country_iso)
-        #self.prefix = re.sub(',', '', self.prefix)
+        # self.prefix = re.sub(',', '', self.prefix)
 
         if len(self.prefix) > 0:
             self.prefix_commas = ', '
@@ -344,7 +344,7 @@ class Loc:
         self.country_name, modified = Normalize.country_normalize(self.country_name)
 
         if len(self.extra) > 0:
-            full_title = self.prefix + ' ' + self.extra + ',' +  f"{self.city1}, {self.admin2_name}, {self.admin1_name}, {str(self.country_name)}"
+            full_title = self.prefix + ' ' + self.extra + ',' + f"{self.city1}, {self.admin2_name}, {self.admin1_name}, {str(self.country_name)}"
         else:
             full_title = self.prefix + ',' + f"{self.city1}, {self.admin2_name}, {self.admin1_name}, {str(self.country_name)}"
 
@@ -449,10 +449,12 @@ class Loc:
         return nm
 
 
-type_name = {"ADM0": 'Country', "ADM1": 'City', "ADM2": 'City', "ADM3": 'City', "ADM4": 'City', "ADMF": 'City',
-             "CH": 'Church', "CSTL": 'Castle', "CMTY": 'Cemetery', "EST": 'Estate', "HSP": 'Hospital',
-             "HSTS": 'Historic', "ISL": 'Island', "MSQE": 'Mosque', "MSTY": 'Monastery', "MT": 'Mountain', "MUS": 'Museum', "PAL": 'Palace',
-             "PPL": 'City', "PPLA": 'City', "PPLA2": 'City', "PPLA3": 'City', "PPLA4": 'City',
-             "PPLC": 'City', "PPLG": 'City', "PPLH": 'City', "PPLL": 'Village', "PPLQ": 'City', "PPLX": 'City',
-             "PRK": 'Park', "PRN": 'Prison', "PRSH": 'Parish', "RUIN": 'Ruin',
-             "RLG": 'Religious', "STG": '', "SQR": 'Square', "SYG": 'Synagogue', "VAL": 'Valley', "PP1M": 'City', "PP1K": 'City'}
+type_name = {
+    "ADM0": 'Country', "ADM1": 'City', "ADM2": 'City', "ADM3": 'City', "ADM4": 'City', "ADMF": 'City',
+    "CH": 'Church', "CSTL": 'Castle', "CMTY": 'Cemetery', "EST": 'Estate', "HSP": 'Hospital',
+    "HSTS": 'Historic', "ISL": 'Island', "MSQE": 'Mosque', "MSTY": 'Monastery', "MT": 'Mountain', "MUS": 'Museum', "PAL": 'Palace',
+    "PPL": 'City', "PPLA": 'City', "PPLA2": 'City', "PPLA3": 'City', "PPLA4": 'City',
+    "PPLC": 'City', "PPLG": 'City', "PPLH": 'City', "PPLL": 'Village', "PPLQ": 'City', "PPLX": 'City',
+    "PRK": 'Park', "PRN": 'Prison', "PRSH": 'Parish', "RUIN": 'Ruin',
+    "RLG": 'Religious', "STG": '', "SQR": 'Square', "SYG": 'Synagogue', "VAL": 'Valley', "PP1M": 'City', "PP1K": 'City'
+    }

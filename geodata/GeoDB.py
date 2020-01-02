@@ -31,7 +31,9 @@ from tkinter import messagebox
 
 from geodata import GeoUtil, Loc, Country, MatchScore, Normalize, DB, QueryList
 from geodata.GeoUtil import Query, Result, Entry, get_soundex
-#from util import SpellCheck
+
+
+# from util import SpellCheck
 
 
 class GeoDB:
@@ -59,7 +61,7 @@ class GeoDB:
         self.select_str = 'name, country, admin1_id, admin2_id, lat, lon, f_code, geoid, sdx'
         if spellcheck:
             raise ValueError('Spellcheck is not currently supported')
-            
+
         self.spellcheck = spellcheck
         self.use_wildcards = True
         self.total_time = 0
@@ -427,7 +429,7 @@ class GeoDB:
             None.  place.admin2_id is updated with best match 
         """
         lookup_target = place.admin2_name
-        pattern = self.create_county_wildcard(lookup_target)
+        #pattern = self.create_county_wildcard(lookup_target)
         if len(lookup_target) == 0:
             return
 
@@ -472,7 +474,7 @@ class GeoDB:
         # Returns:
             None.  place.admin2_id is updated with best match 
         """
-        
+
         lookup_target = place.admin1_id
         if len(lookup_target) == 0:
             return '', ''
@@ -809,7 +811,6 @@ class GeoDB:
         for tbl in ['geodata', 'admin']:
             # noinspection SqlWithoutWhere
             self.db.delete_table(tbl)
-
 
     def create_geoid_index(self):
         """

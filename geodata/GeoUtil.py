@@ -68,11 +68,13 @@ def get_directory_name() -> str:
     """
     return "geoname_data"
 
-def get_cache_directory( dirname):
+
+def get_cache_directory(dirname):
     """ 
     Returns:  directory for geodata cache files including DB
     """
     return os.path.join(dirname, "cache")
+
 
 def get_soundex(txt):
     """
@@ -80,6 +82,7 @@ def get_soundex(txt):
     """
     res = phonetics.dmetaphone(txt)
     return res[0]
+
 
 def set_debug_logging(msg):
     """
@@ -93,6 +96,7 @@ def set_debug_logging(msg):
     logger.info(msg)
     return logger
 
+
 def set_info_logging(msg):
     """
          Set up logging configuration for info level 
@@ -105,7 +109,8 @@ def set_info_logging(msg):
     logger.info(msg)
     return logger
 
-def _remove_matching_seq(text1: str, text2: str, attempts: int, min_len:int) -> (str, str):
+
+def _remove_matching_seq(text1: str, text2: str, attempts: int, min_len: int) -> (str, str):
     """
     Find largest matching sequence.  Remove it in text1 and text2.
             Private - called by remove_matching_sequences which provides a wrapper
@@ -127,7 +132,8 @@ def _remove_matching_seq(text1: str, text2: str, attempts: int, min_len:int) -> 
             text1, text2 = _remove_matching_seq(text1, text2, attempts - 1, min_len)
     return text1, text2
 
-def remove_matching_sequences(text1: str, text2: str, min_len:int) -> (str, str):
+
+def remove_matching_sequences(text1: str, text2: str, min_len: int) -> (str, str):
     """
     Find largest sequences that match between text1 and 2.  Remove them from text1 and text2.
     Matches will NOT include commas
@@ -146,8 +152,10 @@ def remove_matching_sequences(text1: str, text2: str, min_len:int) -> (str, str)
     text2 = re.sub('@', ',', text2)
     return text1.strip(' '), text2.strip(' ')
 
+
 def _lowercase_match_group(matchobj):
     return matchobj.group().lower()
+
 
 def capwords(text):
     """
@@ -159,6 +167,7 @@ def capwords(text):
         text = re.sub(poss_regex, _lowercase_match_group, text.title())
 
     return text
+
 
 type_names = {
     "CH": 'Church',
@@ -191,4 +200,4 @@ type_names = {
     "PPLL": 'Village',
     "PPLQ": 'Historical',
     "PPLX": 'Neighborhood'
-}
+    }

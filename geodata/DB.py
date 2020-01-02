@@ -146,7 +146,7 @@ class DB:
             c = self.conn.cursor()
             c.execute(create_table_sql)
             self.conn.commit()
-            #self.logger.debug(f'Create DB table \n{create_table_sql}')  # Print  table name for logging
+            # self.logger.debug(f'Create DB table \n{create_table_sql}')  # Print  table name for logging
         except Exception as e:
             if self.show_message:
                 messagebox.showwarning('Error', e)
@@ -272,8 +272,8 @@ class DB:
         except Exception as e:
             if self.show_message:
                 messagebox.showwarning('Error', f'Database select error\n\n'
-            f'SELECT\n {select_str}\n FROM {from_tbl} WHERE\n {where}\n'
-            f'{args}\n\n {e}')
+                f'SELECT\n {select_str}\n FROM {from_tbl} WHERE\n {where}\n'
+                f'{args}\n\n {e}')
             self.err = e
             self.logger.error(e)
             if self.exit_on_error:
@@ -282,7 +282,7 @@ class DB:
                 result_list = None
         return result_list
 
-    def table_exists(self, table_name)->bool:
+    def table_exists(self, table_name) -> bool:
         """
             Returns whether table exists
         # Args:
@@ -335,7 +335,7 @@ class DB:
         self.logger.debug(f'db test sql={sql} args=[{args}]')
         try:
             cur.execute(sql, args)
-            res = cur.fetchall()
+            cur.fetchall()
             self.logger.debug('DB no error')
             return False
         except Exception as e:

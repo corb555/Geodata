@@ -25,18 +25,19 @@ from pathlib import Path
 from geodata import Geodata, Loc
 
 
-class Example():
+class Example:
     """
     Example program for Geodata gazeteer.  
     1. Create folder in home directory:  example/cache  
     2. Download gb.txt from geonames.org and place in example/cache.  (This just has Great Britain data)  
     3. Run example.py  
     """
+
     def __init__(self):
         # Set up standard logging.  
         logging.getLogger(__name__)
         fmt = "%(levelname)s %(name)s.%(funcName)s %(lineno)d: %(message)s"
-        logging.basicConfig(level=logging.INFO, stream=sys.stdout, format=fmt)   # Change this to logging.DEBUG for more detail
+        logging.basicConfig(level=logging.INFO, stream=sys.stdout, format=fmt)  # Change this to logging.DEBUG for more detail
 
         # Initialize
         directory = os.path.join(str(Path.home()), "example")
@@ -54,11 +55,11 @@ class Example():
 
     def lookup_place(self, location_name):
         # Create Location instance.  This will hold search params and result
-        place: Loc.Loc = Loc.Loc()   
-        
+        place: Loc.Loc = Loc.Loc()
+
         # Find matches - allow wildcard searches
         self.geodata.find_matches(location=location_name, place=place, plain_search=False)
-        
+
         # Sort results and remove duplicates
         flags = self.geodata.sort_results(place)
 
@@ -74,6 +75,7 @@ class Example():
         else:
             print('   NO MATCH')
 
+
 # Geoname feature types to add to database.  Other feature types will be ignored.
 features = {"ADM1", "ADM2", "ADM3", "ADM4", "ADMF", "CH", "CSTL", "CMTY", "EST ", "HSP", "FT",
             "HSTS", "ISL", "MSQE", "MSTY", "MT", "MUS", "PAL", "PPL", "PPLA", "PPLA2", "PPLA3", "PPLA4",
@@ -82,18 +84,17 @@ features = {"ADM1", "ADM2", "ADM3", "ADM4", "ADMF", "CH", "CSTL", "CMTY", "EST "
 if __name__ == "__main__":
     # Initialize
     ex = Example()
-    
+
     # Try a few different lookups
-    
+
     # Search with misspelling of Edinburgh
     ex.lookup_place('eddinburg,,scotland')
 
     # Search with wildcard
     ex.lookup_place('cant* cath*,england')
-    
+
     # Search with wildcard where feature is Castle and country is Great Britain
     ex.lookup_place('d*,--feature=CSTL,--iso=GB')
-    
+
     # Search with Street name/address - street is ignored and returned in prefix.  
     ex.lookup_place('12 main, westminster,england')
-

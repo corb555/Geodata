@@ -125,4 +125,4 @@ class AlternateNames(FileReader.FileReader):
         :return: None
         """
         self.geo_files.geodb.db.commit()
-        #self.geo_files.geodb.clear_geoname_data()
+        # self.geo_files.geodb.clear_geoname_data()

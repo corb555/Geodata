@@ -119,7 +119,7 @@ class GeodataFiles:
                                                              progress_bar=self.progress_bar, filename='alternateNamesV2.txt',
                                                              lang_list=self.lang_list)
 
-    def open_geodb(self, repair_database:bool) -> bool:
+    def open_geodb(self, repair_database: bool) -> bool:
         """
          Read Geoname DB file - this is the db of geoname.org city files and is stored in cache directory under geonames_data.
          The db only contains important fields and only for supported countries.
@@ -179,7 +179,7 @@ class GeodataFiles:
                 self.geodb = GeoDB.GeoDB(db_path=db_path, spellcheck=self.spellcheck,
                                          show_message=self.show_message, exit_on_error=self.exit_on_error,
                                          set_speed_pragmas=True, db_limit=105)
-                err = self.create_geonames_database()
+                self.create_geonames_database()
 
                 # Create spell check file
                 if self.enable_spell_checker:
@@ -200,10 +200,10 @@ class GeodataFiles:
         if self.geodb is None:
             self.logger.error('Cannot create DB: geodb is None')
             return True
-        
+
         self.geodb.create_tables()
         self.geodb.insert_version(self.required_db_version)
-            
+
         self.country = Country.Country(progress=self.progress_bar, geo_files=self, lang_list=self.lang_list)
 
         file_count = 0
@@ -278,7 +278,7 @@ class GeodataFiles:
 
         if os.path.exists(path):
             fsize = os.path.getsize(path)
-            bytes_per_line = 128   # Approximate bytes per line for progress indicator
+            bytes_per_line = 128  # Approximate bytes per line for progress indicator
             with open(path, 'r', newline="", encoding='utf-8', errors='replace') as geofile:
                 self.progress("Building Database from {}".format(file), 2)  # initialize progress bar
                 reader = csv.reader(geofile, delimiter='\t')

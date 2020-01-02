@@ -234,5 +234,6 @@ class MatchScore:
 
         return out_score
 
-    def _adjust_adm_score(self, score, feat):
+    @staticmethod
+    def _adjust_adm_score(score, feat):
         return score

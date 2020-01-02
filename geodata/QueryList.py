@@ -117,7 +117,7 @@ class QueryList:
     @staticmethod
     def query_list_admin2(query_list, place: Loc):
         # Try Admin queries and find best match
-        sdx = get_soundex(place.target)
+        #sdx = get_soundex(place.target)
         pattern = QueryList.create_wildcard(place.target)
 
         if len(place.country_iso) == 0:
@@ -171,7 +171,7 @@ class QueryList:
     def query_list_country(query_list, place: Loc):
         """Search for Admin1 entry"""
         sdx = get_soundex(place.target)
-        pattern = QueryList.create_wildcard(place.target)
+        #pattern = QueryList.create_wildcard(place.target)
 
         query_list.append(where="country = ? AND f_code = ? ",
                           args=(place.country_iso, 'ADM0'),
@@ -184,7 +184,7 @@ class QueryList:
     @staticmethod
     def query_list_admin1_id(query_list, place: Loc):
         """Search for Admin1 entry"""
-        sdx = get_soundex(place.target)
+        #sdx = get_soundex(place.target)
         pattern = QueryList.create_wildcard(place.target)
 
         if place.country_iso == '':
@@ -210,7 +210,7 @@ class QueryList:
     @staticmethod
     def query_list_admin2_id(query_list, place: Loc):
         """Search for Admin1 entry"""
-        sdx = get_soundex(place.target)
+        #sdx = get_soundex(place.target)
         pattern = QueryList.create_wildcard(place.target)
 
         if len(place.admin1_id) > 0:
