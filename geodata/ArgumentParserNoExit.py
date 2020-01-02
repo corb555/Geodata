@@ -1,5 +1,6 @@
-import argparse
+""" Command argument parser that throws exception rather than exitting """
 
+import argparse
 
 # Variant of ArgParse which will not exit when there is a parser error, instead raises exception
 class ArgumentParserError(Exception):

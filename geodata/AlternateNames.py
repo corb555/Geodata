@@ -21,7 +21,7 @@
 """
 Add alternate names for places using the Geonames.org Alternate names file 
 """
-from geodata import GeodataFiles, Loc, GeoUtil, GeoDB, FileReader
+from geodata import GeodataBuild, Loc, GeoUtil, GeoDB, FileReader
 
 ALT_GEOID = 1
 ALT_LANG = 2
@@ -35,7 +35,7 @@ class AlternateNames(FileReader.FileReader):
     If the lang is in lang_list and the ID is ALREADY in our geonames dictionary, we add this as an alternative name
     """
 
-    def __init__(self, directory: str, filename: str, progress_bar, geo_files: GeodataFiles, lang_list):
+    def __init__(self, directory: str, filename: str, progress_bar, geo_files: GeodataBuild, lang_list):
         """
             Read in geonames alternate names file and add to geodata database in alt_names table
         # Args:
@@ -47,7 +47,7 @@ class AlternateNames(FileReader.FileReader):
         """
         super().__init__(directory, filename, progress_bar)
         self.sub_dir = GeoUtil.get_cache_directory(directory)
-        self.geo_files: GeodataFiles.GeodataFiles = geo_files
+        self.geo_files: GeodataBuild.GeodataFiles = geo_files
         self.lang_list = lang_list
         self.loc = Loc.Loc()
 

@@ -41,7 +41,7 @@ import copy
 import logging
 from operator import itemgetter
 
-from geodata import GeoUtil, GeodataFiles, Loc, MatchScore
+from geodata import GeoUtil, GeodataBuild, Loc, MatchScore
 
 
 
@@ -69,7 +69,7 @@ Provide place lookup gazeteer based on files from geonames.org
         self.logger = logging.getLogger(__name__)
         self.directory: str = directory_name
         self.progress_bar = progress_bar  # progress_bar
-        self.geo_files = GeodataFiles.GeodataFiles(self.directory, progress_bar=self.progress_bar,
+        self.geo_files = GeodataBuild.GeodataFiles(self.directory, progress_bar=self.progress_bar,
                                                    enable_spell_checker=enable_spell_checker,
                                                    show_message=show_message, exit_on_error=exit_on_error,
                                                    languages_list_dct=languages_list_dct,

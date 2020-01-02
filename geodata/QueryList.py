@@ -1,3 +1,23 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+#  Copyright (c) 2019.       Mike Herbert
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+
+""" Build database queries for various lookups """
 import re
 
 from geodata import Loc
@@ -117,7 +137,7 @@ class QueryList:
     @staticmethod
     def query_list_admin2(query_list, place: Loc):
         # Try Admin queries and find best match
-        #sdx = get_soundex(place.target)
+        # sdx = get_soundex(place.target)
         pattern = QueryList.create_wildcard(place.target)
 
         if len(place.country_iso) == 0:
@@ -171,7 +191,7 @@ class QueryList:
     def query_list_country(query_list, place: Loc):
         """Search for Admin1 entry"""
         sdx = get_soundex(place.target)
-        #pattern = QueryList.create_wildcard(place.target)
+        # pattern = QueryList.create_wildcard(place.target)
 
         query_list.append(where="country = ? AND f_code = ? ",
                           args=(place.country_iso, 'ADM0'),
@@ -184,7 +204,7 @@ class QueryList:
     @staticmethod
     def query_list_admin1_id(query_list, place: Loc):
         """Search for Admin1 entry"""
-        #sdx = get_soundex(place.target)
+        # sdx = get_soundex(place.target)
         pattern = QueryList.create_wildcard(place.target)
 
         if place.country_iso == '':
@@ -210,7 +230,7 @@ class QueryList:
     @staticmethod
     def query_list_admin2_id(query_list, place: Loc):
         """Search for Admin1 entry"""
-        #sdx = get_soundex(place.target)
+        # sdx = get_soundex(place.target)
         pattern = QueryList.create_wildcard(place.target)
 
         if len(place.admin1_id) > 0:

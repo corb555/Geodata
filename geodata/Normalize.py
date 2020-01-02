@@ -24,7 +24,7 @@ import re
 
 import unidecode
 
-from geodata import GeodataFiles, GeoUtil, Loc, GeoDB
+from geodata import GeodataBuild, GeoUtil, Loc, GeoDB
 
 
 def normalize_for_scoring(text: str, iso: str) -> str:
@@ -192,7 +192,7 @@ alias_list = {
     }
 
 
-def add_aliases_to_database(geo_files: GeodataFiles):
+def add_aliases_to_database(geo_files: GeodataBuild):
     #  Add alias names to DB
     place = Loc.Loc()
     for ky in alias_list:

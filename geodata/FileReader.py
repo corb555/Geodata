@@ -16,6 +16,8 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+
+"""        Read a file and call a handler for each line.  """
 import logging
 import os
 
@@ -24,7 +26,7 @@ class FileReader:
 
     def __init__(self, directory: str, filename: str, progress_bar):
         """
-        Read a file and call a handler for each line.
+        Read a file and call a handler for each line.  Update progress bar if present
         #Args:
             directory:
             filename:

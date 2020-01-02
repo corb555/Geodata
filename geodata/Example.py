@@ -28,6 +28,7 @@ from geodata import Geodata, Loc
 class Example:
     """
     Example program for Geodata gazeteer.  
+    0. pip3 install geodata
     1. Create folder in home directory:  example/cache  
     2. Download gb.txt from geonames.org and place in example/cache.  (This just has Great Britain data)  
     3. Run example.py  
