@@ -48,17 +48,17 @@ class Example:
                                        feature_code_list_dct=features,
                                        supported_countries_dct={'fr', 'gb'})
 
-        # Open Geoname database - city names, lat/long, etc.  Create DB if not found
+        # Open Geoname database - city names, lat/long, etc.  Create database if not found
         error = self.geodata.open(repair_database=True)
         if error:
             print(f"Missing geoname Files in {directory}: download gb.txt or allcountries.txt from geonames.org")
             raise ValueError('Missing files from geonames.org')
 
     def lookup_place(self, location_name):
-        # Create Location instance.  This will hold search params and result
+        # Create Location instance.  This will hold search parameters and result
         place: Loc.Loc = Loc.Loc()
 
-        # Find matches - allow wildcard searches
+        # Find best match
         match = self.geodata.find_best_match(location=location_name, place=place)
 
         if match:
@@ -78,26 +78,17 @@ if __name__ == "__main__":
     # Initialize
     ex = Example()
 
-    # Try a few different lookups
-    
-    # Search with Street name/address - street is ignored and returned in prefix.  
-    ex.lookup_place('12 baker st, Manchester, , England')
+    # Try a few different locations
+    locations = [
+        '12 baker st, Manchester, , England',  # Street as prefix
+        'eddinburg,,scotland',  # misspelled
+        'cant* cath*,england',  # wildcards
+        'd*,--feature=CSTL,--iso=GB',  # search by feature type
+        'cardiff, wales',  # good location
+        'carddif, scotland',  # misspelled and not in Scotland
+        'lindering, wales',  # poor match quality
+        'phoenix, england'  # doesnt exist
+        ]
 
-    # Search with misspelling of Edinburgh
-    ex.lookup_place('eddinburg,,scotland')
-
-    # Search with wildcard
-    ex.lookup_place('cant* cath*,england')
-
-    # Search with wildcard where feature is Castle and country is Great Britain
-    ex.lookup_place('d*,--feature=CSTL,--iso=GB')
-    
-    # Search with Scotland instead of Wales, and Cardiff misspelled
-    ex.lookup_place('cardiff, wales')
-    
-    # Search with Scotland instead of Wales, and Cardiff misspelled
-    ex.lookup_place('carddif, scotland')
-
-    # Search non existant
-    ex.lookup_place('phoenix, england')
-
+    for name in locations:
+        ex.lookup_place(name)
