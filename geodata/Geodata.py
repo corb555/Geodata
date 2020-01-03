@@ -203,7 +203,8 @@ Provide place lookup gazeteer based on files from geonames.org
         elif typ == Loc.PlaceType.ADMIN2:
             # Try ADMIN2 as city
             if place.admin2_name != '':
-                place.prefix += ' ' + place.city1
+                if '*' not in place.city1:
+                    place.prefix += ' ' + place.city1
                 place.city1 = place.admin2_name
                 place.admin2_name = ''
                 typ_name = 'Admin2'
@@ -212,7 +213,8 @@ Provide place lookup gazeteer based on files from geonames.org
             if place.prefix != '':
                 tmp = place.city1
                 place.city1 = place.prefix
-                place.prefix = tmp
+                if '*' not in tmp:
+                    place.prefix = tmp
                 typ_name = 'Prefix'
         elif typ == Loc.PlaceType.ADVANCED_SEARCH:
             # Advanced Search
@@ -228,14 +230,14 @@ Provide place lookup gazeteer based on files from geonames.org
             place.place_type = Loc.PlaceType.CITY
             self.geo_files.geodb.lookup_place(place=place)
 
-    def find_best_match(self, location: str, place: Loc):
+    def find_best_match(self, location: str, place: Loc)->bool:
         """
             Find the best scoring match for this location in the geoname dictionary.  
         #Args:  
             location:  location name, e.g. Los Angeles, California, USA   
             place:  Loc instance   
-        #Returns:   
-            Update place with -- lat, lon, district, city, country_iso, result code  
+        #Returns: None     
+            place is updated with -- lat, lon, district, city, country_iso, result code  
         """
 
         #  First parse the location into <prefix>, city, <district2>, district1, country.
@@ -255,9 +257,16 @@ Provide place lookup gazeteer based on files from geonames.org
             row = copy.copy(place.georow_list[0])
             place.georow_list.clear()
             place.georow_list.append(row)
-            place.result_type = GeoUtil.Result.STRONG_MATCH
+            if place.score <= MatchScore.Score.VERY_GOOD:
+                place.result_type = GeoUtil.Result.STRONG_MATCH
+            else:
+                place.result_type = GeoUtil.Result.PARTIAL_MATCH
 
         self.process_results(place=place, flags=ResultFlags(limited=False, filtered=False))
+        if len(place.georow_list) > 0:
+            return True
+        else:
+            return False
 
     def find_geoid(self, geoid: str, place: Loc):
         """

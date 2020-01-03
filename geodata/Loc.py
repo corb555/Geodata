@@ -84,6 +84,7 @@ class Loc:
         self.enclosed_by = ''
         self.standard_parse = True
         self.updated_entry = ''
+        self.score = 9999
 
         # Lookup result info
         self.status: str = ""
@@ -199,9 +200,11 @@ class Loc:
 
             # Assign remaining tokens (if any) to prefix.  Zero'th token to 4th from end.
             for item in tokens[0:-4]:
-                if len(self.prefix) > 0:
-                    self.prefix += ' '
-                self.prefix += str(item.strip(' '))
+                if '*' not in item:
+                    if len(self.prefix) > 0:
+                        self.prefix += ' '
+                        
+                    self.prefix += str(item.strip(' '))
 
         self.prefix = self.prefix.strip(',')
 
@@ -298,7 +301,6 @@ class Loc:
 
         # normalize prefix
         self.prefix = Normalize.normalize_for_search(self.prefix, self.country_iso)
-        # self.prefix = re.sub(',', '', self.prefix)
 
         if len(self.prefix) > 0:
             self.prefix_commas = ', '

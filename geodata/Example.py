@@ -51,7 +51,7 @@ class Example:
         # Open Geoname database - city names, lat/long, etc.  Create DB if not found
         error = self.geodata.open(repair_database=True)
         if error:
-            print(f"Missing geoname Files in {directory}: gb.txt or allcountries.txt from geonames.org")
+            print(f"Missing geoname Files in {directory}: download gb.txt or allcountries.txt from geonames.org")
             raise ValueError('Missing files from geonames.org')
 
     def lookup_place(self, location_name):
@@ -59,22 +59,14 @@ class Example:
         place: Loc.Loc = Loc.Loc()
 
         # Find matches - allow wildcard searches
-        self.geodata.find_matches(location=location_name, place=place, plain_search=False)
+        match = self.geodata.find_best_match(location=location_name, place=place)
 
-        # Sort results and remove duplicates
-        flags = self.geodata.sort_results(place)
-
-        print(f'Found {len(place.georow_list)} matches for {location_name}')
-
-        if len(place.georow_list) > 0:
-            self.geodata.process_results(place=place, flags=flags)
-            place.set_place_type()
-
+        if match:
             # Create full name for result
             name = f'{place.get_long_name(None)}'
-            print(f'   Best: [{name}]  Prefix=[{place.prefix}{place.prefix_commas}] Score=')
+            print(f'   Best match for {location_name}:\n {name}  Prefix={place.prefix}{place.prefix_commas} Score={place.score:.0f}\n')
         else:
-            print('   NO MATCH')
+            print(f'   Best match for {location_name}:\nNO MATCH')
 
 
 # Geoname feature types to add to database.  Other feature types will be ignored.
@@ -87,6 +79,9 @@ if __name__ == "__main__":
     ex = Example()
 
     # Try a few different lookups
+    
+    # Search with Street name/address - street is ignored and returned in prefix.  
+    ex.lookup_place('12 baker st, Manchester, , England')
 
     # Search with misspelling of Edinburgh
     ex.lookup_place('eddinburg,,scotland')
@@ -96,6 +91,13 @@ if __name__ == "__main__":
 
     # Search with wildcard where feature is Castle and country is Great Britain
     ex.lookup_place('d*,--feature=CSTL,--iso=GB')
+    
+    # Search with Scotland instead of Wales, and Cardiff misspelled
+    ex.lookup_place('cardiff, wales')
+    
+    # Search with Scotland instead of Wales, and Cardiff misspelled
+    ex.lookup_place('carddif, scotland')
 
-    # Search with Street name/address - street is ignored and returned in prefix.  
-    ex.lookup_place('12 main, westminster,england')
+    # Search non existant
+    ex.lookup_place('phoenix, england')
+

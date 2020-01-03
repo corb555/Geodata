@@ -303,7 +303,7 @@ class GeoDB:
                 place.place_type = Loc.PlaceType.CITY
                 match_adm1 = self.get_admin1_name_direct(admin1_id=place.georow_list[0][Entry.ADM1], iso=place.country_iso)
                 # self.logger.debug(f'pl_iso [{place.country_iso}] pl_adm1 {place.admin1_name} match_adm1=[{match_adm1}] ')
-                if place.admin1_name != match_adm1:
+                if place.admin1_name != match_adm1 and '*' not in place.admin1_name.title():
                     place.prefix = place.admin1_name.title()
                     place.admin1_name = ''
                 return
@@ -803,6 +803,11 @@ class GeoDB:
         place.city1 = str(place.city1)
         if place.city1 is None:
             place.city1 = ''
+            
+        try:
+            place.score = row[Entry.SCORE]
+        except IndexError as e:
+            pass
 
     def clear_geoname_data(self):
         """
@@ -1089,7 +1094,7 @@ class GeoDB:
             self.total_time += elapsed
             self.total_lookups += 1
             if elapsed > .005:
-                self.logger.debug(f'Time={elapsed:.6f} TOT={self.total_time:.1f} '
+                self.logger.debug(f'Slow lookup. Time={elapsed:.6f} TOT={self.total_time:.1f} '
                                   f'len {len(row_list)} from {from_tbl} '
                                   f'where {query.where} val={query.args} ')
             if len(row_list) > self.max_query_results:
@@ -1160,6 +1165,21 @@ class GeoDB:
 
         """
         new_prfx = pref.lower()
+        result_soundex = ''
+        result = result.lower()
+        result_words = result.split(' ')
+        for item in result_words:
+            result_soundex += GeoUtil.get_soundex(item)
+            result_soundex += ' '
+            
+        word_list = new_prfx.split(' ')
+        for idx, item in enumerate(word_list):
+            sdx = GeoUtil.get_soundex(item)
+            if sdx in result_soundex and sdx != '':
+                word_list[idx] = ''
+            if '*' in item:
+                word_list[idx] = ''
+        new_prfx = ' '.join(word_list)
 
         # Remove words from prefix that are in result
         for item in re.split(r'\W+', result.lower()):
@@ -1167,7 +1187,7 @@ class GeoDB:
                 new_prfx = re.sub(item, '', new_prfx, count=1)
 
         # Remove wildcard char from prefix
-        new_prfx = re.sub(r'\*', '', new_prfx)
+        #new_prfx = re.sub(r'\*', '', new_prfx)
 
         new_prfx = new_prfx.strip(' ')
 
@@ -1213,14 +1233,16 @@ class GeoDB:
                 place.updated_entry = place.get_long_name(None)
 
             score = self.match.match_score(target_place=place, result_place=result_place)
+            
             if result_place.feature == target_feature:
                 score -= 10
 
             min_score = min(min_score, score)
-
+ 
             # Convert row tuple to list and extend so we can assign score
             update = list(rw)
-            update.append(1)
+            if len(update) < GeoUtil.Entry.SCORE + 1:
+                update.append(1)
             update[GeoUtil.Entry.SCORE] = score
 
             result_place.prefix = Normalize.normalize(place.prefix, True)
