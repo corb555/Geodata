@@ -139,7 +139,7 @@ def _remove_noise_words(text: str):
     text = re.sub(r' of ', ' ', text)
     text = re.sub(r' departement', ' ', text)
     text = re.sub(r'battle of ', 'battle of ,', text)  # - battle of - add comma
-    text = re.sub(r'k. at ', ' ', text)  # - killed at  - remove extra comma
+    text = re.sub(r'k\. at ', ' ', text)  # - killed at  - remove extra comma
     text = re.sub(r'killed ', ' ', text)  # - killed at  - remove extra comma
     text = re.sub(r'royal borough of windsor and maidenhead', 'berkshire', text)
 

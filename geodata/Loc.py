@@ -164,7 +164,7 @@ class Loc:
                 # Lookup Admin1
                 geo_files.geodb.wide_search_admin1_id(self)
                 if self.admin1_id != '':
-                    self.logger.debug(f'Found admin1 {self.admin1_name}')
+                    #self.logger.debug(f'Found admin1 {self.admin1_name}')
                     pass
                 else:
                     # Last token is not Admin1 - append blank

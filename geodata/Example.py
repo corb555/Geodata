@@ -38,10 +38,10 @@ class Example:
         # Set up standard logging.  
         logging.getLogger(__name__)
         fmt = "%(levelname)s %(name)s.%(funcName)s %(lineno)d: %(message)s"
-        logging.basicConfig(level=logging.INFO, stream=sys.stdout, format=fmt)  # Change this to logging.DEBUG for more detail
+        logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, format=fmt)  # Change this to logging.DEBUG for more detail
 
         # Initialize
-        directory = os.path.join(str(Path.home()), "example")
+        directory = os.path.join(str(Path.home()),"Documents", "geoname_data")
         self.geodata = Geodata.Geodata(directory_name=directory, progress_bar=None, enable_spell_checker=False,
                                        show_message=True, exit_on_error=True,
                                        languages_list_dct={'en'},
@@ -66,7 +66,11 @@ class Example:
             name = f'{place.get_long_name(None)}'
             print(f'   Best match for {location_name}:\n {name}  Prefix={place.prefix}{place.prefix_commas} Score={place.score:.0f}\n')
         else:
-            print(f'   Best match for {location_name}:\nNO MATCH')
+            if place.result_type == Geodata.GeoUtil.Result.NOT_SUPPORTED:
+                print(f'   NO match for {location_name}:\n Country {place.country_name} not in supported country list')
+            else:
+                print(f'   NO match for {location_name}:\n')
+
 
 
 # Geoname feature types to add to database.  Other feature types will be ignored.
@@ -87,7 +91,8 @@ if __name__ == "__main__":
         'cardiff, wales',  # good location
         'carddif, scotland',  # misspelled and not in Scotland
         'lindering, wales',  # poor match quality
-        'phoenix, england'  # doesnt exist
+        'phoenix, england',  # doesnt exist
+        'abbaye aux,calvados,,france',
         ]
 
     for name in locations:

@@ -107,6 +107,10 @@ Provide place lookup gazeteer based on files from geonames.org
         self.logger.debug(f"    ==== PARSE: [{location}]\n    Pref=[{place.prefix}] City=[{place.city1}] Adm2=[{place.admin2_name}]"
                           f" Adm1 [{place.admin1_name}] adm1_id [{place.admin1_id}] Ctry [{place.country_name}]"
                           f" type_id={place.place_type}")
+        
+        res = self.is_country_valid(place)
+        if not res:
+            return place.result_type
 
         # Add comma if prefix present
         if len(place.prefix) > 0:
@@ -245,6 +249,13 @@ Provide place lookup gazeteer based on files from geonames.org
         place.parse_place(place_name=location, geo_files=self.geo_files)
         place.country_name = self.geo_files.geodb.get_country_name(place.country_iso)
         place.country_iso = place.country_iso
+        
+        self.logger.debug(f"    ==== PARSE: [{location}]\n    Pref=[{place.prefix}] City=[{place.city1}] Adm2=[{place.admin2_name}]"
+                          f" Adm1 [{place.admin1_name}] adm1_id [{place.admin1_id}] Ctry [{place.country_name}]"
+                          f" type_id={place.place_type}")
+        res = self.is_country_valid(place)
+        if not res:
+            return False
 
         # Lookup location
         self.geo_files.geodb.lookup_place(place=place)
@@ -393,6 +404,9 @@ Provide place lookup gazeteer based on files from geonames.org
         # Find and remove if two entries are duplicates - defined as two items with:
         #  1) same GEOID or 2) same name and similar lat/lon (within Box Distance of 0.6 degrees)
         for geo_row in rows_sorted_by_latlon:
+            #self.logger.debug(f'{geo_row[GeoUtil.Entry.NAME]},{geo_row[GeoUtil.Entry.FEAT]} '
+            #                  f'{geo_row[GeoUtil.Entry.SCORE]:.1f} {geo_row[GeoUtil.Entry.ADM2]}, '
+            #                  f'{geo_row[GeoUtil.Entry.ADM1]} {geo_row[GeoUtil.Entry.ISO]}')
             if self._valid_year_for_location(event_year, geo_row[GeoUtil.Entry.ISO], geo_row[GeoUtil.Entry.ADM1], 60) is False:
                 # Skip location if location name  didnt exist at the time of event WITH 60 years padding
                 continue
@@ -403,9 +417,7 @@ Provide place lookup gazeteer based on files from geonames.org
 
             old_row = list(geo_row)
             geo_row = tuple(old_row)
-            # self.logger.debug(f'{geo_row[GeoKeys.Entry.NAME]},{geo_row[GeoKeys.Entry.FEAT]} '
-            #                  f'{geo_row[GeoKeys.Entry.SCORE]:.1f} {geo_row[GeoKeys.Entry.ADM2]}, '
-            #                  f'{geo_row[GeoKeys.Entry.ADM1]} {geo_row[GeoKeys.Entry.ISO]}')
+
             if geo_row[GeoUtil.Entry.NAME] != prev_geo_row[GeoUtil.Entry.NAME]:
                 # Add this item to georow list since it has a different name.  Also add its idx to geoid dict
                 place.georow_list.append(geo_row)
@@ -462,23 +474,25 @@ Provide place lookup gazeteer based on files from geonames.org
                     f' {admin1_name}, {geo_row[GeoUtil.Entry.ISO]}'
 
 
-            self.logger.debug(f'Score {score:.1f}  {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
-                              f' {geo_row[GeoUtil.Entry.ADM1]}')
+            #self.logger.debug(f'Score {score:.1f}  {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
+            #                  f' {geo_row[GeoUtil.Entry.ADM1]}')
 
             gap_threshold = MatchScore.Score.VERY_GOOD / 2 + abs(min_score) * .3
-
-            # Range to display when there is a strong match
-            if min_score <= MatchScore.Score.VERY_GOOD and score > min_score + gap_threshold:
-                self.logger.debug(f'Min score <7 and gap > {gap_threshold}. min={min_score} curr={score}')
-                break
-
             # Range to display when there is a weak match
             weak_threshold = MatchScore.Score.VERY_GOOD / 2 + abs(min_score) * .8
-            if score > min_score + weak_threshold:
-                self.logger.debug(f'Score gap greater than {weak_threshold:.1f}. min={min_score:.1f} curr={score:.1f}')
-                break
 
-            place.georow_list.append(geo_row)
+            # Range to display when there is a strong match
+            if (min_score <= MatchScore.Score.VERY_GOOD and score > min_score + gap_threshold) or score > min_score + weak_threshold:
+                self.logger.debug(f'Min score <{MatchScore.Score.VERY_GOOD} and gap > {gap_threshold}. min={min_score} curr={score}\n'
+                                  f'{geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
+                              f' {geo_row[GeoUtil.Entry.ADM1]}')
+                #break
+            else:
+                place.georow_list.append(geo_row)
+
+            #if score > min_score + weak_threshold:
+            #    self.logger.debug(f'Score gap greater than {weak_threshold:.1f}. min={min_score:.1f} curr={score:.1f}')
+            #    break
 
         self.logger.debug(f'min={min_score:.1f}, gap2={gap_threshold:.1f}')
 
@@ -633,7 +647,7 @@ default = ["ADM1", "ADM2", "ADM3", "ADM4", "ADMF", "CH", "CSTL", "CMTY", "EST ",
 feature_priority = {
     'PP1M': 90, 'ADM1': 88, 'PPLA': 88, 'PPLC': 88, 'PP1K': 75, 'PPLA2': 85, 'P10K': 81, 'P1HK': 85,
     'PPL': 50, 'PPLA3': 65, 'ADMF': 65, 'PPLA4': 63, 'ADMX': 60, 'PAL': 40, 'ISL': 50,
-    'ADM2': 73, 'PPLG': 68, 'RGN': 65, 'MILB': 40, 'NVB': 65, 'PPLF': 63, 'ADM0': 85, 'PPLL': 50, 'PPLQ': 55, 'PPLR': 55,
+    'ADM2': 73, 'PPLG': 68, 'RGN': 65, 'AREA': 65, 'MILB': 40, 'NVB': 65, 'PPLF': 63, 'ADM0': 85, 'PPLL': 50, 'PPLQ': 55, 'PPLR': 55,
     'CH': 40, 'MSQE': 40, 'SYG': 40, 'CMTY': 40, 'CSTL': 40, 'EST': 40, 'PPLS': 50, 'PPLW': 50, 'PPLX': 75, 'BTL': 20,
     'HSTS': 40, 'PRK': 40, 'HSP': 0, 'VAL': 0, 'MT': 0, 'ADM3': 30, 'ADM4': 0, 'DEFAULT': 0, 'MNMT':40
     }

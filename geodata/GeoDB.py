@@ -184,8 +184,8 @@ class GeoDB:
         pattern = self.create_wildcard(pattern)
 
         sdx = get_soundex(lookup_target)
-        # self.logger.debug(f'CITY lkp targ=[{lookup_target}] adm1 id=[{place.admin1_id}]'
-        #                  f' adm2 id=[{place.admin2_id}] iso=[{place.country_iso}] patt =[{pattern}] sdx={sdx} pref={place.prefix}')
+        self.logger.debug(f'CITY lkp targ=[{lookup_target}] adm1 id=[{place.admin1_id}]'
+                          f' adm2 id=[{place.admin2_id}] iso=[{place.country_iso}] patt =[{pattern}] sdx={sdx} pref={place.prefix}')
 
         query_list = []
         QueryList.QueryList.build_query_list(typ=QueryList.Typ.CITY, query_list=query_list, place=place)
@@ -410,10 +410,9 @@ class GeoDB:
         if len(place.georow_list) > 0:
             sorted_list = sorted(place.georow_list, key=itemgetter(GeoUtil.Entry.SCORE))
             score = sorted_list[0][Entry.SCORE]
-            self.logger.debug(f'score={score}')
             place.admin1_id = sorted_list[0][Entry.ADM1]
 
-            self.logger.debug(f'Found adm1 id = {place.admin1_id}')
+            #self.logger.debug(f'Found adm1 id = {place.admin1_id}  score={score:.1f}')
             # Fill in Country ISO
             if place.country_iso == '':
                 place.country_iso = sorted_list[0][Entry.ISO]
@@ -1070,22 +1069,27 @@ class GeoDB:
         """
         # Perform each SQL query in the list
         row_list = []
+        result_list2 = []
+
         result_type = Result.NO_MATCH
         for query in query_list:
             # Skip query if it's a wildcard and wildcards are disabled
             if self.use_wildcards is False and (query.result == Result.WILDCARD_MATCH or query.result == Result.SOUNDEX_MATCH):
                 continue
             start = time.time()
-            if query.result == Result.WORD_MATCH:
-                result_list = self.word_match(select_string, query.where, from_tbl,
-                                              query.args)
-            else:
-                result_list = self.db.select(select_string, query.where, from_tbl,
+            result_list = self.db.select(select_string, query.where, from_tbl,
                                              query.args)
+            
+            if query.result == Result.WORD_MATCH:
+                result_list2 = self.word_match(select_string, query.where, from_tbl,
+                                              query.args)
+
             if row_list:
                 row_list.extend(result_list)
             else:
                 row_list = result_list
+                
+            row_list.extend(result_list2)
 
             if len(row_list) > 0:
                 result_type = query.result
@@ -1147,7 +1151,7 @@ class GeoDB:
                     results.append(row)  # add it to overall list
                     # if reasonable number of results for this word, flag to
                     # keep the result
-                    res_flags.append(len(result) < 20)
+                    res_flags.append(len(result) < 50)
         # strip out any results not flagged (too many to be interesting)
         result = [results[indx] for indx in range(len(results)) if
                   res_flags[indx]]
