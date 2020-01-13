@@ -106,8 +106,8 @@ def _phrase_normalize(text: str) -> str:
     text = re.sub(r',palace', ' palace', text)  # - palace  - remove extra comma
     text = re.sub(r',cathedral', ' cathedral', text)  # - palace  - remove extra comma
 
-    text = re.sub(r'battle of ', 'battle of ,', text)  # - battle of - add comma
-    text = re.sub(r'k. at ', ' ', text)  # - killed at  - remove extra comma
+    #text = re.sub(r'battle of ', 'battle of ,', text)  # - battle of - add comma
+    text = re.sub(r'k\. at ', ' ', text)  # - killed at  - remove extra comma
     text = re.sub(r'killed ', ' ', text)  # - killed at  - remove extra comma
     return text
 

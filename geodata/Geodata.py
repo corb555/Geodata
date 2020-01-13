@@ -167,7 +167,7 @@ Provide place lookup gazeteer based on files from geonames.org
         if len(place.georow_list) > 0:
             # Copy geodata to place record
             self.process_results(place=place, flags=flags)
-            flags = self.sort_results(place)
+            flags = self.filter_results(place)
 
         if len(place.georow_list) == 0:
             # NO MATCH
@@ -250,7 +250,7 @@ Provide place lookup gazeteer based on files from geonames.org
         self.geo_files.geodb.lookup_place(place=place)
 
         # Sort by match score
-        self.sort_results(place)
+        self.filter_results(place)
 
         # Clear to just best entry
         if len(place.georow_list) > 1:
@@ -284,7 +284,7 @@ Provide place lookup gazeteer based on files from geonames.org
         if len(place.georow_list) > 0:
             # Copy geo row to Place
             self.geo_files.geodb.copy_georow_to_place(row=place.georow_list[0], place=place)
-            place.original_entry = place.get_long_name(None)
+            #place.original_entry = place.get_long_name(None)
             place.result_type = GeoUtil.Result.STRONG_MATCH
         else:
             place.result_type = GeoUtil.Result.NO_MATCH
@@ -328,7 +328,7 @@ Provide place lookup gazeteer based on files from geonames.org
             # self.logger.debug(f'Match {place.georow_list}')
             flags = ResultFlags(limited=False, filtered=False)
             self.process_results(place=place, flags=flags)
-            self.sort_results(place)
+            self.filter_results(place)
 
     def process_results(self, place: Loc, flags) -> None:
         """
@@ -353,7 +353,7 @@ Provide place lookup gazeteer based on files from geonames.org
 
         place.set_place_type_text()
 
-    def sort_results(self, place: Loc):
+    def filter_results(self, place: Loc):
         """
             Sort place.georow_list by match score and eliminate duplicates   
         
@@ -435,9 +435,10 @@ Provide place lookup gazeteer based on files from geonames.org
             prev_geo_row = geo_row
 
         min_score = 9999
-        min_match = ''
-        sec_match = ''
-        gap_threshold2 = 0
+        best_match_diag = ''
+        second_match_diag = ''
+        gap_threshold = 0
+        score = 0
 
         # Sort places in match_score order
         new_list = sorted(place.georow_list, key=itemgetter(GeoUtil.Entry.SCORE, GeoUtil.Entry.ADM1))
@@ -450,41 +451,44 @@ Provide place lookup gazeteer based on files from geonames.org
             admin2_name = self.geo_files.geodb.get_admin2_name_direct(geo_row[GeoUtil.Entry.ADM1],
                                                                       geo_row[GeoUtil.Entry.ADM2], geo_row[GeoUtil.Entry.ISO])
 
+            if rw == 0:
+                min_score = score
+                best_match_diag = f'Score={score:.1f} {geo_row[GeoUtil.Entry.NAME]}, {admin2_name},' \
+                    f' {admin1_name}, {geo_row[GeoUtil.Entry.ISO]}'
+                
             if rw == 1:
-                sec_match = f'Score={score:.1f} {geo_row[GeoUtil.Entry.NAME]}, {admin2_name},' \
+                min_score = score
+                second_match_diag = f'Score={score:.1f} {geo_row[GeoUtil.Entry.NAME]}, {admin2_name},' \
                     f' {admin1_name}, {geo_row[GeoUtil.Entry.ISO]}'
 
-            if score < min_score:
-                min_score = score
-                min_match = f'Score={score:.1f} {geo_row[GeoUtil.Entry.NAME]}, {admin2_name},' \
-                    f' {admin1_name}, {geo_row[GeoUtil.Entry.ISO]}'
 
             self.logger.debug(f'Score {score:.1f}  {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
                               f' {geo_row[GeoUtil.Entry.ADM1]}')
 
-            gap_threshold2 = MatchScore.Score.VERY_GOOD / 2 + abs(min_score) * .4
+            gap_threshold = MatchScore.Score.VERY_GOOD / 2 + abs(min_score) * .3
 
             # Range to display when there is a strong match
-            if min_score <= MatchScore.Score.VERY_GOOD and score > min_score + gap_threshold2:
-                self.logger.debug(f'Min score <7 and gap > {gap_threshold2}. min={min_score} curr={score}')
+            if min_score <= MatchScore.Score.VERY_GOOD and score > min_score + gap_threshold:
+                self.logger.debug(f'Min score <7 and gap > {gap_threshold}. min={min_score} curr={score}')
                 break
 
             # Range to display when there is a weak match
-            gap_threshold = MatchScore.Score.VERY_GOOD / 2 + abs(min_score) * .8
-            if score > min_score + gap_threshold:
-                self.logger.debug(f'Score gap greater than {gap_threshold:.1f}. min={min_score:.1f} curr={score:.1f}')
+            weak_threshold = MatchScore.Score.VERY_GOOD / 2 + abs(min_score) * .8
+            if score > min_score + weak_threshold:
+                self.logger.debug(f'Score gap greater than {weak_threshold:.1f}. min={min_score:.1f} curr={score:.1f}')
                 break
 
             place.georow_list.append(geo_row)
 
-        self.logger.debug(f'min={min_score:.1f}, gap2={gap_threshold2:.1f}')
+        self.logger.debug(f'min={min_score:.1f}, gap2={gap_threshold:.1f}')
 
         if min_score <= MatchScore.Score.VERY_GOOD and len(place.georow_list) == 1 and place.result_type != GeoUtil.Result.NOT_SUPPORTED:
             place.result_type = GeoUtil.Result.STRONG_MATCH
         else:
             # Log item that we couldnt match
             if self.miss_diag_file:
-                self.miss_diag_file.write(f'{place.original_entry}\n   MIN {min_match}\n   2ND {sec_match}\n\n')
+                self.miss_diag_file.write(f'Lookup {place.original_entry} thresh={gap_threshold} gap={score-min_score}\n   Min {best_match_diag}\n   2nd'
+                                          f' {second_match_diag}\n\n')
 
         return ResultFlags(limited=limited_flag, filtered=date_filtered)
 
@@ -629,9 +633,9 @@ default = ["ADM1", "ADM2", "ADM3", "ADM4", "ADMF", "CH", "CSTL", "CMTY", "EST ",
 feature_priority = {
     'PP1M': 90, 'ADM1': 88, 'PPLA': 88, 'PPLC': 88, 'PP1K': 75, 'PPLA2': 85, 'P10K': 81, 'P1HK': 85,
     'PPL': 50, 'PPLA3': 65, 'ADMF': 65, 'PPLA4': 63, 'ADMX': 60, 'PAL': 40, 'ISL': 50,
-    'ADM2': 73, 'PPLG': 68, 'MILB': 40, 'NVB': 65, 'PPLF': 63, 'ADM0': 85, 'PPLL': 50, 'PPLQ': 55, 'PPLR': 55,
+    'ADM2': 73, 'PPLG': 68, 'RGN': 65, 'MILB': 40, 'NVB': 65, 'PPLF': 63, 'ADM0': 85, 'PPLL': 50, 'PPLQ': 55, 'PPLR': 55,
     'CH': 40, 'MSQE': 40, 'SYG': 40, 'CMTY': 40, 'CSTL': 40, 'EST': 40, 'PPLS': 50, 'PPLW': 50, 'PPLX': 75, 'BTL': 20,
-    'HSTS': 40, 'PRK': 40, 'HSP': 0, 'VAL': 0, 'MT': 0, 'ADM3': 30, 'ADM4': 0, 'DEFAULT': 0,
+    'HSTS': 40, 'PRK': 40, 'HSP': 0, 'VAL': 0, 'MT': 0, 'ADM3': 30, 'ADM4': 0, 'DEFAULT': 0, 'MNMT':40
     }
 
 ResultFlags = collections.namedtuple('ResultFlags', 'limited filtered')

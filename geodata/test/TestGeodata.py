@@ -78,7 +78,7 @@ class TestGeodata(unittest.TestCase):
 
         print("*****TEST: {}".format(title))
         TestGeodata.geodata.find_matches(entry, self.place, False)
-        flags = TestGeodata.geodata.sort_results(self.place)
+        flags = TestGeodata.geodata.filter_results(self.place)
         # If multiple matches, truncate to first match
         lat = self.place.lat
         if len(self.place.georow_list) > 0:

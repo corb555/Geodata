@@ -205,6 +205,7 @@ country_dict = {
     'Dominican Republic': ('DO', 'DOM', '214', '19', '-70.666'),
     'Ecuador': ('EC', 'ECU', '218', '-2', '-77.5'),
     'Egypt': ('EG', 'EGY', '818', '27', '30'),
+    'Eire': ('IE', 'IRL', '372', '53', '-8'),
     'El Salvador': ('SV', 'SLV', '222', '13.833', '-88.916'),
     'Equatorial Guinea': ('GQ', 'GNQ', '226', '2', '10'),
     'Eritrea': ('ER', 'ERI', '232', '15', '39'),
@@ -521,7 +522,7 @@ country_lang = {
 
 # Tables for Non English Country Name
 
-# Dutch country translations
+# Dutch translation
 _nl_trans = {
     "Afghanistan": "Afghanistan",
     "Albania": "Albanië",
@@ -720,7 +721,7 @@ _nl_trans = {
     "Zimbabwe": "Zimbabwe",
     }
 
-# German country translations
+# German translation
 _de_trans = {
     "Afghanistan": "Afghanistan",
     "Albania": "Albanien",
