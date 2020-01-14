@@ -77,13 +77,17 @@ class AlternateNames(FileReader.FileReader):
             return
 
         self.loc.georow_list = []
-
+        if alt_tokens[ALT_LANG] == '':
+            alt_tokens[ALT_LANG] = 'en'
+            
         # Alternate names are in multiple languages.  Only add if item is in requested lang list
         if alt_tokens[ALT_LANG] in self.lang_list:
             # Only Add this alias if  DB already has an entry (since geoname DB is filtered based on feature)
-
+            if 'estminser' in alt_tokens[ALT_NAME]:
+                pass
+ 
             # See if item has an entry with same GEOID in Main DB
-            dbid = self.geo_files.geodb.geoid_main_dict.get(alt_tokens[ALT_GEOID])
+            dbid:str = str(self.geo_files.geodb.geoid_main_dict.get(alt_tokens[ALT_GEOID]))
             if dbid is not None:
                 self.loc.target = dbid
                 # Retrieve entry
@@ -108,7 +112,7 @@ class AlternateNames(FileReader.FileReader):
                     self.geo_files._update_geo_row_name(geo_row=update, name=alt_tokens[ALT_NAME])
                     new_row = tuple(update)  # Convert back to tuple
 
-                    if alt_tokens[ALT_LANG] != 'en' or 'ADM' not in update[GeoDB.Entry.FEAT]:
+                    if 'ADM1' not in update[GeoDB.Entry.FEAT] and 'ADM2' not in update[GeoDB.Entry.FEAT]:
                         #  Add to main DB if not English or not ADM1/ADM2
                         self.geo_files.geodb.insert(geo_row=new_row, feat_code=update[GeoDB.Entry.FEAT])
                         self.count += 1
@@ -117,6 +121,8 @@ class AlternateNames(FileReader.FileReader):
                     if alt_tokens[ALT_LANG] != 'en':
                         self.geo_files.geodb.insert_alternate_name(alt_tokens[ALT_NAME],
                                                                    alt_tokens[ALT_GEOID], alt_tokens[ALT_LANG])
+                        self.count += 1
+
 
     def cancel(self):
         """

@@ -693,7 +693,7 @@ class TestGeodata(unittest.TestCase):
     def test_place_name131(self):
         title = "County  verify not found "
         lat, name = self.run_test(title, "tretwr, llnfhngl cwm du, breconshire, england,")
-        self.assertEqual("Tretwr, Cwmma Tump, Herefordshire, England, United Kingdom", name, title)
+        self.assertEqual("Llnfhngl Cwm, Tretower, Sir Powys, Wales, United Kingdom", name, title)
 
     def test_place_name132(self):
         title = "test"

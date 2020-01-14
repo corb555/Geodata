@@ -189,7 +189,7 @@ class GeodataFiles:
 
         return False
 
-    def create_geonames_database(self):
+    def create_geonames_database(self)->bool:
         """
         Create geonames database from geonames.org files.
         You must call self.geodb = GeoDB.GeoDB(...) before this
@@ -219,7 +219,7 @@ class GeodataFiles:
 
         start_time = time.time()
 
-        # Put in  data from geonames.org files
+        # Put in data from geonames.org files
         for fname in ['allCountries.txt', 'ca.txt', 'gb.txt', 'de.txt', 'fr.txt', 'nl.txt']:
             # Read  geoname files
             error = self._add_geoname_file_to_db(fname)  # Read in info (lat/long) for all places from
@@ -237,8 +237,11 @@ class GeodataFiles:
 
         # Put in geonames.org alternate names
         start_time = time.time()
-        self.alternate_names.add_alternate_names_to_db()
-        self.logger.info(f'Alternate names done.  Elapsed ={time.time() - start_time}')
+        err = self.alternate_names.add_alternate_names_to_db()
+        if err:
+            self.logger.warning(f'Error reading Alternate names.')
+        else:
+            self.logger.info(f'Alternate names done.  Elapsed ={time.time() - start_time}')
         self.logger.info(f'Geonames entries = {self.geodb.get_row_count():,}')
 
         # Add aliases
@@ -253,6 +256,7 @@ class GeodataFiles:
 
         # Set Database Version
         self.geodb.insert_version(self.required_db_version)
+        return err
 
     def _add_geoname_file_to_db(self, file) -> bool:
         """

@@ -223,13 +223,13 @@ class DB:
         self.cur = self.conn.cursor()
         self.cur.execute('BEGIN')
 
-    def execute(self, sql, args):
+    def execute(self, sql, args)->int:
         """
         Execute a SQL statement
         # Args:
             sql: a full SQL statement
 
-        # Returns: True if error.  Self.err is set to Exception text. Shows Messagebox and/or exits on error if flags set.   
+        # Returns: row.  Self.err is set to Exception text. Shows Messagebox and/or exits on error if flags set.   
         # Raises: Nothing.  DB exceptions are suppressed. 
         """
         self.err = ''
@@ -240,9 +240,9 @@ class DB:
                 messagebox.showwarning('Error', f'Database Error\n {e}')
             self.err = e
             self.logger.error(e)
-            return True
+            return 0
 
-        return False
+        return self.cur.lastrowid
 
     def commit(self):
         """ Commit transaction """
