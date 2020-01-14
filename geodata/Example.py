@@ -92,7 +92,7 @@ if __name__ == "__main__":
         'carddif, scotland',  # misspelled and not in Scotland
         'lindering, wales',  # poor match quality
         'phoenix, england',  # doesnt exist
-        'abbaye aux,calvados,,france',
+        'Saint-Denis-le-Ferment,,normandie,france',
         ]
 
     for name in locations:

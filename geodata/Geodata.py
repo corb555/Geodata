@@ -450,6 +450,7 @@ Provide place lookup gazeteer based on files from geonames.org
         best_match_diag = ''
         second_match_diag = ''
         gap_threshold = 0
+        weak_threshold = 0
         score = 0
 
         # Sort places in match_score order
@@ -469,13 +470,8 @@ Provide place lookup gazeteer based on files from geonames.org
                     f' {admin1_name}, {geo_row[GeoUtil.Entry.ISO]}'
                 
             if rw == 1:
-                min_score = score
                 second_match_diag = f'Score={score:.1f} {geo_row[GeoUtil.Entry.NAME]}, {admin2_name},' \
                     f' {admin1_name}, {geo_row[GeoUtil.Entry.ISO]}'
-
-
-            #self.logger.debug(f'Score {score:.1f}  {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
-            #                  f' {geo_row[GeoUtil.Entry.ADM1]}')
 
             gap_threshold = MatchScore.Score.VERY_GOOD / 2 + abs(min_score) * .3
             # Range to display when there is a weak match
@@ -483,18 +479,23 @@ Provide place lookup gazeteer based on files from geonames.org
 
             # Range to display when there is a strong match
             if (min_score <= MatchScore.Score.VERY_GOOD and score > min_score + gap_threshold) or score > min_score + weak_threshold:
-                self.logger.debug(f'Min score <{MatchScore.Score.VERY_GOOD} and gap > {gap_threshold}. min={min_score} curr={score}\n'
-                                  f'{geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
-                              f' {geo_row[GeoUtil.Entry.ADM1]}')
-                #break
+                if (min_score <= MatchScore.Score.VERY_GOOD and score > min_score + gap_threshold):
+                    self.logger.debug(f'STRONG SKIP Score {score:.1f}  {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
+                                      f' {geo_row[GeoUtil.Entry.ADM1]}')
+                else:
+                    self.logger.debug(f'WEAK SKIP Score {score:.1f}  {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
+                                      f' {geo_row[GeoUtil.Entry.ADM1]}')
             else:
                 place.georow_list.append(geo_row)
+                self.logger.debug(f'Score {score:.1f}  {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
+                                  f' {geo_row[GeoUtil.Entry.ADM1]}')
 
             #if score > min_score + weak_threshold:
             #    self.logger.debug(f'Score gap greater than {weak_threshold:.1f}. min={min_score:.1f} curr={score:.1f}')
             #    break
 
-        self.logger.debug(f'min={min_score:.1f}, gap2={gap_threshold:.1f}')
+        self.logger.debug(f'min={min_score:.1f}, gap2={gap_threshold:.1f} strong cutoff={min_score+gap_threshold:.1f}'
+                          f' weak cutoff={min_score+weak_threshold:.1f}')
 
         if min_score <= MatchScore.Score.VERY_GOOD and len(place.georow_list) == 1 and place.result_type != GeoUtil.Result.NOT_SUPPORTED:
             place.result_type = GeoUtil.Result.STRONG_MATCH
