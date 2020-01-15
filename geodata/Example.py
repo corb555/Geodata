@@ -38,7 +38,7 @@ class Example:
         # Set up standard logging.  
         logging.getLogger(__name__)
         fmt = "%(levelname)s %(name)s.%(funcName)s %(lineno)d: %(message)s"
-        logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, format=fmt)  # Change this to logging.DEBUG for more detail
+        logging.basicConfig(level=logging.INFO, stream=sys.stdout, format=fmt)  # Change this to logging.DEBUG for more detail
 
         # Initialize
         directory = os.path.join(str(Path.home()),"Documents", "geoname_data")
@@ -93,6 +93,8 @@ if __name__ == "__main__":
         'lindering, wales',  # poor match quality
         'phoenix, england',  # doesnt exist
         'Saint-Denis-le-Ferment,,normandie,france',
+        'cairo,egypt',
+        'tiverton'
         ]
 
     for name in locations:

@@ -109,7 +109,7 @@ Provide place lookup gazeteer based on files from geonames.org
                           f" type_id={place.place_type}")
         
         res = self.is_country_valid(place)
-        if not res:
+        if place.result_type == GeoUtil.Result.NOT_SUPPORTED:
             return place.result_type
 
         # Add comma if prefix present
@@ -254,7 +254,7 @@ Provide place lookup gazeteer based on files from geonames.org
                           f" Adm1 [{place.admin1_name}] adm1_id [{place.admin1_id}] Ctry [{place.country_name}]"
                           f" type_id={place.place_type}")
         res = self.is_country_valid(place)
-        if not res:
+        if place.result_type == GeoUtil.Result.NOT_SUPPORTED:
             return False
 
         # Lookup location
