@@ -1,12 +1,13 @@
 # Geodata 
-Geodata supports wildcard searches and phonetic searches from the 20M entry geoname.org database.  
+Geodata provides a placename lookup gazeteer utilizing a local database using the 20M entry geonames.org data.   
 
 <a name="features"></a>
 ## Features  
-* Rich place name database from geonames.org 
-* Wildcard search
-* Phonetic search
-* Highlights locations in the US and Canada where the event date is before European settlement
-  
+* Builds a local sqlite3 database of geoname.org data.   
+* Provides powerful search routines   
+* Word search   
+* Wildcard search   
+* Phonetic search using Double Metaphone  
+* Search by feature type.  E.g. all mountains starting with Be in Germany
    
 [See User Guide Wiki for details](https://github.com/corb555/Geodata/wiki/User-Guide)
