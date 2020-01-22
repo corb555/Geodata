@@ -114,7 +114,7 @@ def set_info_logging(msg):
 def _remove_matching_seq(text1: str, text2: str, attempts: int, min_len: int) -> (str, str):
     """
     Find largest matching sequence.  Remove it in text1 and text2.
-            Private - called by remove_matching_sequences which provides a wrapper
+            called by remove_matching_sequences which provides a wrapper
     Call recursively until attempts hits zero or there are no matches longer than 1 char
     :param text1:
     :param text2:
@@ -170,35 +170,101 @@ def capwords(text):
     return text
 
 
-type_names = {
-    "CH": 'Church',
-    "CSTL": 'Castle',
-    "CMTY": 'Cemetery',
-    "EST": 'Estate',
-    "HSP": 'Hospital',
-    "HSTS": 'Historical',
-    "ISL": 'Island',
-    "MT": 'Mountain',
-    "MUS": 'Museum',
-    "PAL": 'Palace',
-    "PRK": 'Park',
-    "PRN": 'Prison',
-    "RUIN": 'Ruin',
-    "SQR": 'Square',
-    "VAL": 'Valley',
-    "ADM1": 'State',
-    "ADM2": 'County',
-    "ADM3": 'Township',
-    "ADM4": 'Township',
-    "PPL": 'City',
-    "PPLA": 'City',
+def get_feature_group(location: str):
+    """
+        If any word in location is in feature list, return the word found and the feature group 
+    Args:
+        location: 
+
+    Returns: (word, group) - feature word found, feature group it is in
+
+    """
+    word_list = location.split(' ')
+    for word in word_list:
+        group = feature_mapping.get(word)
+        if group:
+            return word, group
+    return '', ''
+
+
+default = ["ADM1", "ADM2", "ADM3", "ADM4", "ADMF", "AREA", "CH", "CSTL", "CMTY", "EST ", "HSP", "FT",
+           "HSTS", "ISL", "MSQE", "MSTY", "MT", "MUS", "PAL", "PPL", "PPLA", "PPLA2", "PPLA3", "PPLA4",
+           "PPLC", "PPLG", "PPLH", "PPLL", "PPLQ", "PPLX", "PRK", "PRN", "PRSH", "RUIN", "RGN", "RLG", "STG",
+           "SQR", "SYG", "VAL", "MNMT"]
+
+feature_mapping = {
+    'kapelle'      : 'CH',
+    'chapel'       : 'CH',
+    'kirche'       : 'CH',
+    'kirke'        : 'CH',
+    'church'       : 'CH',
+    'eglise'       : 'CH',
+    'cathedral'    : 'CH',
+    'cathedrale'   : 'CH',
+    'kathedrale'   : 'CH',
+    'kanisat'      : 'CH',
+    'iglesia'      : 'CH',
+    'catedral'     : 'CH',
+    'parroquia'    : 'CH',
+    'chapelle'     : 'CH',
+    'chiesa'       : 'CH',
+    'cappella'     : 'CH',
+    'basilica'     : 'CH',
+    'cattedrale'   : 'CH',
+
+    'castle'       : 'CSTL',
+    'schloss'      : 'CSTL',
+    'chateau'      : 'CSTL',
+    'castell'      : 'CSTL',
+    'castillo'     : 'CSTL',
+    'castello'     : 'CSTL',
+    'kasteel'      : 'CSTL',
+    'zamek'        : 'CSTL',
+    'slott'        : 'CSTL',
+
+    'cemetery'     : 'CMTY',
+    'cimetiere'    : 'CMTY',
+    'cementerio'   : 'CMTY',
+    'cimitero'     : 'CMTY',
+    'begraafplaats': 'CMTY',
+    'gravlund'     : 'CMTY',
+    'kirkegard'    : 'CMTY',
+    'friedhof'     : 'CMTY',
+    }
+
+feature_names = {
+    "AREA" : 'Area',
+    "CH"   : 'Church',
+    "CSTL" : 'Castle',
+    "CMTY" : 'Cemetery',
+    "EST"  : 'Estate',
+    "HSP"  : 'Hospital',
+    "HSTS" : 'Historical',
+    "ISL"  : 'Island',
+    "MT"   : 'Mountain',
+    "MUS"  : 'Museum',
+    "MSQE" : 'Mosque',
+    "MSTY" : 'Monastery',
+    "PAL"  : 'Palace',
+    "PRK"  : 'Park',
+    "PRN"  : 'Prison',
+    "RUIN" : 'Ruin',
+    "SQR"  : 'Square',
+    "VAL"  : 'Valley',
+    "ADM1" : 'State',
+    "ADM2" : 'County',
+    "ADM3" : 'Township',
+    "ADM4" : 'Township',
+    "PPL"  : 'City',
+    "PPLA" : 'City',
     "PPLA2": 'City',
     "PPLA3": 'City',
     "PPLA4": 'City',
-    "PPLC": 'City',
-    "PPLG": 'City',
-    "PPLH": 'City',
-    "PPLL": 'Village',
-    "PPLQ": 'Historical',
-    "PPLX": 'Neighborhood'
+    "PPLC" : 'City',
+    "PPLG" : 'City',
+    "PPLH" : 'City',
+    "PPLL" : 'Village',
+    "PPLQ" : 'Historical',
+    "PPLX" : 'Neighborhood',
+    "SYG"  : 'Synagogue'
     }

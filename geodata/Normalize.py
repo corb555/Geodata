@@ -83,13 +83,14 @@ def _phrase_normalize(text: str) -> str:
     """ Strip spaces and normalize spelling for items such as Saint and County """
     # Replacement patterns to clean up entries
     text = re.sub('r.k. |r k ', 'rooms katholieke ', text)
-    text = re.sub('saints |sainte |sint |saint |sankt |st. ', 'st ', text)  # Normalize Saint to St
+    text = re.sub('sveti |saints |sainte |sint |saint |sankt |st. ', 'st ', text)  # Normalize Saint to St
     text = re.sub(r' co\.', ' county', text)  # Normalize County
     text = re.sub(r'united states of america', 'usa', text)  # Normalize to USA
     text = re.sub(r'united states', 'usa', text)  # Normalize to USA
     text = re.sub(r'town of ', '', text)  # - remove town of
     text = re.sub(r'city of ', '', text)  # - remove city of
     text = re.sub(r'near ', ' ', text)  # - remove near
+    text = re.sub(r'cimetiere', 'cemetery', text)   # cimetière
 
     if 'amt' not in text:
         text = re.sub(r'^mt ', 'mount ', text)

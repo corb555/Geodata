@@ -1043,8 +1043,10 @@ table {
     <li class="set"><h3><a href="#header-variables">Module variables</a></h3>
       
   <ul>
+    <li class="mono"><a href="#geodata.GeoUtil.default">default</a></li>
+    <li class="mono"><a href="#geodata.GeoUtil.feature_mapping">feature_mapping</a></li>
+    <li class="mono"><a href="#geodata.GeoUtil.feature_names">feature_names</a></li>
     <li class="mono"><a href="#geodata.GeoUtil.successful_match">successful_match</a></li>
-    <li class="mono"><a href="#geodata.GeoUtil.type_names">type_names</a></li>
   </ul>
 
     </li>
@@ -1055,6 +1057,7 @@ table {
     <li class="mono"><a href="#geodata.GeoUtil.capwords">capwords</a></li>
     <li class="mono"><a href="#geodata.GeoUtil.get_cache_directory">get_cache_directory</a></li>
     <li class="mono"><a href="#geodata.GeoUtil.get_directory_name">get_directory_name</a></li>
+    <li class="mono"><a href="#geodata.GeoUtil.get_feature_group">get_feature_group</a></li>
     <li class="mono"><a href="#geodata.GeoUtil.get_soundex">get_soundex</a></li>
     <li class="mono"><a href="#geodata.GeoUtil.remove_matching_sequences">remove_matching_sequences</a></li>
     <li class="mono"><a href="#geodata.GeoUtil.set_debug_logging">set_debug_logging</a></li>
@@ -1100,7 +1103,7 @@ table {
   <section id="section-items">
     <h2 class="section-title" id="header-variables">Module variables</h2>
       <div class="item">
-      <p id="geodata.GeoUtil.successful_match" class="name">var <span class="ident">successful_match</span></p>
+      <p id="geodata.GeoUtil.default" class="name">var <span class="ident">default</span></p>
       
   
   <div class="source_cont">
@@ -1108,7 +1111,23 @@ table {
 
       </div>
       <div class="item">
-      <p id="geodata.GeoUtil.type_names" class="name">var <span class="ident">type_names</span></p>
+      <p id="geodata.GeoUtil.feature_mapping" class="name">var <span class="ident">feature_mapping</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="geodata.GeoUtil.feature_names" class="name">var <span class="ident">feature_names</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="geodata.GeoUtil.successful_match" class="name">var <span class="ident">successful_match</span></p>
       
   
   <div class="source_cont">
@@ -1157,6 +1176,25 @@ table {
     
   
     <div class="desc"><p>Returns: Name of geodata data directory where geonames.org files are</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+      
+  <div class="item">
+    <div class="name def" id="geodata.GeoUtil.get_feature_group">
+    <p>def <span class="ident">get_feature_group</span>(</p><p>location)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>See if any word in text is in the feature list.<br />
+    If word is in feature list, return the word found and the feature group 
+Args:
+    location: </p>
+<p>Returns: (word, group) - feature word found, feature group it is in</p></div>
   <div class="source_cont">
 </div>
 

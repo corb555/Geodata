@@ -32,25 +32,23 @@ DB_MINIMUM_RECORDS = 1000
 
 class GeodataFiles:
     """
-    Read in geonames.org geo data files, filter them and place the entries in sqlite db.
+    Read in geonames.org geo data files, filter them and place the entries in a sqlite db.
 
     The files must be downloaded from geonames.org and used according to their usage rules.
     
     geoname files: allCountries.txt,  alternateNamesV2.txt
 
-    The geoname file is filtered to only include the countries and feature codes specified in the country_list,
-      the feature_list, and the language list.  This also creates new Feature codes PP1M, P1HK, and P10K using   
-     geoname population data.   
+    The geoname file is filtered to only include the countries and feature codes specified in: 1) the country_list,
+      2) the feature_list, and 3) the language list.  The import also creates new Feature codes: PP1M, P1HK, and P10K using   
+     geoname population data (Pop > 1M, Pop > 100K, Pop > 10K).   
 
     """
 
     def __init__(self, directory: str, progress_bar, enable_spell_checker,
                  show_message, exit_on_error, languages_list_dct, feature_code_list_dct, supported_countries_dct):
         """
-        Read in datafiles needed for geodata.
-        The entry found can have a Regex transform applied on output if dictionary pickle file,output_list.pkl
-        is present.  Format is {'pattern':'replacement'}
-        Examples:
+        Read in datafiles needed for geodata, filter them and create a sql db.
+        Filter dictionary examples:   
             languages_list_dct={'fr','de'}
             feature_code_list_dct={'PPL', 'ADM1', 'CSTL'}
             supported_countries_dct = {'us','gb','at'}
@@ -121,13 +119,15 @@ class GeodataFiles:
 
     def open_geodb(self, repair_database: bool) -> bool:
         """
-         Read Geoname DB file - this is the db of geoname.org city files and is stored in cache directory under geonames_data.
+         Open Geoname DB file - this is the db of geoname.org city files and is stored in cache directory under geonames_data.
          The db only contains important fields and only for supported countries.
-         If the db doesn't exist, read the geonames.org files and build it if repair flag is True.
-        # Args:
-            repair_database: If True, rebuild database if error or missing
-        Returns:
-            True if error
+         If the db doesn't exist and repair flag is True, read the geonames.org files and build DB.   
+         The DB has a version table for the schema version.  If the schema changes, the version should be updated.   
+         This will check DB schema version and rebuild DB if version is out of date.   
+        # Args:   
+            repair_database: If True, rebuild database if error or missing   
+        Returns:   
+            True if error   
         """
 
         # Use db if it exists and has data and is correct version
@@ -139,7 +139,7 @@ class GeodataFiles:
 
         # Validate Database setup
         if os.path.exists(db_path):
-            # DB Found
+            # DB was Found
             self.logger.debug(f'DB found at {db_path}')
             self.geodb = GeoDB.GeoDB(db_path=db_path, spellcheck=self.spellcheck,
                                      show_message=self.show_message, exit_on_error=self.exit_on_error,
@@ -167,7 +167,8 @@ class GeodataFiles:
             pass
         else:
             # DB error detected - rebuild database if flag set
-            messagebox.showinfo('Database Error', err_msg)
+            if self.show_message:
+                messagebox.showinfo('Database Error', err_msg)
             self.logger.debug(err_msg)
 
             if repair_database:
@@ -180,12 +181,6 @@ class GeodataFiles:
                                          show_message=self.show_message, exit_on_error=self.exit_on_error,
                                          set_speed_pragmas=True, db_limit=105)
                 self.create_geonames_database()
-
-                # Create spell check file
-                if self.enable_spell_checker:
-                    self.progress('Creating Spelling dictionary', 88)
-                    if self.spellcheck:
-                        self.spellcheck.write()
 
         return False
 
@@ -208,13 +203,13 @@ class GeodataFiles:
 
         file_count = 0
 
-        # Set DB version to -1 for invalid (until build completed)
+        # Set DB version to -1 as invalid until build is completed
         self.geodb.insert_version(-1)
 
-        # Put in country data
+        # Put in country names
         self.country.add_country_names_to_db(geodb=self.geodb)
 
-        # Put in historic data
+        # Put in historic names
         self.country.add_historic_names_to_db(self.geodb)
 
         start_time = time.time()

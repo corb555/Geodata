@@ -153,8 +153,8 @@ class GeoDB:
         else:
             # Lookup as City
             lookup_type = 'CITY'
-            if place.admin2_id == '':
-                self.wide_search_admin2_id(place=place)
+            #if place.admin2_id == '':
+            #    self.wide_search_admin2_id(place=place)
             self.wide_search_city(place)
 
         if place.georow_list:
@@ -164,6 +164,16 @@ class GeoDB:
         else:
             # self.logger.debug(f'LOOKUP. No match:for {lookup_type}  targ={place.target} nm=[{place.get_five_part_title()}]\n')
             place.georow_list = []
+            
+    def add_query_by_feature(self, query_list, lookup_target, iso):
+        # Scan target to see if we can determine what feature type it is
+        word, group = GeoUtil.get_feature_group(lookup_target)
+        if word != '':
+            targ = re.sub(word, '', lookup_target)
+            query_list.append(Query(where="name LIKE ? AND country LIKE ? AND f_code LIKE ?",
+                  args=(targ, iso, group),
+                  result=Result.WORD_MATCH))
+            self.logger.debug(f'Added Feature query name={targ} group={group}')
 
     def wide_search_city(self, place: Loc):
         """
@@ -177,21 +187,18 @@ class GeoDB:
         if len(place.target) == 0:
             return
 
-        if self.spellcheck:
-            pattern = self.spellcheck.fix_spelling(lookup_target)
-        else:
-            pattern = lookup_target
-        pattern = self.create_wildcard(pattern)
+        pattern = self.create_wildcard(lookup_target)
 
         sdx = get_soundex(lookup_target)
         self.logger.debug(f'CITY lkp targ=[{lookup_target}] adm1 id=[{place.admin1_id}]'
                           f' adm2 id=[{place.admin2_id}] iso=[{place.country_iso}] patt =[{pattern}] sdx={sdx} pref={place.prefix}')
 
         query_list = []
+        
         QueryList.QueryList.build_query_list(typ=QueryList.Typ.CITY, query_list=query_list, place=place)
 
         if len(place.country_iso) == 0:
-            # NO COUNTRY - try lookup by name.
+            # NO COUNTRY - do lookup just by name 
             if lookup_target in pattern:
                 query_list.append(Query(where="name = ?",
                                         args=(lookup_target,),
@@ -211,15 +218,13 @@ class GeoDB:
             query_list.append(Query(where="sdx = ?",
                                     args=(sdx,),
                                     result=Result.SOUNDEX_MATCH))
-
+            
             place.georow_list, place.result_type = self.process_query_list(select_string=self.select_str,
                                                                            from_tbl='main.geodata',
                                                                            query_list=query_list)
             # self.logger.debug(place.georow_list)
             return
 
-        # Build query list
-        # Start with the most exact match depending on the data provided.
         if len(place.admin1_name) > 0:
             # lookup by name, ADMIN1, country
             if lookup_target in pattern:
@@ -242,7 +247,7 @@ class GeoDB:
                     args=(pattern, place.country_iso, place.admin1_id),
                     result=Result.WORD_MATCH))
         else:
-            # lookup by wildcard  name, country
+            # No admin1 - lookup by name, country
             if '*' in lookup_target:
                 query_list.clear()
 
@@ -255,9 +260,12 @@ class GeoDB:
                                         result=Result.WORD_MATCH))
 
         # lookup by Soundex , country
-        query_list.append(Query(where="sdx = ? AND country = ?",
-                                args=(sdx, place.country_iso),
-                                result=Result.SOUNDEX_MATCH))
+        #query_list.append(Query(where="sdx = ? AND country = ?",
+        #                        args=(sdx, place.country_iso),
+        #                        result=Result.SOUNDEX_MATCH))
+        
+        # Try to find feature type and lookup by that
+        self.add_query_by_feature(query_list, lookup_target, place.country_iso)
 
         # Try each query in list
         place.georow_list, place.result_type = self.process_query_list(select_string=self.select_str, from_tbl='main.geodata',
@@ -304,7 +312,7 @@ class GeoDB:
                 match_adm1 = self.get_admin1_name_direct(admin1_id=place.georow_list[0][Entry.ADM1], iso=place.country_iso)
                 # self.logger.debug(f'pl_iso [{place.country_iso}] pl_adm1 {place.admin1_name} match_adm1=[{match_adm1}] ')
                 if place.admin1_name != match_adm1 and '*' not in place.admin1_name.title():
-                    place.prefix = place.admin1_name.title()
+                    # place.prefix = place.admin1_name.title()
                     place.admin1_name = ''
                 return
 
@@ -379,6 +387,7 @@ class GeoDB:
         pattern = self.create_admin1_wildcard(lookup_target)
         if len(lookup_target) == 0:
             return
+        save_prefix = place.prefix
 
         query_list = []
 
@@ -412,10 +421,11 @@ class GeoDB:
             score = sorted_list[0][Entry.SCORE]
             place.admin1_id = sorted_list[0][Entry.ADM1]
 
-            #self.logger.debug(f'Found adm1 id = {place.admin1_id}  score={score:.1f}')
+            self.logger.debug(f'Found adm1 id = {place.admin1_id}  score={score:.1f}')
             # Fill in Country ISO
             if place.country_iso == '':
                 place.country_iso = sorted_list[0][Entry.ISO]
+        place.prefix = save_prefix
 
     def wide_search_admin2_id(self, place: Loc):
         """
@@ -428,7 +438,8 @@ class GeoDB:
             None.  place.admin2_id is updated with best match 
         """
         lookup_target = place.admin2_name
-        #pattern = self.create_county_wildcard(lookup_target)
+        save_prefix = place.prefix
+        # pattern = self.create_county_wildcard(lookup_target)
         if len(lookup_target) == 0:
             return
 
@@ -462,6 +473,7 @@ class GeoDB:
         if place.result_type == Result.STRONG_MATCH:
             row = place.georow_list[0]
             place.admin2_id = row[Entry.ADM2]
+        place.prefix = save_prefix
 
     def get_admin1_alt_name(self, place: Loc) -> (str, str):
         """
@@ -589,7 +601,7 @@ class GeoDB:
             score = 0.0
 
             # Remove any words from Prefix that are in result name
-            place.prefix = self.prefix_cleanup(place.prefix, result_name)
+            place.prefix = Loc.Loc.prefix_cleanup(place.prefix, result_name)
 
             update[GeoUtil.Entry.SCORE] = int(score * 100)
             place.georow_list[idx] = tuple(update)
@@ -676,7 +688,7 @@ class GeoDB:
             place:   place instance.  looks up by place.country_name   
 
         # Returns:   
-            Country ISO or ''   
+            Country ISO or ''.  If found, update place.country_name with DB country name   
         """
         lookup_target, modified = Normalize.country_normalize(place.country_name)
         if len(lookup_target) == 0:
@@ -699,13 +711,12 @@ class GeoDB:
         self.assign_scores(place, 'ADM0')
 
         if place.result_type == Result.STRONG_MATCH:
-            res = place.georow_list[0][Entry.ISO]
-            # if len(row_list) == 1:
+            iso = place.georow_list[0][Entry.ISO]
             place.country_name = place.georow_list[0][Entry.NAME]
         else:
-            res = ''
+            iso = ''
 
-        return res
+        return iso
 
     def feature_search(self, place: Loc):
         """
@@ -775,22 +786,22 @@ class GeoDB:
         place.feature = str(row[Entry.FEAT])
         place.geoid = str(row[Entry.ID])
         place.prefix = row[Entry.PREFIX]
+        place.place_type = Loc.PlaceType.CITY
 
         if place.feature == 'ADM0':
-            self.place_type = Loc.PlaceType.COUNTRY
+            place.place_type = Loc.PlaceType.COUNTRY
             pass
         elif place.feature == 'ADM1':
             place.admin1_id = row[Entry.ADM1]
-            self.place_type = Loc.PlaceType.ADMIN1
+            place.place_type = Loc.PlaceType.ADMIN1
         elif place.feature == 'ADM2':
             place.admin1_id = row[Entry.ADM1]
             place.admin2_id = row[Entry.ADM2]
-            self.place_type = Loc.PlaceType.ADMIN2
+            place.place_type = Loc.PlaceType.ADMIN2
         else:
             place.admin1_id = row[Entry.ADM1]
             place.admin2_id = row[Entry.ADM2]
             place.city1 = row[Entry.NAME]
-            self.place_type = Loc.PlaceType.CITY
 
         place.admin1_name = str(self.get_admin1_name(place))
         place.admin2_name = str(self.get_admin2_name(place))
@@ -802,7 +813,7 @@ class GeoDB:
         place.city1 = str(place.city1)
         if place.city1 is None:
             place.city1 = ''
-            
+
         try:
             place.score = row[Entry.SCORE]
         except IndexError as e:
@@ -1078,17 +1089,17 @@ class GeoDB:
                 continue
             start = time.time()
             result_list = self.db.select(select_string, query.where, from_tbl,
-                                             query.args)
-            
+                                         query.args)
+
             if query.result == Result.WORD_MATCH:
                 result_list2 = self.word_match(select_string, query.where, from_tbl,
-                                              query.args)
+                                               query.args)
 
             if row_list:
                 row_list.extend(result_list)
             else:
                 row_list = result_list
-                
+
             row_list.extend(result_list2)
 
             if len(row_list) > 0:
@@ -1147,55 +1158,14 @@ class GeoDB:
                         res_flags[indx] = True
                         break
                 else:  # this result row did not match anything
-                    # Remove "word" from prefix
                     results.append(row)  # add it to overall list
                     # if reasonable number of results for this word, flag to
                     # keep the result
-                    res_flags.append(len(result) < 50)
+                    res_flags.append(len(result) < 100)
         # strip out any results not flagged (too many to be interesting)
         result = [results[indx] for indx in range(len(results)) if
                   res_flags[indx]]
         return result
-
-    @staticmethod
-    def prefix_cleanup(pref: str, result: str) -> str:
-        """
-        Cleanup prefix.  Remove any words from prefix that are in match result.  Remove *   
-        #Args:   
-            pref:   
-            result:   
-
-        #Returns:   
-
-        """
-        new_prfx = pref.lower()
-        result_soundex = ''
-        result = result.lower()
-        result_words = result.split(' ')
-        for item in result_words:
-            result_soundex += GeoUtil.get_soundex(item)
-            result_soundex += ' '
-            
-        word_list = new_prfx.split(' ')
-        for idx, item in enumerate(word_list):
-            sdx = GeoUtil.get_soundex(item)
-            if sdx in result_soundex and sdx != '':
-                word_list[idx] = ''
-            if '*' in item:
-                word_list[idx] = ''
-        new_prfx = ' '.join(word_list)
-
-        # Remove words from prefix that are in result
-        for item in re.split(r'\W+', result.lower()):
-            if len(item) > 1:
-                new_prfx = re.sub(item, '', new_prfx, count=1)
-
-        # Remove wildcard char from prefix
-        #new_prfx = re.sub(r'\*', '', new_prfx)
-
-        new_prfx = new_prfx.strip(' ')
-
-        return new_prfx
 
     def assign_scores(self, place, target_feature):
         """
@@ -1207,7 +1177,7 @@ class GeoDB:
         result_place: Loc = Loc.Loc()
 
         min_score = 9999
-        original_prefix = place.prefix + ' ' + place.extra + ' ' + place.target
+        original_prefix = place.prefix #+ ' ' + place.extra   + ' ' + place.target
 
         # Remove redundant terms in prefix by converting it to dictionary (then back to list)
         # prefix_list = list(dict.fromkeys(original_prefix.split(' ')))
@@ -1215,8 +1185,8 @@ class GeoDB:
 
         # Add search quality score and prefix to each entry
         for idx, rw in enumerate(place.georow_list):
+            place.prefix = original_prefix
             self.copy_georow_to_place(row=rw, place=result_place)
-            result_place.set_place_type()
             result_place.original_entry = result_place.get_long_name(None)
 
             if len(place.prefix) > 0 and result_place.prefix == '':
@@ -1227,22 +1197,18 @@ class GeoDB:
 
             # Remove items in prefix that are in result
             if place.place_type != Loc.PlaceType.ADVANCED_SEARCH:
-                nm = place.get_long_name(None)
-                place.prefix = self.prefix_cleanup(original_prefix, nm)
-                new_prfx = place.prefix
-
-                if len(new_prfx) > 0:
-                    new_prfx += ', '
+                result_name = result_place.get_long_name(None)
+                place.prefix = Loc.Loc.prefix_cleanup(place.prefix, result_name)
             else:
                 place.updated_entry = place.get_long_name(None)
 
             score = self.match.match_score(target_place=place, result_place=result_place)
-            
+
             if result_place.feature == target_feature:
                 score -= 10
 
             min_score = min(min_score, score)
- 
+
             # Convert row tuple to list and extend so we can assign score
             update = list(rw)
             if len(update) < GeoUtil.Entry.SCORE + 1:
@@ -1250,12 +1216,14 @@ class GeoDB:
             update[GeoUtil.Entry.SCORE] = score
 
             result_place.prefix = Normalize.normalize(place.prefix, True)
-            result_place.clean_prefix()
             update[GeoUtil.Entry.PREFIX] = result_place.prefix
             place.georow_list[idx] = tuple(update)  # Convert back from list to tuple
 
         if min_score < MatchScore.Score.VERY_GOOD + 2:
             place.result_type = GeoUtil.Result.STRONG_MATCH
+            
+        if min_score > MatchScore.Score.POOR:
+            place.georow_list.clear()
 
     def create_tables(self):
         """

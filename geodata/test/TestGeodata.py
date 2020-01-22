@@ -96,6 +96,9 @@ class TestGeodata(unittest.TestCase):
 
     # ======= TEST Event Year handling
 
+        
+    
+
     def test_eventyear01(self):
         title = "City - good - and after city start"
         self.place.event_year = 1541
@@ -433,7 +436,7 @@ class TestGeodata(unittest.TestCase):
     def test_wildcard03(self):
         title = "City - good - wildcard city, full county and province"
         lat, name = self.run_test(title, "St. Andr,Charlotte County,new brunswick,Canada")
-        self.assertEqual("St Andrews, Charlotte County, New Brunswick Nouveau Brunswick, Canada", name, title)
+        self.assertEqual("St Andr, St Andrews, Charlotte County, New Brunswick Nouveau Brunswick, Canada", name, title)
 
     def test_wildcard04(self):
         title = "City - good - wildcard city, no county"
@@ -537,7 +540,7 @@ class TestGeodata(unittest.TestCase):
 
     def test_place_name05(self):
         title = "County  verify place name with prefix. prioritize city "
-        lat, name = self.run_test(title, "abc,,Halifax, Nova Scotia, Canada")
+        lat, name = self.run_test(title, "abc,Halifax, Nova Scotia, Canada")
         self.assertEqual("Abc, Halifax, , Nova Scotia, Canada", name, title)
 
     def test_place_name06(self):
@@ -593,17 +596,17 @@ class TestGeodata(unittest.TestCase):
     def test_place_name16(self):
         title = "City - Amsterdam, Spiegelplein 9"
         lat, name = self.run_test(title, "Amsterdam, Spiegelplein 9")
-        self.assertEqual("Amsterdam,  Amsterdam,  Noord Holland, Netherlands", name, title)
+        self.assertEqual("Spiegelplein 9, Amsterdam,  Amsterdam,  Noord Holland, Netherlands", name, title)
 
     def test_place_name17(self):
         title = "City - Rooms-Katholieke begraafplaats ‘Buitenveldert’, Amsterdam"
         lat, name = self.run_test(title, "Rooms-Katholieke begraafplaats ‘Buitenveldert’, Amsterdam, netherlands")
-        self.assertEqual("'', Rooms Katholieke Begraafplaats,  Apeldoorn,  Gelderland, Netherlands",
+        self.assertEqual("'Buitenveldert' Amsterdam, Rooms Katholieke Begraafplaats,  Apeldoorn,  Gelderland, Netherlands",
                          name, title)
 
     def test_place_name18(self):
         title = "City - Troyes, Aube,  , France"
-        lat, name = self.run_test(title, "Troyes, Aube,  , France")
+        lat, name = self.run_test(title, "Troyes, L'Aube,  , France")
         self.assertEqual("Troyes, Departement De L'Aube, Grand Est, France",
                          name, title)
 
@@ -627,14 +630,14 @@ class TestGeodata(unittest.TestCase):
 
     def test_place_name22(self):
         title = "City - Evreux, Eure, Normandy, France"
-        lat, name = self.run_test(title, "Evreux, Eure, Normandy, France")
+        lat, name = self.run_test(title, "Evreux, L'Eure, Normandy, France")
         self.assertEqual("Evreux, Departement De L'Eure, Normandie, France",
                          name, title)
 
     def test_place_name23(self):
         title = "City - St. Janskathedraal, 's Hertogenbosch"
         lat, name = self.run_test(title, "St. Janskathedraal, 's Hertogenbosch")
-        self.assertEqual("St Janskathedraal 'S, 'S Hertogenbosch,  'S Hertogenbosch,  Noord Brabant, Netherlands",
+        self.assertEqual("St Janskathedraal, 'S Hertogenbosch,  'S Hertogenbosch,  Noord Brabant, Netherlands",
                          name, title)
 
     def test_place_name24(self):
@@ -657,8 +660,8 @@ class TestGeodata(unittest.TestCase):
 
     def test_place_name27(self):
         title = "County  verify place name with prefix "
-        lat, name = self.run_test(title, "abc,,Halifax County, Nova Scotia, Canada")
-        self.assertEqual("Abc, Halifax County, Nova Scotia, Canada", name, title)
+        lat, name = self.run_test(title, "abc,Halifax County, Nova Scotia, Canada")
+        self.assertEqual("Abc, Halifax, , Nova Scotia, Canada", name, title)
 
     def test_place_name29(self):
         title = "County  verify not found "
@@ -692,8 +695,9 @@ class TestGeodata(unittest.TestCase):
 
     def test_place_name131(self):
         title = "County  verify not found "
-        lat, name = self.run_test(title, "tretwr, llnfhngl cwm du, breconshire, england,")
-        self.assertEqual("Llnfhngl Cwm, Tretower, Sir Powys, Wales, United Kingdom", name, title)
+        lat, name = self.run_test(title, "tretwr, llnfhngl cwm du, breconshire, wales,")
+        self.assertEqual("Tretwr Llnfhngl, Cwm Du, Sir Powys, Wales, United Kingdom", name, title)
+        # llanfihangel cwmdu with bwlch and cathedine
 
     def test_place_name132(self):
         title = "test"
@@ -712,8 +716,8 @@ class TestGeodata(unittest.TestCase):
 
     def test_place_name135(self):
         title = "aisne, picardy, france"
-        lat, name = self.run_test(title, "aisne, picardy, france")
-        self.assertEqual("Departement De L'Aisne, Hauts De France, France", name, title)
+        lat, name = self.run_test(title, "aisne, Hauts-de-France, france")
+        self.assertEqual("Vic Sur Aisne, Departement De L'Aisne, Hauts De France, France", name, title)
 
     def test_place_name136(self):
         title = "braines, loire atlantique,pays de la loire, france"
@@ -723,7 +727,7 @@ class TestGeodata(unittest.TestCase):
     def test_place_name137(self):
         title = "braines, loire atlantique,pays de la loire, france"
         lat, name = self.run_test(title, "rue d'artagnan, braines, loire atlantique,pays de la loire, france")
-        self.assertEqual("Rue D'Artagnan, Brains, Loire Atlantique, Pays De La Loire, France", name, title)
+        self.assertEqual("Rue D'Artagnan, Brains, Sarthe, Pays De La Loire, France", name, title)
 
     def test_place_name138(self):
         title = "Nogent Le Roi,france"
@@ -737,12 +741,12 @@ class TestGeodata(unittest.TestCase):
 
     def test_place_name139(self):
         title = "Chartres,Eure Et Loir, Beauce Centre,  France"
-        lat, name = self.run_test(title, "Chartres,Eure Et Loir, Beauce Centre, , France")
+        lat, name = self.run_test(title, "Chartres,D'Eure Et Loir, Beauce Centre,  France")
         self.assertEqual("Chartres, Departement D'Eure Et Loir, Centre Val De Loire, France", name, title)
 
+"""
+"""
 
-"""
-"""
 
 if __name__ == '__main__':
     unittest.main()

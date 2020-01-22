@@ -27,7 +27,7 @@ from geodata import GeoUtil, Loc, Normalize, Geodata
 class Score:
     VERY_GOOD = 19
     GOOD = 40
-    POOR = 60
+    POOR = 85
     VERY_POOR = 120
 
 
@@ -109,10 +109,10 @@ class MatchScore:
 
         # Create full TARGET  title (prefix,city,county,state,country)
         # Clean up prefix - remove any words that are in city, admin1 or admin2 from Prefix
-        target_place.clean_prefix()
         target_words = target_place.get_five_part_title()
         target_words = Normalize.normalize_for_scoring(target_words, target_place.country_iso)
         target_tokens = target_words.split(',')
+        target_tokens[0] = Loc.Loc.matchscore_prefix(target_tokens[0], result_words)
 
         target_words, result_words = Normalize.remove_aliase(target_words, result_words)
 
@@ -121,7 +121,7 @@ class MatchScore:
             target_tokens[it] = target_tokens[it].strip(' ')
             target_tkn_len[it] = len(target_tokens[it])
 
-        # Remove sequences that match in target  and result
+        # Remove sequences that match in target and result
         result_words, target_words = GeoUtil.remove_matching_sequences(text1=result_words, text2=target_words, min_len=3)
 
         # Calculate score for input match
@@ -155,11 +155,10 @@ class MatchScore:
         score: float = self.in_score * self.input_weight + self.out_score * self.result_weight + feature_score * self.feature_weight + \
                        wildcard_penalty + prefix_penalty * self.prefix_weight + parse_penalty
 
-        # self.logger.debug(f'SCORE {score:.1f} res=[{result_place.original_entry}] pref=[{target_place.prefix}]\n'
-        #                  f'inp=[{",".join(target_tokens)}]  outSc={self.out_score * self.out_weight:.1f}% '
-        #                  f'inSc={self.in_score * self.in_weight:.1f}% feat={feature_score * self.feature_weight:.1f} {result_place.feature}  '
+        #self.logger.debug(f'SCORE {score:.1f} res=[{result_place.original_entry}] pref=[{target_place.prefix}]\n'
+        #                  f'inp=[{",".join(target_tokens)}]  outSc={self.out_score * self.result_weight:.1f}% '
+        #                  f'inSc={self.in_score * self.input_weight:.1f}% feat={feature_score * self.feature_weight:.1f} {result_place.feature}  '
         #                  f'wild={wildcard_penalty} pref={prefix_penalty * self.prefix_weight:.1f}')
-        # self.logger.debug(f'{self.score_diags}\n')
 
         return score
 

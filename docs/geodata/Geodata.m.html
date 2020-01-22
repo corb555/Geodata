@@ -1063,6 +1063,7 @@ table {
     <li class="mono"><a href="#geodata.Geodata.Geodata.__init__">__init__</a></li>
     <li class="mono"><a href="#geodata.Geodata.Geodata.close">close</a></li>
     <li class="mono"><a href="#geodata.Geodata.Geodata.close_diag_file">close_diag_file</a></li>
+    <li class="mono"><a href="#geodata.Geodata.Geodata.filter_results">filter_results</a></li>
     <li class="mono"><a href="#geodata.Geodata.Geodata.find_best_match">find_best_match</a></li>
     <li class="mono"><a href="#geodata.Geodata.Geodata.find_by_type">find_by_type</a></li>
     <li class="mono"><a href="#geodata.Geodata.Geodata.find_feature">find_feature</a></li>
@@ -1072,7 +1073,6 @@ table {
     <li class="mono"><a href="#geodata.Geodata.Geodata.open">open</a></li>
     <li class="mono"><a href="#geodata.Geodata.Geodata.open_diag_file">open_diag_file</a></li>
     <li class="mono"><a href="#geodata.Geodata.Geodata.process_results">process_results</a></li>
-    <li class="mono"><a href="#geodata.Geodata.Geodata.sort_results">sort_results</a></li>
   </ul>
 
         </li>
@@ -1230,6 +1230,35 @@ table {
   
             
   <div class="item">
+    <div class="name def" id="geodata.Geodata.Geodata.filter_results">
+    <p>def <span class="ident">filter_results</span>(</p><p>self, place)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Sort place.georow_list by match score and eliminate duplicates   </p>
+<p>In case of duplicate, keep the one with best match score. <br />
+See MatchScore.match_score() for details on score calculation  <br />
+Discard names that didnt exist at time of event (update result flag if this occurs)<br />
+Duplicates are defined as two items with:<br />
+1) same GEOID or 2) same name and similar lat/lon (within Rectilinear Distance of distance_cutoff degrees)  </p>
+<p>Add flag if we hit the lookup limit  </p>
+<h1>Args:</h1>
+<div class="codehilite"><pre><span></span><span class="n">place</span><span class="p">:</span>
+</pre></div>
+
+
+<h1>Returns:</h1>
+<div class="codehilite"><pre><span></span><span class="n">ResultFlags</span><span class="p">(</span><span class="n">limited</span><span class="o">=</span><span class="n">limited_flag</span><span class="p">,</span> <span class="n">filtered</span><span class="o">=</span><span class="n">date_filtered</span><span class="p">)</span>
+</pre></div></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
     <div class="name def" id="geodata.Geodata.Geodata.find_best_match">
     <p>def <span class="ident">find_best_match</span>(</p><p>self, location, place)</p>
     </div>
@@ -1244,8 +1273,8 @@ table {
 </pre></div>
 
 
-<h1>Returns:</h1>
-<div class="codehilite"><pre><span></span><span class="k">Update</span> <span class="n">place</span> <span class="k">with</span> <span class="c1">-- lat, lon, district, city, country_iso, result code</span>
+<h1>Returns: None</h1>
+<div class="codehilite"><pre><span></span><span class="n">place</span> <span class="k">is</span> <span class="n">updated</span> <span class="k">with</span> <span class="c1">-- lat, lon, district, city, country_iso, result code</span>
 </pre></div></div>
   <div class="source_cont">
 </div>
@@ -1435,35 +1464,6 @@ table {
 
 <h1>Returns:</h1>
 <div class="codehilite"><pre><span></span><span class="k">None</span><span class="p">.</span>  <span class="n">place</span> <span class="n">instance</span> <span class="n">fields</span> <span class="k">are</span> <span class="n">updated</span>
-</pre></div></div>
-  <div class="source_cont">
-</div>
-
-  </div>
-  
-            
-  <div class="item">
-    <div class="name def" id="geodata.Geodata.Geodata.sort_results">
-    <p>def <span class="ident">sort_results</span>(</p><p>self, place)</p>
-    </div>
-    
-
-    
-  
-    <div class="desc"><p>Sort place.georow_list by match score and eliminate duplicates   </p>
-<p>In case of duplicate, keep the one with best match score. <br />
-See MatchScore.match_score() for details on score calculation  <br />
-Discard names that didnt exist at time of event (update result flag if this occurs)<br />
-Duplicates are defined as two items with:<br />
-1) same GEOID or 2) same name and similar lat/lon (within Rectilinear Distance of distance_cutoff degrees)  </p>
-<p>Add flag if we hit the lookup limit  </p>
-<h1>Args:</h1>
-<div class="codehilite"><pre><span></span><span class="n">place</span><span class="p">:</span>
-</pre></div>
-
-
-<h1>Returns:</h1>
-<div class="codehilite"><pre><span></span><span class="n">ResultFlags</span><span class="p">(</span><span class="n">limited</span><span class="o">=</span><span class="n">limited_flag</span><span class="p">,</span> <span class="n">filtered</span><span class="o">=</span><span class="n">date_filtered</span><span class="p">)</span>
 </pre></div></div>
   <div class="source_cont">
 </div>

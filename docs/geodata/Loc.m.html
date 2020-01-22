@@ -1059,10 +1059,9 @@ table {
           
   <ul>
     <li class="mono"><a href="#geodata.Loc.Loc.__init__">__init__</a></li>
+    <li class="mono"><a href="#geodata.Loc.Loc.add_commas">add_commas</a></li>
     <li class="mono"><a href="#geodata.Loc.Loc.capwords">capwords</a></li>
-    <li class="mono"><a href="#geodata.Loc.Loc.clean_prefix">clean_prefix</a></li>
     <li class="mono"><a href="#geodata.Loc.Loc.clear">clear</a></li>
-    <li class="mono"><a href="#geodata.Loc.Loc.format_term">format_term</a></li>
     <li class="mono"><a href="#geodata.Loc.Loc.get_district1_type">get_district1_type</a></li>
     <li class="mono"><a href="#geodata.Loc.Loc.get_filter_parameters">get_filter_parameters</a></li>
     <li class="mono"><a href="#geodata.Loc.Loc.get_five_part_title">get_five_part_title</a></li>
@@ -1070,12 +1069,15 @@ table {
     <li class="mono"><a href="#geodata.Loc.Loc.get_status">get_status</a></li>
     <li class="mono"><a href="#geodata.Loc.Loc.get_type_name">get_type_name</a></li>
     <li class="mono"><a href="#geodata.Loc.Loc.lowercase_match_group">lowercase_match_group</a></li>
+    <li class="mono"><a href="#geodata.Loc.Loc.matchscore_prefix">matchscore_prefix</a></li>
     <li class="mono"><a href="#geodata.Loc.Loc.parse_place">parse_place</a></li>
+    <li class="mono"><a href="#geodata.Loc.Loc.prefix_cleanup">prefix_cleanup</a></li>
     <li class="mono"><a href="#geodata.Loc.Loc.remove_old_fields">remove_old_fields</a></li>
     <li class="mono"><a href="#geodata.Loc.Loc.set_place_type">set_place_type</a></li>
     <li class="mono"><a href="#geodata.Loc.Loc.set_place_type_text">set_place_type_text</a></li>
     <li class="mono"><a href="#geodata.Loc.Loc.set_type_from_feature">set_type_from_feature</a></li>
     <li class="mono"><a href="#geodata.Loc.Loc.set_types_as_string">set_types_as_string</a></li>
+    <li class="mono"><a href="#geodata.Loc.Loc.sort_words">sort_words</a></li>
   </ul>
 
         </li>
@@ -1161,6 +1163,20 @@ Parses a name into Loc items (county, state, etc)</p></div>
   
             
   <div class="item">
+    <div class="name def" id="geodata.Loc.Loc.add_commas">
+    <p>def <span class="ident">add_commas</span>(</p><p>self, txt)</p>
+    </div>
+    
+
+    
+  
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
     <div class="name def" id="geodata.Loc.Loc.capwords">
     <p>def <span class="ident">capwords</span>(</p><p>nm)</p>
     </div>
@@ -1175,36 +1191,8 @@ Parses a name into Loc items (county, state, etc)</p></div>
   
             
   <div class="item">
-    <div class="name def" id="geodata.Loc.Loc.clean_prefix">
-    <p>def <span class="ident">clean_prefix</span>(</p><p>self)</p>
-    </div>
-    
-
-    
-  
-  <div class="source_cont">
-</div>
-
-  </div>
-  
-            
-  <div class="item">
     <div class="name def" id="geodata.Loc.Loc.clear">
     <p>def <span class="ident">clear</span>(</p><p>self)</p>
-    </div>
-    
-
-    
-  
-  <div class="source_cont">
-</div>
-
-  </div>
-  
-            
-  <div class="item">
-    <div class="name def" id="geodata.Loc.Loc.format_term">
-    <p>def <span class="ident">format_term</span>(</p><p>self, txt)</p>
     </div>
     
 
@@ -1335,6 +1323,20 @@ Prefix is NOT included.  Text also has replacements from dictionary applied   </
   
             
   <div class="item">
+    <div class="name def" id="geodata.Loc.Loc.matchscore_prefix">
+    <p>def <span class="ident">matchscore_prefix</span>(</p><p>pref, result)</p>
+    </div>
+    
+
+    
+  
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
     <div class="name def" id="geodata.Loc.Loc.parse_place">
     <p>def <span class="ident">parse_place</span>(</p><p>self, place_name, geo_files)</p>
     </div>
@@ -1353,6 +1355,28 @@ Prefix is NOT included.  Text also has replacements from dictionary applied   </
 <h1>Returns:</h1>
 <div class="codehilite"><pre><span></span><span class="n">Fields</span> <span class="k">in</span> <span class="n">Loc</span> <span class="p">(</span><span class="n">city</span><span class="p">,</span> <span class="n">adm1</span><span class="p">,</span> <span class="n">adm2</span><span class="p">,</span> <span class="n">iso</span><span class="p">)</span> <span class="k">are</span> <span class="n">updated</span> <span class="n">based</span> <span class="k">on</span> <span class="n">parsing</span><span class="p">.</span> <span class="k">self</span><span class="p">.</span><span class="n">status</span> <span class="n">has</span> <span class="k">Result</span> <span class="n">status</span> <span class="n">code</span>
 </pre></div></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="geodata.Loc.Loc.prefix_cleanup">
+    <p>def <span class="ident">prefix_cleanup</span>(</p><p>pref, result)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Cleanup prefix.  Remove any items from prefix that are in match result.  Remove *   </p>
+<h1>Args:</h1>
+<div class="codehilite"><pre><span></span><span class="n">pref</span><span class="o">:</span>   
+<span class="n">result</span><span class="o">:</span>
+</pre></div>
+
+
+<h1>Returns:</h1></div>
   <div class="source_cont">
 </div>
 
@@ -1418,6 +1442,20 @@ Prefix is NOT included.  Text also has replacements from dictionary applied   </
   <div class="item">
     <div class="name def" id="geodata.Loc.Loc.set_types_as_string">
     <p>def <span class="ident">set_types_as_string</span>(</p><p>self)</p>
+    </div>
+    
+
+    
+  
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="geodata.Loc.Loc.sort_words">
+    <p>def <span class="ident">sort_words</span>(</p><p>words)</p>
     </div>
     
 
