@@ -114,6 +114,7 @@ Provide place lookup gazeteer based on files from geonames.org
             prfx = ''
 
         # Create full entry text
+        prfx = Loc.Loc.prefix_cleanup(prfx, place.get_long_name(self.geo_build.output_replace_dct))
         place.updated_entry = GeoUtil.capwords(prfx) + place.get_long_name(self.geo_build.output_replace_dct)
         place.standard_parse = True
 

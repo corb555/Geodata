@@ -174,15 +174,15 @@ class Loc:
             self.prefix = self.prefix.strip(',')
             self.prefix = Normalize.normalize_for_search(self.prefix, '')
             
-        if token_count > 2:
+        #if token_count > 2:
             #  3rd to last token is Admin2
-            self.admin2_name, mod = Normalize.admin2_normalize(tokens[-3], self.country_iso)
+        #    self.admin2_name, mod = Normalize.admin2_normalize(tokens[-3], self.country_iso)
             
         # fill in country name if still missing - finding Admin1 will find country ISO
         if self.country_name == '' and self.country_iso != '':
             self.country_name = geo_files.geodb.get_country_name(self.country_iso)
             
-        # Last two tokens are now Admin1, Country (although they may be blank)
+        # Last two tokens are now Admin1, Country (although they may be '_')
         # If >2 tokens:  Put first non-blank token in City and in Prefix
         # If >3 tokens:  Put second non-blank token in Admin2 and also append to Prefix
         

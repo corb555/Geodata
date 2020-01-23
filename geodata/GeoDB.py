@@ -1111,9 +1111,15 @@ class GeoDB:
             self.total_time += elapsed
             self.total_lookups += 1
             if elapsed > .005:
-                self.logger.debug(f'Slow lookup. Time={elapsed:.6f} TOT={self.total_time:.1f} '
-                                  f'len {len(row_list)} from {from_tbl} '
-                                  f'where {query.where} val={query.args} ')
+                if query.result == Result.WORD_MATCH:
+                    self.logger.debug(f'Slow word lookup. Time={elapsed:.4f}  '
+                                      f'len {len(row_list)} from {from_tbl} '
+                                      f'where {query.where} val={query.args} ')
+                else:
+                    self.logger.debug(f'Slow lookup. Time={elapsed:.4f}  '
+                                      f'len {len(row_list)} from {from_tbl} '
+                                      f'where {query.where} val={query.args} ')
+                    
             if len(row_list) > self.max_query_results:
                 break
 

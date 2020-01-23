@@ -100,7 +100,7 @@ if __name__ == "__main__":
         ]
 
     locations2 = [
-        'Hoxa ,Ronaldsay,  scotland'
+        'thetford abbey'
         ]
 
     for name in locations2:
