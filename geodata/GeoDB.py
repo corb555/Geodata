@@ -1080,7 +1080,6 @@ class GeoDB:
         """
         # Perform each SQL query in the list
         row_list = []
-        result_list2 = []
 
         result_type = Result.NO_MATCH
         for query in query_list:
@@ -1088,19 +1087,22 @@ class GeoDB:
             if self.use_wildcards is False and (query.result == Result.WILDCARD_MATCH or query.result == Result.SOUNDEX_MATCH):
                 continue
             start = time.time()
-            result_list = self.db.select(select_string, query.where, from_tbl,
-                                         query.args)
 
             if query.result == Result.WORD_MATCH:
                 result_list2 = self.word_match(select_string, query.where, from_tbl,
                                                query.args)
-
-            if row_list:
-                row_list.extend(result_list)
+                if row_list:
+                    row_list.extend(result_list2)
+                else:
+                    row_list = result_list2
             else:
-                row_list = result_list
+                result_list = self.db.select(select_string, query.where, from_tbl,
+                                             query.args)
 
-            row_list.extend(result_list2)
+                if row_list:
+                    row_list.extend(result_list)
+                else:
+                    row_list = result_list
 
             if len(row_list) > 0:
                 result_type = query.result
@@ -1146,11 +1148,16 @@ class GeoDB:
         words = args[0].split()
         results = []  # the entire merged list of result rows
         res_flags = []  # list of flags, matching results list, 'True' to keep
+        if len(words) == 0:
+            return []
+        
         for word in words:
             # redo tuple for each word; select_string still has LIKE
             n_args = (f'%{word.strip()}%', *args[1:])
             result = self.db.select(select_string, where, from_tbl, n_args)
-            for row in result:
+            for idx, row in enumerate(result):
+                if idx > 50:
+                    break
                 # check if already in overall list
                 for indx, r_row in enumerate(results):
                     if row[Entry.ID] == r_row[Entry.ID]:
@@ -1161,7 +1168,7 @@ class GeoDB:
                     results.append(row)  # add it to overall list
                     # if reasonable number of results for this word, flag to
                     # keep the result
-                    res_flags.append(len(result) < 100)
+                    res_flags.append(len(result) < 50)
         # strip out any results not flagged (too many to be interesting)
         result = [results[indx] for indx in range(len(results)) if
                   res_flags[indx]]

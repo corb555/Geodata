@@ -134,7 +134,6 @@ class Loc:
             return
         elif token_count > 0:
             #  COUNTRY - right-most token should be country
-            #  Format: Country
             self.country_name = Normalize.normalize_for_search(tokens[-1], "")
             self.target = self.country_name
 
@@ -145,18 +144,16 @@ class Loc:
                 self.place_type = PlaceType.COUNTRY
             else:
                 # Last token is not COUNTRY.
-                # Append blank to token list so we now have xxx, blank_country
-                tokens.append('')
+                # Append dummy token  so we now have <tokens>, x
+                tokens.append('_')
                 token_count = len(tokens)
                 self.result_type = GeoUtil.Result.NO_COUNTRY
                 self.country_iso = ''
                 self.country_name = ''
 
         if token_count > 1:
-            #  ADMIN1
             #  See if 2nd to last token is Admin1
-            self.admin1_name = Normalize.normalize_for_search(tokens[-2], self.country_iso)
-            self.admin1_name = Normalize.admin1_normalize(self.admin1_name, self.country_iso)
+            self.admin1_name = Normalize.admin1_normalize(tokens[-2], self.country_iso)
 
             if len(self.admin1_name) > 0:
                 self.target = self.admin1_name
@@ -164,27 +161,35 @@ class Loc:
                 geo_files.geodb.wide_search_admin1_id(self)
                 if self.admin1_id != '':
                     # Found Admin1
-                    # self.logger.debug(f'Found admin1 {self.admin1_name}')
                     self.place_type = PlaceType.ADMIN1
                 else:
-                    # Last token is not Admin1 - append blank token so we have xxx, admin1, country
+                    # Last token is not Admin1 - append dummy token so we have <tokens>, admin1, country
                     self.admin1_name = ''
-                    # Append blank token for admin1 position
-                    # TODO, should insert, not append if country present!
-                    tokens.append('')
+                    # Add dummy token for admin1 position
+                    tokens.insert(-1, '_')
                     token_count = len(tokens)
+            else:
+                tokens[-2] = '_'
 
             self.prefix = self.prefix.strip(',')
             self.prefix = Normalize.normalize_for_search(self.prefix, '')
+            
+        if token_count > 2:
+            #  3rd to last token is Admin2
+            self.admin2_name, mod = Normalize.admin2_normalize(tokens[-3], self.country_iso)
             
         # fill in country name if still missing - finding Admin1 will find country ISO
         if self.country_name == '' and self.country_iso != '':
             self.country_name = geo_files.geodb.get_country_name(self.country_iso)
             
         # Last two tokens are now Admin1, Country (although they may be blank)
-        # If >2 tokens:  Put token[0] in City and in Prefix
-        # If >3 tokens:  Put token[1] in Admin2 and also append to Prefix
- 
+        # If >2 tokens:  Put first non-blank token in City and in Prefix
+        # If >3 tokens:  Put second non-blank token in Admin2 and also append to Prefix
+        
+        # Remove all blank tokens
+        tokens = [x for x in tokens if x]
+        token_count = len(tokens)
+
         if token_count > 2:
             # Additional token, take first as city
             self.city1 = Normalize.normalize_for_search(tokens[0], self.country_iso)
@@ -199,10 +204,10 @@ class Loc:
             # Add ADMIN2
             #  Format: City, Admin2, Admin1, Country
             #  Admin2 is 2nd.  Note -  if Admin2 isnt found, it will look it up as city
-            self.admin2_name = Normalize.normalize_for_search(tokens[1], self.country_iso)
-            self.admin2_name, modif = Normalize.admin2_normalize(self.admin2_name, self.country_iso)
+            if self.admin2_name == '' or token_count > 4:
+                self.admin2_name, modif = Normalize.admin2_normalize(tokens[1], self.country_iso)
             
-            # Also append token[1] into Prefix
+            #  append token[1] into Prefix
             if '*' not in tokens[1]:
                     self.prefix += ', '
                     self.prefix += str(tokens[1].strip(' '))
@@ -433,6 +438,14 @@ class Loc:
 
     @staticmethod
     def matchscore_prefix(pref: str, result: str) -> str:
+        """
+        Cleanup prefix.  Remove any items from prefix that are in match result.  Remove *   
+        #Args:   
+            pref:   
+            result:   
+
+        #Returns:  Prefix with words removed   
+        """
         new_prfx = pref.lower()
         new_prfx = new_prfx.strip(' ')
         prefix_parts = new_prfx.split(',')
@@ -479,32 +492,6 @@ class Loc:
         """
         return Loc.matchscore_prefix(pref, result)
         
-        new_prfx = pref.lower()
-        new_prfx = new_prfx.strip(' ')
-        result = result.lower()
-
-        new_prfx, res = GeoUtil.remove_matching_sequences(new_prfx, result, 2)
-        return new_prfx
-
-        # Split result by comma and iterate through items
-        result_parts = result.split(',')
-        prefix_parts = new_prfx.split(',')
-
-        for idx, result_item in enumerate(result_parts):
-            # Sort words so order doesn't matter
-            result_item = Loc.sort_words(result_item)
-            result_soundex = GeoUtil.get_soundex(result_item)
-            # Walk thru words in prefix
-            for idx, word in enumerate(prefix_parts):
-                prfx = Loc.sort_words(word)
-                if GeoUtil.get_soundex(prfx) in result_soundex:
-                    prefix_parts[idx] = ''
-                if prfx in result_item:
-                    prefix_parts[idx] = ''
-
-        res = ', '.join(prefix_parts)
-        res = res.strip(' ')
-        return res.strip(',')
 
     @staticmethod
     def get_district1_type(iso) -> str:

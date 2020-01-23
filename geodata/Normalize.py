@@ -238,6 +238,7 @@ def add_aliases_to_database(geo_files: GeodataBuild):
 
 def admin1_normalize(admin1_name: str, iso):
     """ Normalize historic or colloquial Admin1 names to standard """
+    admin1_name = normalize_for_search(admin1_name, iso)
     if iso == 'de':
         admin1_name = re.sub(r'bayern', 'bavaria', admin1_name)
         admin1_name = re.sub(r'westphalia', 'westfalen', admin1_name)
@@ -275,6 +276,8 @@ def admin2_normalize(admin2_name: str, iso) -> (str, bool):
     Returns: (result, modified) - result is new string, modified - True if modified
 
     """
+    admin2_name = normalize_for_search(admin2_name, iso)
+
     mod = False
 
     if iso == 'gb':

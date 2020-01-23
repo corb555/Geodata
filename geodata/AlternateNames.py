@@ -47,7 +47,7 @@ class AlternateNames(FileReader.FileReader):
         """
         super().__init__(directory, filename, progress_bar)
         self.sub_dir = GeoUtil.get_cache_directory(directory)
-        self.geo_files: GeodataBuild.GeodataFiles = geo_files
+        self.geo_files: GeodataBuild.GeodataBuild = geo_files
         self.lang_list = lang_list
         self.loc = Loc.Loc()
 

@@ -38,7 +38,7 @@ class Example:
         # Set up standard logging.  
         logging.getLogger(__name__)
         fmt = "%(levelname)s %(name)s.%(funcName)s %(lineno)d: %(message)s"
-        logging.basicConfig(level=logging.INFO, stream=sys.stdout, format=fmt)  # Change this to logging.DEBUG for more detail
+        logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, format=fmt)  # Change this to logging.DEBUG for more detail
 
         # Initialize
         directory = os.path.join(str(Path.home()), "Documents", "geoname_data")
@@ -46,10 +46,10 @@ class Example:
                                        show_message=True, exit_on_error=True,
                                        languages_list_dct={'en'},
                                        feature_code_list_dct=features,
-                                       supported_countries_dct={'fr', 'gb'})
+                                       supported_countries_dct={'fr', 'gb', 'ca'})
 
         # Open Geoname database - city names, lat/long, etc.  Create database if not found
-        error = self.geodata.open(repair_database=True)
+        error = self.geodata.open(repair_database=True, query_limit=105)
         if error:
             print(f"Missing geoname Files in {directory}: download gb.txt or allcountries.txt from geonames.org")
             raise ValueError('Missing files from geonames.org')
@@ -82,11 +82,11 @@ if __name__ == "__main__":
     ex = Example()
 
     # Try a few different locations
-    locations2 = [
+    locations = [
         '12 baker st, Manchester, , England',  # Street as prefix
         'eddinburg castle,,scotland',  # misspelled
         'cant* cath*,england',  # wildcards
-        'd*,--feature=CSTL,--iso=GB',  # search by feature type
+        'd*,--feature=CSTL,--iso=GB',  # search by feature type= castle
         'cardiff, wales',  # good location
         'carddif, wales',  # misspelled 
         'lindering, wales',  # poor match quality
@@ -99,9 +99,9 @@ if __name__ == "__main__":
         'kathedrale winchester,england',
         ]
 
-    locations = [
-        "rue d'artagnan, braines, loire atlantique,pays de la loire, france"
+    locations2 = [
+        'Hoxa ,Ronaldsay,  scotland'
         ]
 
-    for name in locations:
+    for name in locations2:
         ex.lookup_place(name)

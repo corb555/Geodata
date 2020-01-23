@@ -69,7 +69,7 @@ Provide place lookup gazeteer based on files from geonames.org
         self.logger = logging.getLogger(__name__)
         self.directory: str = directory_name
         self.progress_bar = progress_bar  # progress_bar
-        self.geo_files = GeodataBuild.GeodataFiles(self.directory, progress_bar=self.progress_bar,
+        self.geo_build = GeodataBuild.GeodataBuild(self.directory, progress_bar=self.progress_bar,
                                                    enable_spell_checker=enable_spell_checker,
                                                    show_message=show_message, exit_on_error=exit_on_error,
                                                    languages_list_dct=languages_list_dct,
@@ -96,9 +96,9 @@ Provide place lookup gazeteer based on files from geonames.org
 
         if plain_search:
             # Don't do wildcard searches
-            self.geo_files.geodb.db.use_wildcards = False
+            self.geo_build.geodb.db.use_wildcards = False
 
-        place.parse_place(place_name=location, geo_files=self.geo_files)
+        place.parse_place(place_name=location, geo_files=self.geo_build)
 
         self.logger.debug(f"    ==== PARSE: [{location}]\n    Pref=[{place.prefix}] City=[{place.city1}] Adm2=[{place.admin2_name}]"
                           f" Adm1 [{place.admin1_name}] adm1_id [{place.admin1_id}] Ctry [{place.country_name}]"
@@ -115,7 +115,7 @@ Provide place lookup gazeteer based on files from geonames.org
             prfx = ''
 
         # Create full entry text
-        place.updated_entry = GeoUtil.capwords(prfx) + place.get_long_name(self.geo_files.output_replace_dct)
+        place.updated_entry = GeoUtil.capwords(prfx) + place.get_long_name(self.geo_build.output_replace_dct)
         place.standard_parse = True
 
         flags = ResultFlags(limited=False, filtered=False)
@@ -144,7 +144,7 @@ Provide place lookup gazeteer based on files from geonames.org
         # 1) Try lookup as determined by standard parsing:  city, county, state/province, country
         self.logger.debug(f'  1) Try standard, based on parsing.  pref [{place.prefix}] type={place.place_type}')
 
-        self.geo_files.geodb.lookup_place(place=place)
+        self.geo_build.geodb.lookup_place(place=place)
         if place.georow_list:
             result_list.extend(place.georow_list)
 
@@ -220,7 +220,7 @@ Provide place lookup gazeteer based on files from geonames.org
                 typ_name = 'Prefix'
         elif typ == Loc.PlaceType.ADVANCED_SEARCH:
             # Advanced Search
-            self.geo_files.geodb.lookup_place(place=place)
+            self.geo_build.geodb.lookup_place(place=place)
             return
         else:
             self.logger.warning(f'Unknown TYPE {typ}')
@@ -230,7 +230,7 @@ Provide place lookup gazeteer based on files from geonames.org
 
             place.target = place.city1
             place.place_type = Loc.PlaceType.CITY
-            self.geo_files.geodb.lookup_place(place=place)
+            self.geo_build.geodb.lookup_place(place=place)
 
     def find_best_match(self, location: str, place: Loc)->bool:
         """
@@ -293,10 +293,10 @@ Provide place lookup gazeteer based on files from geonames.org
         """
         place.target = geoid
         place.georow_list.clear()
-        self.geo_files.geodb.get_geoid(place=place)
+        self.geo_build.geodb.get_geoid(place=place)
         if len(place.georow_list) > 0:
             # Copy geo row to Place
-            self.geo_files.geodb.copy_georow_to_place(row=place.georow_list[0], place=place)
+            self.geo_build.geodb.copy_georow_to_place(row=place.georow_list[0], place=place)
             #place.original_entry = place.get_long_name(None)
             place.result_type = GeoUtil.Result.STRONG_MATCH
         else:
@@ -319,7 +319,7 @@ Provide place lookup gazeteer based on files from geonames.org
         place.city1 = ''
         place.place_type = Loc.PlaceType.ADMIN2
         self.logger.debug(f'  Try admin2  [{place.target}] as city [{place.get_five_part_title()}]')
-        self.geo_files.geodb.lookup_place(place=place)
+        self.geo_build.geodb.lookup_place(place=place)
         result_list.extend(place.georow_list)
 
     def find_feature(self, place):
@@ -358,7 +358,7 @@ Provide place lookup gazeteer based on files from geonames.org
             place.place_type = Loc.PlaceType.COUNTRY
 
         if place.result_type in GeoUtil.successful_match and len(place.georow_list) > 0:
-            self.geo_files.geodb.copy_georow_to_place(row=place.georow_list[0], place=place)
+            self.geo_build.geodb.copy_georow_to_place(row=place.georow_list[0], place=place)
         elif len(place.georow_list) > 0 and place.result_type != GeoUtil.Result.NOT_SUPPORTED:
             # self.logger.debug(f'***RESULT={place.result_type} Setting to Partial')
             place.result_type = GeoUtil.Result.PARTIAL_MATCH
@@ -396,7 +396,7 @@ Provide place lookup gazeteer based on files from geonames.org
         place.georow_list.clear()
 
         # Create a dummy 'previous' row so the comparison to previous entry works on the first item
-        prev_geo_row = self.geo_files.geodb.make_georow(name='q', iso='q', adm1='q', adm2='q', lat=900, lon=900, feat='q', geoid='q', sdx='q')
+        prev_geo_row = self.geo_build.geodb.make_georow(name='q', iso='q', adm1='q', adm2='q', lat=900, lon=900, feat='q', geoid='q', sdx='q')
         georow_idx = 0
 
         # Keep track of list by GEOID to ensure no duplicates in GEOID
@@ -463,8 +463,8 @@ Provide place lookup gazeteer based on files from geonames.org
         # Go through sorted list and only add items to georow_list that are close to the best score
         for rw, geo_row in enumerate(new_list):
             score = geo_row[GeoUtil.Entry.SCORE]
-            admin1_name = self.geo_files.geodb.get_admin1_name_direct(geo_row[GeoUtil.Entry.ADM1], geo_row[GeoUtil.Entry.ISO])
-            admin2_name = self.geo_files.geodb.get_admin2_name_direct(geo_row[GeoUtil.Entry.ADM1],
+            admin1_name = self.geo_build.geodb.get_admin1_name_direct(geo_row[GeoUtil.Entry.ADM1], geo_row[GeoUtil.Entry.ISO])
+            admin2_name = self.geo_build.geodb.get_admin2_name_direct(geo_row[GeoUtil.Entry.ADM1],
                                                                       geo_row[GeoUtil.Entry.ADM2], geo_row[GeoUtil.Entry.ISO])
 
             if rw == 0:
@@ -510,16 +510,17 @@ Provide place lookup gazeteer based on files from geonames.org
 
         return ResultFlags(limited=limited_flag, filtered=date_filtered)
 
-    def open(self, repair_database=True):
+    def open(self, repair_database:bool, query_limit:int):
         """
         Open geodb.  Create DB if needed   
         #Args:  
-            repair_database: If True, create DB if missing or damaged   
+            repair_database: If True, create DB if missing or damaged. 
+            query_limit:  SQL query limit 
         #Returns:  
             True if error  
         """
         self._progress("Reading Geoname files...", 70)
-        return self.geo_files.open_geodb(repair_database=repair_database)
+        return self.geo_build.open_geodb(repair_database=repair_database, query_limit=query_limit)
 
     def _progress(self, msg: str, percent: int):
         if self.progress_bar is not None:
@@ -540,7 +541,7 @@ Provide place lookup gazeteer based on files from geonames.org
         if place.country_iso == '':
             place.result_type = GeoUtil.Result.NO_COUNTRY
             is_valid = False
-        elif place.country_iso not in self.geo_files.supported_countries_dct:
+        elif place.country_iso not in self.geo_build.supported_countries_dct:
             self.logger.debug(f'[{place.country_iso}] not supported')
             place.result_type = GeoUtil.Result.NOT_SUPPORTED
             place.place_type = Loc.PlaceType.COUNTRY
@@ -636,8 +637,8 @@ Provide place lookup gazeteer based on files from geonames.org
         Returns: None   
 
         """
-        if self.geo_files:
-            self.geo_files.close()
+        if self.geo_build:
+            self.geo_build.close()
 
 
 # Default geonames.org feature types to load

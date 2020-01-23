@@ -60,7 +60,7 @@ class TestGeodata(unittest.TestCase):
 
         # Read in Geoname Gazeteer file - city names, lat/long, etc.
         start_time = time.time()
-        error = TestGeodata.geodata.open()
+        error = TestGeodata.geodata.open(repair_database=True, query_limit=105)
         end_time = time.time()
 
         print(f'Elapsed {end_time - start_time}')
@@ -87,7 +87,7 @@ class TestGeodata(unittest.TestCase):
             TestGeodata.geodata.process_results(place=self.place, flags=flags)
             self.place.set_place_type()
 
-            nm = f'{self.place.get_long_name(TestGeodata.geodata.geo_files.output_replace_dct)}'
+            nm = f'{self.place.get_long_name(TestGeodata.geodata.geo_build.output_replace_dct)}'
             print(f'Found pre=[{self.place.prefix}{self.place.prefix_commas}] Nam=[{nm}]')
             return float(lat), GeoUtil.capwords(self.place.prefix) + self.place.prefix_commas + nm
         else:
@@ -169,7 +169,7 @@ class TestGeodata(unittest.TestCase):
     def test_res_code06(self):
         title = "City - good. wrong province"
         lat, name = self.run_test(title, "Natuashish, ,Alberta, Canada")
-        self.assertEqual(GeoUtil.Result.SOUNDEX_MATCH, self.place.result_type, title)
+        self.assertEqual(GeoUtil.Result.STRONG_MATCH, self.place.result_type, title)
 
     def test_res_code07(self):
         title = "City - good. wrong county"
@@ -225,7 +225,7 @@ class TestGeodata(unittest.TestCase):
 
     def test_place_code03(self):
         title = "State - Bad.  verify place type.  with prefix"
-        lat, name = self.run_test(title, "abc,,,Alberta,Canada")
+        lat, name = self.run_test(title, ",,Alberta,Canada")
         self.assertEqual(Loc.PlaceType.ADMIN1, self.place.place_type, title)
 
     def test_place_code04(self):
@@ -246,7 +246,7 @@ class TestGeodata(unittest.TestCase):
     def test_place_code25(self):
         title = "County prioritize city verify place type with prefix "
         lat, name = self.run_test(title, "abc,,Halifax County, Nova Scotia, Canada")
-        self.assertEqual(Loc.PlaceType.ADMIN2, self.place.place_type, title)
+        self.assertEqual(Loc.PlaceType.CITY, self.place.place_type, title)
 
     def test_place_code06(self):
         title = "City  verify place type"
@@ -283,11 +283,6 @@ class TestGeodata(unittest.TestCase):
         lat, name = self.run_test(title, "Alberta, Canada")
         self.assertEqual(52.28333, lat, title)
 
-    def test_province02(self):
-        title = "Province - Good with prefix"
-        lat, name = self.run_test(title, "abcde, , ,Alberta, Canada")
-        self.assertEqual(52.28333, lat, title)
-
     def test_province04(self):
         title = "Province - bad name"
         lat, name = self.run_test(title, "notaplace,Canada")
@@ -298,11 +293,6 @@ class TestGeodata(unittest.TestCase):
         title = "County - good Bruce County"
         lat, name = self.run_test(title, "Bruce County, Ontario, Canada")
         self.assertEqual(bruce_cty_lat, lat, title)
-
-    def test_county02(self):
-        title = "County - good with prefix Bruce County"
-        lat, name = self.run_test(title, "abcd, ,Bruce County, Ontario, Canada")
-        self.assertEqual("Abcd, Bruce County, Ontario, Canada", name, title)
 
     def test_county03(self):
         title = "County - Abbreviated good Bruce Co."
@@ -436,7 +426,7 @@ class TestGeodata(unittest.TestCase):
     def test_wildcard03(self):
         title = "City - good - wildcard city, full county and province"
         lat, name = self.run_test(title, "St. Andr,Charlotte County,new brunswick,Canada")
-        self.assertEqual("St Andr, St Andrews, Charlotte County, New Brunswick Nouveau Brunswick, Canada", name, title)
+        self.assertEqual("Andr, St Andrews, Charlotte County, New Brunswick Nouveau Brunswick, Canada", name, title)
 
     def test_wildcard04(self):
         title = "City - good - wildcard city, no county"
@@ -495,26 +485,26 @@ class TestGeodata(unittest.TestCase):
     def test_parse01(self):
         title = "***** Test Parse admin1"
         print(title)
-        self.place.parse_place(place_name="aaa,Banff,Alberta's Rockies,Alberta,Canada", geo_files=TestGeodata.geodata.geo_files)
+        self.place.parse_place(place_name="aaa,Banff,Alberta's Rockies,Alberta,Canada", geo_files=TestGeodata.geodata.geo_build)
         self.assertEqual("alberta", self.place.admin1_name, title)
 
     def test_parse02(self):
         title = "***** Test Parse admin2"
         print(title)
-        self.place.parse_place(place_name="aaa,Banff,Alberta's Rockies,Alberta,Canada", geo_files=TestGeodata.geodata.geo_files)
-        self.assertEqual("alberta's rockies", self.place.admin2_name, title)
+        self.place.parse_place(place_name="aaa,Banff,Alberta's Rockies,Alberta,Canada", geo_files=TestGeodata.geodata.geo_build)
+        self.assertEqual("banff", self.place.admin2_name, title)
 
     def test_parse03(self):
         title = "***** Test Parse city with punctuation"
         print(title)
-        self.place.parse_place(place_name="aaa,Banff!@#^&)_+-=;:<>/?,Alberta's Rockies,Alberta,Canada", geo_files=TestGeodata.geodata.geo_files)
-        self.assertEqual("banff", self.place.city1, title)
+        self.place.parse_place(place_name="aaa,Banff!@#^&)_+-=;:<>/?,Alberta's Rockies,Alberta,Canada", geo_files=TestGeodata.geodata.geo_build)
+        self.assertEqual("aaa", self.place.city1, title)
 
     def test_parse04(self):
         title = "***** Test Parse prefix"
         print(title)
-        self.place.parse_place(place_name="pref,   abcde,Banff,Alberta's Rockies,Alberta,Canada", geo_files=TestGeodata.geodata.geo_files)
-        self.assertEqual("pref abcde", self.place.prefix + self.place.prefix_commas, title)
+        self.place.parse_place(place_name="pref,   abcde,Banff,Alberta's Rockies,Alberta,Canada", geo_files=TestGeodata.geodata.geo_build)
+        self.assertEqual("pref, abcde", self.place.prefix + self.place.prefix_commas, title)
 
     # =====  TEST Verify Name match
 
@@ -612,7 +602,7 @@ class TestGeodata(unittest.TestCase):
 
     def test_place_name19(self):
         title = "City - Hoxa ,Ronaldsay, orkney, scotland"
-        lat, name = self.run_test(title, "Hoxa ,Ronaldsay, orkney, scotland")
+        lat, name = self.run_test(title, "Hoxa ,Ronaldsay,  scotland")
         self.assertEqual("Hoxa, North Ronaldsay, Orkney Islands, Scotland, United Kingdom",
                          name, title)
 
@@ -716,8 +706,8 @@ class TestGeodata(unittest.TestCase):
 
     def test_place_name135(self):
         title = "aisne, picardy, france"
-        lat, name = self.run_test(title, "aisne, Hauts-de-France, france")
-        self.assertEqual("Vic Sur Aisne, Departement De L'Aisne, Hauts De France, France", name, title)
+        lat, name = self.run_test(title, "l'aisne, Hauts-de-France, france")
+        self.assertEqual("Departement De L'Aisne, Hauts De France, France", name, title)
 
     def test_place_name136(self):
         title = "braines, loire atlantique,pays de la loire, france"
@@ -744,8 +734,14 @@ class TestGeodata(unittest.TestCase):
         lat, name = self.run_test(title, "Chartres,D'Eure Et Loir, Beauce Centre,  France")
         self.assertEqual("Chartres, Departement D'Eure Et Loir, Centre Val De Loire, France", name, title)
 
-"""
-"""
+    """
+    def test_place_name141(self):
+        title = "County - good with prefix Bruce County"
+        lat, name = self.run_test(title, "abcd, Bruce County, Ontario, Canada")
+        self.assertEqual("Abcd, Bruce County, Ontario, Canada", name, title)
+
+
+    """
 
 
 if __name__ == '__main__':

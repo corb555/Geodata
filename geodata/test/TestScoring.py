@@ -40,7 +40,7 @@ class TestScoring(unittest.TestCase):
 
     # ===== TEST SCORING
     test_values = [
-        # Target, Result, Feature, Expected Score
+        # 0Target, 1Result, 2Feature, 3Expected Score
         ("toronto,nova scotia, canada", "toronto,ontario,canada", 'PPL', MatchScore.Score.POOR, 35),  # 0
         ("toronto,ontario,canada", "toronto,ontario,canada", 'PP1M', MatchScore.Score.VERY_GOOD, 0.0),  # 1
 
@@ -110,7 +110,7 @@ class TestScoring(unittest.TestCase):
 
         # Read in Geoname Gazeteer file - city names, lat/long, etc.
         start_time = time.time()
-        error = TestScoring.geodata.open()
+        error = TestScoring.geodata.open(repair_database=False, query_limit=105)
         end_time = time.time()
 
     def setUp(self) -> None:
@@ -139,13 +139,13 @@ class TestScoring(unittest.TestCase):
 
         in_place = Loc.Loc()
         in_place.original_entry = inp
-        in_place.parse_place(place_name=inp, geo_files=TestScoring.geodata.geo_files)
+        in_place.parse_place(place_name=inp, geo_files=TestScoring.geodata.geo_build)
         if in_place.country_name == '' and in_place.country_iso != '':
             in_place.country_name = TestScoring.geodata.geo_files.geodb.get_country_name(in_place.country_iso)
 
         res_place = Loc.Loc()
         res_place.original_entry = res
-        res_place.parse_place(place_name=res, geo_files=TestScoring.geodata.geo_files)
+        res_place.parse_place(place_name=res, geo_files=TestScoring.geodata.geo_build)
         res_place.feature = feat
         if res_place.country_name == '' and res_place.country_iso != '':
             res_place.country_name = TestScoring.geodata.geo_files.geodb.get_country_name(res_place.country_iso)
@@ -163,272 +163,23 @@ class TestScoring(unittest.TestCase):
 
         print(f'#{idx} {score:.1f} RS={sc:.1f}[{in_place.original_entry.title().lower()}] [{res_place.get_five_part_title()}]')
         return sc
+    
+    def test_output(self):
+        for i in range(0, len(TestScoring.test_values)-1):
+            with self.subTest(i=i):
+                score = self.run_test3(2, i)
+                self.assertEqual(TestScoring.test_values[i][4], score,
+                                 msg=TestScoring.test_values[i][0])
 
-    # def test_even(self):
-    #Test that numbers between 0 and 5 are all even.
-    # for i in range(0, 6):
-    #    with self.subTest(i=i):
-    #        self.assertEqual(i % 2, 0)
-
-    # OUTPUT SCORE TESTS
-    def test_outscore_00(self):
-        score = self.run_test3(2, 0)
-        self.assertEqual(TestScoring.test_values[TestScoring.test_idx][4], score,
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_outscore_01(self):
-        score = self.run_test3(2, 1)
-        self.assertEqual(TestScoring.test_values[TestScoring.test_idx][4], score,
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_outscore_02(self):
-        score = self.run_test3(2, 2)
-        self.assertEqual(TestScoring.test_values[TestScoring.test_idx][4], score,
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_outscore_03(self):
-        score = self.run_test3(2, 3)
-        self.assertEqual(TestScoring.test_values[TestScoring.test_idx][4], score,
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_outscore_04(self):
-        score = self.run_test3(2, 4)
-        self.assertEqual(TestScoring.test_values[TestScoring.test_idx][4], score,
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_outscore_05(self):
-        score = self.run_test3(2, 5)
-        self.assertEqual(TestScoring.test_values[TestScoring.test_idx][4], score,
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_outscore_06(self):
-        score = self.run_test3(2, 6)
-        self.assertEqual(TestScoring.test_values[TestScoring.test_idx][4], score,
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_outscore_07(self):
-        score = self.run_test3(2, 7)
-        self.assertEqual(TestScoring.test_values[TestScoring.test_idx][4], score,
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_outscore_08(self):
-        score = self.run_test3(2, 8)
-        self.assertEqual(TestScoring.test_values[TestScoring.test_idx][4], score,
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_outscore_09(self):
-        score = self.run_test3(2, 9)
-        self.assertEqual(TestScoring.test_values[TestScoring.test_idx][4], score,
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_outscore_10(self):
-        score = self.run_test3(2, 10)
-        self.assertEqual(TestScoring.test_values[TestScoring.test_idx][4], score,
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_outscore_11(self):
-        score = self.run_test3(2, 11)
-        self.assertEqual(TestScoring.test_values[TestScoring.test_idx][4], score,
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    # ======= SCORE TESTS ===========
-
-
-    def test_score_00(self):
-        score = self.run_test3(0, 0)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_01(self):
-        score = self.run_test3(0, 1)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_02(self):
-        score = self.run_test3(0, 2)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_03(self):
-        score = self.run_test3(0, 3)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_04(self):
-        score = self.run_test3(0, 4)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_05(self):
-        score = self.run_test3(0, 5)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_06(self):
-        score = self.run_test3(0, 6)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_07(self):
-        score = self.run_test3(0, 7)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_08(self):
-        score = self.run_test3(0, 8)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_09(self):
-        score = self.run_test3(0, 9)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_10(self):
-        score = self.run_test3(0, 10)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_11(self):
-        score = self.run_test3(0, 11)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_12(self):
-        score = self.run_test3(0, 12)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_13(self):
-        score = self.run_test3(0, 13)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_14(self):
-        score = self.run_test3(0, 14)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_15(self):
-        score = self.run_test3(0, 15)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_16(self):
-        score = self.run_test3(0, 16)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_17(self):
-        score = self.run_test3(0, 17)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_18(self):
-        score = self.run_test3(0, 18)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_19(self):
-        score = self.run_test3(0, 19)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_20(self):
-        score = self.run_test3(0, 20)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_21(self):
-        score = self.run_test3(0, 21)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_22(self):
-        score = self.run_test3(0, 22)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_23(self):
-        score = self.run_test3(0, 23)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_24(self):
-        score = self.run_test3(0, 24)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_25(self):
-        score = self.run_test3(0, 25)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_26(self):
-        score = self.run_test3(0, 26)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
-
-    def test_score_27(self):
-        score = self.run_test3(0, 27)
-        self.assertLess(score, TestScoring.test_values[TestScoring.test_idx][3],
-                        msg=TestScoring.test_values[TestScoring.test_idx][0])
-        self.assertGreaterEqual(score, TestScoring.test_values[TestScoring.test_idx][3] - TestScoring.delta,
-                                msg=TestScoring.test_values[TestScoring.test_idx][0])
+    def test_score(self):
+        for i in range(0, len(TestScoring.test_values)-1):
+            with self.subTest(i=i):
+                score = self.run_test3(0, i)
+                self.assertLess(score, TestScoring.test_values[i][3],
+                                msg=TestScoring.test_values[i][0])
+                self.assertGreaterEqual(score, TestScoring.test_values[i][3] - TestScoring.delta,
+                                        msg=TestScoring.test_values[i][0])
+    
 
     # ===== TEST INPUT WORD REMOVAL
 

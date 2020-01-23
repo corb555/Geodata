@@ -30,7 +30,7 @@ from geodata import GeoUtil, Loc, Country, GeoDB, Normalize, CachedDictionary, A
 DB_MINIMUM_RECORDS = 1000
 
 
-class GeodataFiles:
+class GeodataBuild:
     """
     Read in geonames.org geo data files, filter them and place the entries in a sqlite db.
 
@@ -117,7 +117,7 @@ class GeodataFiles:
                                                              progress_bar=self.progress_bar, filename='alternateNamesV2.txt',
                                                              lang_list=self.lang_list)
 
-    def open_geodb(self, repair_database: bool) -> bool:
+    def open_geodb(self, repair_database: bool, query_limit:int) -> bool:
         """
          Open Geoname DB file - this is the db of geoname.org city files and is stored in cache directory under geonames_data.
          The db only contains important fields and only for supported countries.
@@ -143,7 +143,7 @@ class GeodataFiles:
             self.logger.debug(f'DB found at {db_path}')
             self.geodb = GeoDB.GeoDB(db_path=db_path, spellcheck=self.spellcheck,
                                      show_message=self.show_message, exit_on_error=self.exit_on_error,
-                                     set_speed_pragmas=True, db_limit=105)
+                                     set_speed_pragmas=True, db_limit=query_limit)
 
             # Make sure DB is correct version
             ver = self.geodb.get_db_version()
@@ -179,7 +179,7 @@ class GeodataFiles:
 
                 self.geodb = GeoDB.GeoDB(db_path=db_path, spellcheck=self.spellcheck,
                                          show_message=self.show_message, exit_on_error=self.exit_on_error,
-                                         set_speed_pragmas=True, db_limit=105)
+                                         set_speed_pragmas=True, db_limit=query_limit)
                 self.create_geonames_database()
 
         return False
