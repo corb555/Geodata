@@ -1404,7 +1404,7 @@ Duplicates are defined as two items with:<br />
             
   <div class="item">
     <div class="name def" id="geodata.Geodata.Geodata.open">
-    <p>def <span class="ident">open</span>(</p><p>self, repair_database=True)</p>
+    <p>def <span class="ident">open</span>(</p><p>self, repair_database, query_limit)</p>
     </div>
     
 
@@ -1412,7 +1412,8 @@ Duplicates are defined as two items with:<br />
   
     <div class="desc"><p>Open geodb.  Create DB if needed   </p>
 <h1>Args:</h1>
-<div class="codehilite"><pre><span></span><span class="nv">repair_database</span>: <span class="k">If</span> <span class="nv">True</span>, <span class="nv">create</span> <span class="nv">DB</span> <span class="k">if</span> <span class="nv">missing</span> <span class="nv">or</span> <span class="nv">damaged</span>
+<div class="codehilite"><pre><span></span><span class="nv">repair_database</span>: <span class="k">If</span> <span class="nv">True</span>, <span class="nv">create</span> <span class="nv">DB</span> <span class="k">if</span> <span class="nv">missing</span> <span class="nv">or</span> <span class="nv">damaged</span>. 
+<span class="nv">query_limit</span>:  <span class="nv">SQL</span> <span class="nv">query</span> <span class="nv">limit</span>
 </pre></div>
 
 
@@ -1482,7 +1483,7 @@ Duplicates are defined as two items with:<br />
 
             </div>
             <div class="item">
-            <p id="geodata.Geodata.Geodata.geo_files" class="name">var <span class="ident">geo_files</span></p>
+            <p id="geodata.Geodata.Geodata.geo_build" class="name">var <span class="ident">geo_build</span></p>
             
 
             

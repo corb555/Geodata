@@ -1066,6 +1066,7 @@ table {
     <li class="mono"><a href="#geodata.Loc.Loc.get_filter_parameters">get_filter_parameters</a></li>
     <li class="mono"><a href="#geodata.Loc.Loc.get_five_part_title">get_five_part_title</a></li>
     <li class="mono"><a href="#geodata.Loc.Loc.get_long_name">get_long_name</a></li>
+    <li class="mono"><a href="#geodata.Loc.Loc.get_soundex_by_word">get_soundex_by_word</a></li>
     <li class="mono"><a href="#geodata.Loc.Loc.get_status">get_status</a></li>
     <li class="mono"><a href="#geodata.Loc.Loc.get_type_name">get_type_name</a></li>
     <li class="mono"><a href="#geodata.Loc.Loc.lowercase_match_group">lowercase_match_group</a></li>
@@ -1281,6 +1282,20 @@ Prefix is NOT included.  Text also has replacements from dictionary applied   </
   
             
   <div class="item">
+    <div class="name def" id="geodata.Loc.Loc.get_soundex_by_word">
+    <p>def <span class="ident">get_soundex_by_word</span>(</p><p>text)</p>
+    </div>
+    
+
+    
+  
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
     <div class="name def" id="geodata.Loc.Loc.get_status">
     <p>def <span class="ident">get_status</span>(</p><p>self)</p>
     </div>
@@ -1330,6 +1345,14 @@ Prefix is NOT included.  Text also has replacements from dictionary applied   </
 
     
   
+    <div class="desc"><p>Cleanup prefix.  Remove any items from prefix that are in match result.  Remove *   </p>
+<h1>Args:</h1>
+<div class="codehilite"><pre><span></span><span class="n">pref</span><span class="o">:</span>   
+<span class="n">result</span><span class="o">:</span>
+</pre></div>
+
+
+<h1>Returns:  Prefix with words removed</h1></div>
   <div class="source_cont">
 </div>
 
@@ -1345,7 +1368,7 @@ Prefix is NOT included.  Text also has replacements from dictionary applied   </
     
   
     <div class="desc"><p>Given a comma separated place name, <br />
-    parse into its city, adminID, country_iso and type of entity (city, country etc)   </p>
+    parse into its city, admin1, country and type of entity (city, country etc)   </p>
 <h1>Args:</h1>
 <div class="codehilite"><pre><span></span><span class="n">place_name</span><span class="o">:</span> <span class="n">The</span> <span class="n">place</span> <span class="n">name</span> <span class="n">to</span> <span class="n">parse</span>   
 <span class="n">geo_files</span><span class="o">:</span> <span class="n">Geo_files</span>
@@ -1376,7 +1399,7 @@ Prefix is NOT included.  Text also has replacements from dictionary applied   </
 </pre></div>
 
 
-<h1>Returns:</h1></div>
+<h1>Returns:  Prefix with words removed</h1></div>
   <div class="source_cont">
 </div>
 

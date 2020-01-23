@@ -44,7 +44,6 @@ from operator import itemgetter
 from geodata import GeoUtil, GeodataBuild, Loc, MatchScore
 
 
-
 class Geodata:
     """
 Provide place lookup gazeteer based on files from geonames.org  
@@ -103,7 +102,7 @@ Provide place lookup gazeteer based on files from geonames.org
         self.logger.debug(f"    ==== PARSE: [{location}]\n    Pref=[{place.prefix}] City=[{place.city1}] Adm2=[{place.admin2_name}]"
                           f" Adm1 [{place.admin1_name}] adm1_id [{place.admin1_id}] Ctry [{place.country_name}]"
                           f" type_id={place.place_type}")
-        
+
         res = self.is_country_valid(place)
         if place.result_type == GeoUtil.Result.NOT_SUPPORTED:
             return place.result_type
@@ -137,7 +136,7 @@ Provide place lookup gazeteer based on files from geonames.org
             # The country in this entry is not supported
             self.process_results(place=place, flags=flags)
             return place.result_type
-        
+
         # If >2 tokens:  token[0] is in City and in Prefix
         # If >3 tokens:  token[1] is in Admin2 and also appended to Prefix
 
@@ -205,7 +204,7 @@ Provide place lookup gazeteer based on files from geonames.org
         elif typ == Loc.PlaceType.ADMIN2:
             # Try ADMIN2 as city
             if place.admin2_name != '':
-                #if '*' not in place.city1:
+                # if '*' not in place.city1:
                 #    place.prefix += ' ' + place.city1
                 place.city1 = place.admin2_name
                 place.admin2_name = ''
@@ -215,7 +214,7 @@ Provide place lookup gazeteer based on files from geonames.org
             if place.prefix != '':
                 tmp = place.city1
                 place.city1 = place.prefix
-                #if '*' not in tmp:
+                # if '*' not in tmp:
                 #    place.prefix = tmp
                 typ_name = 'Prefix'
         elif typ == Loc.PlaceType.ADVANCED_SEARCH:
@@ -232,7 +231,7 @@ Provide place lookup gazeteer based on files from geonames.org
             place.place_type = Loc.PlaceType.CITY
             self.geo_build.geodb.lookup_place(place=place)
 
-    def find_best_match(self, location: str, place: Loc)->bool:
+    def find_best_match(self, location: str, place: Loc) -> bool:
         """
             Find the best scoring match for this location in the geoname dictionary.  
         #Args:  
@@ -297,7 +296,7 @@ Provide place lookup gazeteer based on files from geonames.org
         if len(place.georow_list) > 0:
             # Copy geo row to Place
             self.geo_build.geodb.copy_georow_to_place(row=place.georow_list[0], place=place)
-            #place.original_entry = place.get_long_name(None)
+            # place.original_entry = place.get_long_name(None)
             place.result_type = GeoUtil.Result.STRONG_MATCH
         else:
             place.result_type = GeoUtil.Result.NO_MATCH
@@ -405,7 +404,7 @@ Provide place lookup gazeteer based on files from geonames.org
         # Find and remove if two entries are duplicates - defined as two items with:
         #  1) same GEOID or 2) same name and similar lat/lon (within Box Distance of 0.6 degrees)
         for geo_row in rows_sorted_by_latlon:
-            #self.logger.debug(f'{geo_row[GeoUtil.Entry.NAME]},{geo_row[GeoUtil.Entry.FEAT]} '
+            # self.logger.debug(f'{geo_row[GeoUtil.Entry.NAME]},{geo_row[GeoUtil.Entry.FEAT]} '
             #                  f'{geo_row[GeoUtil.Entry.SCORE]:.1f} {geo_row[GeoUtil.Entry.ADM2]}, '
             #                  f'{geo_row[GeoUtil.Entry.ADM1]} {geo_row[GeoUtil.Entry.ISO]}')
             if self._valid_year_for_location(event_year, geo_row[GeoUtil.Entry.ISO], geo_row[GeoUtil.Entry.ADM1], 60) is False:
@@ -419,7 +418,7 @@ Provide place lookup gazeteer based on files from geonames.org
             old_row = list(geo_row)
             geo_row = tuple(old_row)
 
-            #if geo_row[GeoUtil.Entry.SCORE] > MatchScore.Score.POOR:
+            # if geo_row[GeoUtil.Entry.SCORE] > MatchScore.Score.POOR:
             #    pass
             if geo_row[GeoUtil.Entry.NAME] != prev_geo_row[GeoUtil.Entry.NAME]:
                 # Add this item to georow list since it has a different name.  Also add its idx to geoid dict
@@ -471,7 +470,7 @@ Provide place lookup gazeteer based on files from geonames.org
                 min_score = score
                 best_match_diag = f'Score={score:.1f} {geo_row[GeoUtil.Entry.NAME]}, {admin2_name},' \
                     f' {admin1_name}, {geo_row[GeoUtil.Entry.ISO]}'
-                
+
             if rw == 1:
                 second_match_diag = f'Score={score:.1f} {geo_row[GeoUtil.Entry.NAME]}, {admin2_name},' \
                     f' {admin1_name}, {geo_row[GeoUtil.Entry.ISO]}'
@@ -493,24 +492,25 @@ Provide place lookup gazeteer based on files from geonames.org
                 self.logger.debug(f'Score {score:.1f} [{geo_row[GeoUtil.Entry.PREFIX]}] {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
                                   f' {geo_row[GeoUtil.Entry.ADM1]}')
 
-            #if score > min_score + weak_threshold:
+            # if score > min_score + weak_threshold:
             #    self.logger.debug(f'Score gap greater than {weak_threshold:.1f}. min={min_score:.1f} curr={score:.1f}')
             #    break
 
-        self.logger.debug(f'min={min_score:.1f}, gap2={gap_threshold:.1f} strong cutoff={min_score+gap_threshold:.1f}'
-                          f' weak cutoff={min_score+weak_threshold:.1f}')
+        self.logger.debug(f'min={min_score:.1f}, gap2={gap_threshold:.1f} strong cutoff={min_score + gap_threshold:.1f}'
+                          f' weak cutoff={min_score + weak_threshold:.1f}')
 
         if min_score <= MatchScore.Score.VERY_GOOD and len(place.georow_list) == 1 and place.result_type != GeoUtil.Result.NOT_SUPPORTED:
             place.result_type = GeoUtil.Result.STRONG_MATCH
         else:
             # Log item that we couldnt match
             if self.miss_diag_file:
-                self.miss_diag_file.write(f'Lookup {place.original_entry} thresh={gap_threshold} gap={score-min_score}\n   Min {best_match_diag}\n   2nd'
-                                          f' {second_match_diag}\n\n')
+                self.miss_diag_file.write(
+                    f'Lookup {place.original_entry} thresh={gap_threshold} gap={score - min_score}\n   Min {best_match_diag}\n   2nd'
+                    f' {second_match_diag}\n\n')
 
         return ResultFlags(limited=limited_flag, filtered=date_filtered)
 
-    def open(self, repair_database:bool, query_limit:int):
+    def open(self, repair_database: bool, query_limit: int):
         """
         Open geodb.  Create DB if needed   
         #Args:  
@@ -627,7 +627,7 @@ Provide place lookup gazeteer based on files from geonames.org
         place.city1 = save_place.city1
         place.admin2_name = save_place.admin2_name
         place.prefix = save_place.prefix
-        #place.extra = save_place.extra
+        # place.extra = save_place.extra
         place.standard_parse = save_place.standard_parse
 
     def close(self):
@@ -651,10 +651,10 @@ default = ["ADM1", "ADM2", "ADM3", "ADM4", "ADMF", "CH", "CSTL", "CMTY", "EST ",
 # Note: PP1M, P1HK, P10K do not exist in Geonames and are created by geodata.geodatafiles
 feature_priority = {
     'PP1M': 90, 'ADM1': 88, 'PPLA': 88, 'PPLC': 88, 'PP1K': 75, 'PPLA2': 85, 'P10K': 81, 'P1HK': 85,
-    'PPL': 50, 'PPLA3': 65, 'ADMF': 65, 'PPLA4': 63, 'ADMX': 60, 'PAL': 40, 'ISL': 50,
+    'PPL' : 50, 'PPLA3': 65, 'ADMF': 65, 'PPLA4': 63, 'ADMX': 60, 'PAL': 40, 'ISL': 50,
     'ADM2': 73, 'PPLG': 68, 'RGN': 65, 'AREA': 65, 'MILB': 40, 'NVB': 65, 'PPLF': 63, 'ADM0': 85, 'PPLL': 50, 'PPLQ': 55, 'PPLR': 55,
-    'CH': 40, 'MSQE': 40, 'SYG': 40, 'CMTY': 40, 'CSTL': 40, 'EST': 40, 'PPLS': 50, 'PPLW': 50, 'PPLX': 75, 'BTL': 20,
-    'HSTS': 40, 'PRK': 40, 'HSP': 0, 'VAL': 0, 'MT': 0, 'ADM3': 30, 'ADM4': 0, 'DEFAULT': 0, 'MNMT':40
+    'CH'  : 40, 'MSQE': 40, 'SYG': 40, 'CMTY': 40, 'CSTL': 40, 'EST': 40, 'PPLS': 50, 'PPLW': 50, 'PPLX': 75, 'BTL': 20,
+    'HSTS': 40, 'PRK': 40, 'HSP': 0, 'VAL': 0, 'MT': 0, 'ADM3': 30, 'ADM4': 0, 'DEFAULT': 0, 'MNMT': 40
     }
 
 ResultFlags = collections.namedtuple('ResultFlags', 'limited filtered')

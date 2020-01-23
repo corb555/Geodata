@@ -1050,6 +1050,7 @@ table {
           
   <ul>
     <li class="mono"><a href="#geodata.GeoDB.GeoDB.__init__">__init__</a></li>
+    <li class="mono"><a href="#geodata.GeoDB.GeoDB.add_query_by_feature">add_query_by_feature</a></li>
     <li class="mono"><a href="#geodata.GeoDB.GeoDB.assign_scores">assign_scores</a></li>
     <li class="mono"><a href="#geodata.GeoDB.GeoDB.clear_geoname_data">clear_geoname_data</a></li>
     <li class="mono"><a href="#geodata.GeoDB.GeoDB.close">close</a></li>
@@ -1156,6 +1157,20 @@ Provides a number of methods to lookup locations by name, feature, admin ID, etc
 <h1>Raises:</h1>
 <div class="codehilite"><pre><span></span><span class="n">ValueError</span><span class="p">(</span><span class="s1">&#39;Cannot open database&#39;</span><span class="p">),</span> <span class="n">ValueError</span><span class="p">(</span><span class="s1">&#39;Database empty or corrupt&#39;</span><span class="p">)</span>
 </pre></div></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="geodata.GeoDB.GeoDB.add_query_by_feature">
+    <p>def <span class="ident">add_query_by_feature</span>(</p><p>self, query_list, lookup_target, iso)</p>
+    </div>
+    
+
+    
+  
   <div class="source_cont">
 </div>
 
@@ -1528,7 +1543,7 @@ is the same at create_wildcard   </p>
 
 
 <h1>Returns:</h1>
-<div class="codehilite"><pre><span></span><span class="n">Country</span> <span class="n">ISO</span> <span class="k">or</span> <span class="s1">&#39;&#39;</span>
+<div class="codehilite"><pre><span></span><span class="nv">Country</span> <span class="nv">ISO</span> <span class="nv">or</span> <span class="s1">&#39;&#39;</span>.  <span class="k">If</span> <span class="nv">found</span>, <span class="nv">update</span> <span class="nv">place</span>.<span class="nv">country_name</span> <span class="nv">with</span> <span class="nv">DB</span> <span class="nv">country</span> <span class="nv">name</span>
 </pre></div></div>
   <div class="source_cont">
 </div>
