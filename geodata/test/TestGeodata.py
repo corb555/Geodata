@@ -56,7 +56,7 @@ class TestGeodata(unittest.TestCase):
                                               show_message=True, exit_on_error=False,
                                               languages_list_dct={'en'},
                                               feature_code_list_dct=features,
-                                              supported_countries_dct={'fr', 'gb', 'ca','de','nl'})
+                                              supported_countries_dct={'fr', 'gb', 'ca','de','nl','us'})
 
         # Read in Geoname Gazeteer file - city names, lat/long, etc.
         start_time = time.time()
@@ -95,10 +95,6 @@ class TestGeodata(unittest.TestCase):
 
 
     # ======= TEST Event Year handling
-
-        
-    
-
     def test_eventyear01(self):
         title = "City - good - and after city start"
         self.place.event_year = 1541
@@ -733,16 +729,16 @@ class TestGeodata(unittest.TestCase):
         title = "Chartres,Eure Et Loir, Beauce Centre,  France"
         lat, name = self.run_test(title, "Chartres,D'Eure Et Loir, Beauce Centre,  France")
         self.assertEqual("Chartres, Departement D'Eure Et Loir, Centre Val De Loire, France", name, title)
-
-    """
+        
     def test_place_name141(self):
         title = "County - good with prefix Bruce County"
         lat, name = self.run_test(title, "abcd, Bruce County, Ontario, Canada")
         self.assertEqual("Abcd, Bruce County, Ontario, Canada", name, title)
-
-
-    """
-
+    
+    def test_place_name142(self):
+        title = "County - Spilsby, Lincolnshire, , "
+        lat, name = self.run_test(title, "Spilsby, Lincolnshire, , ")
+        self.assertEqual("Spilsby, Lincolnshire, England, United Kingdom", name, title)
 
 if __name__ == '__main__':
     unittest.main()

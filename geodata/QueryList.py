@@ -169,9 +169,9 @@ class QueryList:
         """Search for Admin1 entry"""
         sdx = get_soundex(place.target)
         pattern = QueryList.create_wildcard(place.target)
-        query_list.append(Query(where="name = ? AND country = ? AND f_code = ? ",
-                                args=(place.target, place.country_iso, 'ADM1'),
-                                result=Result.STRONG_MATCH))
+        #query_list.append(Query(where="name = ? AND country = ? AND f_code = ? ",
+        #                        args=(place.target, place.country_iso, 'ADM1'),
+        #                        result=Result.STRONG_MATCH))
         if '*' in place.target:
             query_list.clear()
 

@@ -79,6 +79,10 @@ Provide place lookup gazeteer based on files from geonames.org
         self.miss_diag_file = None
         self.distance_cutoff = 0.6  # Value to determine if two lat/longs are similar based on Rectilinear Distance
 
+    def log_results(self, geo_row_list):
+        for  geo_row in geo_row_list:
+            self.logger.debug(f'    {geo_row[GeoUtil.Entry.NAME]}')
+
     def find_matches(self, location: str, place: Loc, plain_search) -> GeoUtil.Result:
         """
             Find a location in the geoname database.  On successful match, place.georow_list will contain   
@@ -99,10 +103,6 @@ Provide place lookup gazeteer based on files from geonames.org
 
         place.parse_place(place_name=location, geo_files=self.geo_build)
 
-        self.logger.debug(f"    ==== PARSE: [{location}]\n    Pref=[{place.prefix}] City=[{place.city1}] Adm2=[{place.admin2_name}]"
-                          f" Adm1 [{place.admin1_name}] adm1_id [{place.admin1_id}] Ctry [{place.country_name}]"
-                          f" type_id={place.place_type}")
-
         res = self.is_country_valid(place)
         if place.result_type == GeoUtil.Result.NOT_SUPPORTED:
             return place.result_type
@@ -120,6 +120,7 @@ Provide place lookup gazeteer based on files from geonames.org
 
         flags = ResultFlags(limited=False, filtered=False)
         result_list = []  # We will do different search types and append all results into result_list
+        result_list2 = []
 
         # self.logger.debug(f'== FIND LOCATION City=[{place.city1}] Adm2=[{place.admin2_name}]\
         # Adm1=[{place.admin1_name}] Pref=[{place.prefix}] Cntry=[{place.country_name}] iso=[{place.country_iso}]  Type={place.place_type} ')
@@ -138,29 +139,38 @@ Provide place lookup gazeteer based on files from geonames.org
             self.process_results(place=place, flags=flags)
             return place.result_type
 
-        # If >2 tokens:  token[0] is in City and in Prefix
-        # If >3 tokens:  token[1] is in Admin2 and also appended to Prefix
+        # After parsing, last token is either country or underscore. 
+        # Second to last is either Admin1 or underscore
+        # If >2 tokens:  token[0] is placed in City and in Prefix
+        # If >3 tokens:  token[1] is placed in Admin2 and appended to Prefix
 
-        # 1) Try lookup as determined by standard parsing:  city, county, state/province, country
-        self.logger.debug(f'  1) Try standard, based on parsing.  pref [{place.prefix}] type={place.place_type}')
+        # 1) Try lookup as determined by standard parsing:  either city, state/province, or country
+        self.logger.debug(f'  1) Standard, based on parsing.  pref [{place.prefix}] type={place.place_type}')
 
         self.geo_build.geodb.lookup_place(place=place)
+        self.log_results(place.georow_list)
         if place.georow_list:
             result_list.extend(place.georow_list)
 
         # Restore items
         self._restore_fields(place, self.save_place)
 
-        # Try Admin2 as city since parsing can be wrong
-        for ty in [Loc.PlaceType.ADMIN2]:
-            self.find_by_type(place, ty)
+        # Try Admin2 as city 
+        for typ in [Loc.PlaceType.ADMIN2]:
+            place.georow_list.clear()
+            self.find_type_as_city(place, typ)
+            self.log_results(place.georow_list)
+
             if place.georow_list:
                 result_list.extend(place.georow_list)
             self._restore_fields(place, self.save_place)
 
-        # 3) Try city as Admin2 since parsing can be wrong
-        self.logger.debug(f'  3) Try lookup with City as Adm2. Target={place.city1}  pref [{place.prefix}] ')
-        self._lookup_city_as_admin2(place=place, result_list=result_list)
+        # 3) Try city as Admin2 
+        place.georow_list.clear()
+        self.logger.debug(f'  3)  Lookup with City as Adm2.  Target={place.city1}  pref [{place.prefix}] ')
+        self._lookup_city_as_admin2(place=place, result_list=result_list2)
+        result_list.extend(result_list2)
+        self.log_results(place.georow_list)
 
         #  Move result_list into place georow list
         place.georow_list.clear()
@@ -185,7 +195,7 @@ Provide place lookup gazeteer based on files from geonames.org
         # self.logger.debug(f'Status={place.status}')
         return place.result_type
 
-    def find_by_type(self, place: Loc, typ):
+    def find_type_as_city(self, place: Loc, typ):
         """
             Do a lookup using the field as specifed by typ.  E.g. if typ is PlaceType.ADMIN1 then   
             use the place.admin1_name field to do the lookup   
@@ -231,6 +241,8 @@ Provide place lookup gazeteer based on files from geonames.org
             place.target = place.city1
             place.place_type = Loc.PlaceType.CITY
             self.geo_build.geodb.lookup_place(place=place)
+        else:
+            self.logger.warning(f'2) UNKNOWN lookup type {typ} or name is blank')
 
     def find_best_match(self, location: str, place: Loc) -> bool:
         """
@@ -244,24 +256,6 @@ Provide place lookup gazeteer based on files from geonames.org
 
         #  First parse the location into <prefix>, city, <district2>, district1, country.
         #  Then look it up in the place db
-        """
-        place.parse_place(place_name=location, geo_files=self.geo_files)
-        place.country_name = self.geo_files.geodb.get_country_name(place.country_iso)
-        place.country_iso = place.country_iso
-        
-        self.logger.debug(f"    ==== PARSE: [{location}]\n    Pref=[{place.prefix}] City=[{place.city1}] Adm2=[{place.admin2_name}]"
-                          f" Adm1 [{place.admin1_name}] adm1_id [{place.admin1_id}] Ctry [{place.country_name}]"
-                          f" type_id={place.place_type}")
-        res = self.is_country_valid(place)
-        if place.result_type == GeoUtil.Result.NOT_SUPPORTED:
-            return False
-
-        # Lookup location
-        self.geo_files.geodb.lookup_place(place=place)
-
-        # Sort by match score
-        self.filter_results(place)
-        """
 
         self.find_matches(location, place, plain_search=False)
 
@@ -314,7 +308,7 @@ Provide place lookup gazeteer based on files from geonames.org
         """
         # Try City as ADMIN2
         place.standard_parse = False
-        place.target = place.city1
+        #place.target = place.city1
         place.admin2_name = place.city1
         place.city1 = ''
         place.place_type = Loc.PlaceType.ADMIN2
@@ -333,7 +327,7 @@ Provide place lookup gazeteer based on files from geonames.org
 
         """
         self.logger.debug('Feature Search')
-        self.find_by_type(place, place.place_type)
+        self.find_type_as_city(place, place.place_type)
 
         if len(place.georow_list) > 0:
             # Build list - sort and remove duplicates
@@ -484,7 +478,7 @@ Provide place lookup gazeteer based on files from geonames.org
             if (min_score <= MatchScore.Score.VERY_GOOD and score > min_score + gap_threshold) or score > min_score + weak_threshold:
                 if (min_score <= MatchScore.Score.VERY_GOOD and score > min_score + gap_threshold):
                     self.logger.debug(f'STRONG SKIP Score {score:.1f}  {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
-                                      f' {geo_row[GeoUtil.Entry.ADM1]}')
+                                      f' {geo_row[GeoUtil.Entry.ADM1]} [{geo_row[GeoUtil.Entry.PREFIX]}]')
                 else:
                     self.logger.debug(f'WEAK SKIP Score {score:.1f}  {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
                                       f' {geo_row[GeoUtil.Entry.ADM1]}')

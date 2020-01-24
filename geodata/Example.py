@@ -100,7 +100,7 @@ if __name__ == "__main__":
         ]
 
     locations2 = [
-        'thetford abbey'
+        'Nogent Le Roi,france'
         ]
 
     for name in locations2:

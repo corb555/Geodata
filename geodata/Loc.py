@@ -105,6 +105,7 @@ class Loc:
         #Returns:   
             Fields in Loc (city, adm1, adm2, iso) are updated based on parsing. self.status has Result status code   
         """
+        self.logger.debug('PARSE')
         self.clear()
         self.original_entry = place_name
 
@@ -212,7 +213,7 @@ class Loc:
                     self.prefix += ', '
                     self.prefix += str(tokens[1].strip(' '))
 
-        self.logger.debug(f"    ======= PARSE: {place_name} \nCity [{self.city1}] Adm2 [{self.admin2_name}]"
+        self.logger.debug(f"    ======= PARSED: {place_name} \nCity [{self.city1}] Adm2 [{self.admin2_name}]"
                           f" Adm1 [{self.admin1_name}] adm1_id [{self.admin1_id}] Cntry [{self.country_name}] Pref=[{self.prefix}]"
                           f" type_id={self.place_type}")
         return

@@ -41,7 +41,7 @@ class TestScoring(unittest.TestCase):
     # ===== TEST SCORING
     test_values = [
         # 0Target, 1Result, 2Feature, 3Expected Score
-        ("toronto,nova scotia, canada", "toronto,ontario,canada", 'PPL', MatchScore.Score.POOR, 35),  # 0
+        ("Spilsby, Lincolnshire, , ", "Lincolnshire, Erie County, Ohio, United States", 'P10K', MatchScore.Score.POOR, 35),  # 0
         ("toronto,ontario,canada", "toronto,ontario,canada", 'PP1M', MatchScore.Score.VERY_GOOD, 0.0),  # 1
 
         ("toronto, canada", "toronto, canada", 'PPL', MatchScore.Score.VERY_GOOD, 3.5),  # 2
@@ -89,6 +89,7 @@ class TestScoring(unittest.TestCase):
 
         ("Berlin, , deutschland", "Berlin, Germany", 'PP1M', MatchScore.Score.VERY_GOOD, 1),  # 28
         ("Berl*n, , deutschland", "Berlin, Germany", 'PP1M', MatchScore.Score.VERY_GOOD, 1),  # 29
+        ("toronto,nova scotia, canada", "toronto,ontario,canada", 'PPL', MatchScore.Score.POOR, 35),  # 30
 
         ]
 
@@ -128,53 +129,77 @@ class TestScoring(unittest.TestCase):
         print("*****TEST: CHAR {}".format(title))
         out, inp = GeoUtil.remove_matching_sequences(out, inp, 2)
         return out, inp
-
+    
     @staticmethod
-    def run_test3(typ, idx) -> int:
+    def prepare_test(idx, in_place, res_place):
         TestScoring.test_idx = idx
         title = TestScoring.test_values[idx][0]
         inp = TestScoring.test_values[idx][0]
         res = TestScoring.test_values[idx][1]
         feat = TestScoring.test_values[idx][2]
 
-        in_place = Loc.Loc()
         in_place.original_entry = inp
         in_place.parse_place(place_name=inp, geo_files=TestScoring.geodata.geo_build)
         if in_place.country_name == '' and in_place.country_iso != '':
             in_place.country_name = TestScoring.geodata.geo_files.geodb.get_country_name(in_place.country_iso)
 
-        res_place = Loc.Loc()
         res_place.original_entry = res
         res_place.parse_place(place_name=res, geo_files=TestScoring.geodata.geo_build)
         res_place.feature = feat
         if res_place.country_name == '' and res_place.country_iso != '':
             res_place.country_name = TestScoring.geodata.geo_files.geodb.get_country_name(res_place.country_iso)
+        
+    @staticmethod
+    def run_test_score( idx) -> int:
+        in_place = Loc.Loc()
+        res_place = Loc.Loc()
 
+        TestScoring.prepare_test(idx, in_place, res_place)
         score = TestScoring.scoring.match_score(in_place, res_place)
 
-        if typ == 0:
-            sc = score
-        elif typ == 1:
-            sc = TestScoring.scoring.in_score
-        elif typ == 2:
-            sc = TestScoring.scoring.out_score
-        else:
-            sc = 9999
+        print(f'#{idx} {score:.1f} [{in_place.original_entry.title().lower()}] [{res_place.get_five_part_title()}]')
+        return score
+    
+    @staticmethod
+    def run_test_inscore(idx) -> int:
+        in_place = Loc.Loc()
+        res_place = Loc.Loc()
 
-        print(f'#{idx} {score:.1f} RS={sc:.1f}[{in_place.original_entry.title().lower()}] [{res_place.get_five_part_title()}]')
+        TestScoring.prepare_test(idx, in_place, res_place)
+        score = TestScoring.scoring.match_score(in_place, res_place)
+        sc = TestScoring.scoring.in_score
+
+        print(f'#{idx} {score:.1f} In={sc:.1f}[{in_place.original_entry.title().lower()}] [{res_place.get_five_part_title()}]')
         return sc
     
+    @staticmethod
+    def run_test_outscore(idx) -> int:
+        in_place = Loc.Loc()
+        res_place = Loc.Loc()
+
+        TestScoring.prepare_test(idx, in_place, res_place)
+        score = TestScoring.scoring.match_score(in_place, res_place)
+
+        sc = TestScoring.scoring.out_score
+
+        print(f'#{idx} {score:.1f} Out={sc:.1f}[{in_place.original_entry.title().lower()}] [{res_place.get_five_part_title()}]')
+        return sc
+
+    def test_one(self):
+        self.run_test_score(0)
+    
+    """
     def test_output(self):
         for i in range(0, len(TestScoring.test_values)-1):
             with self.subTest(i=i):
-                score = self.run_test3(2, i)
+                score = self.run_test_outscore(i)
                 self.assertEqual(TestScoring.test_values[i][4], score,
                                  msg=TestScoring.test_values[i][0])
 
     def test_score(self):
         for i in range(0, len(TestScoring.test_values)-1):
             with self.subTest(i=i):
-                score = self.run_test3(0, i)
+                score = self.run_test_score(i)
                 self.assertLess(score, TestScoring.test_values[i][3],
                                 msg=TestScoring.test_values[i][0])
                 self.assertGreaterEqual(score, TestScoring.test_values[i][3] - TestScoring.delta,
@@ -264,7 +289,7 @@ class TestScoring(unittest.TestCase):
         title = "Input word3"
         out, inp = self.run_test2(title, "Frunce", "Paris, France")
         self.assertEqual('u', inp, title)
-
+    """
 
 if __name__ == '__main__':
     unittest.main()
