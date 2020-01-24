@@ -18,13 +18,63 @@
 #   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 """
 Provide functions to normalize text strings by converting to lowercase, removing noisewords.   
-This is used by the lookup functions and the database build functions.
+This is used by the lookup functions and the database build functions and match scoring   
+noise_words is a list of replacements only used for match scoring   
+phrase_cleanup is a list of replacements for db build, lookup and match scoring   
 """
 import re
-
 import unidecode
 
 from geodata import GeodataBuild, GeoUtil, Loc, GeoDB
+
+
+noise_words= [
+    # Noise words - Replacements - only used to calculate match similarity scoring
+    (r', ', ','),
+    (r"normandy american ", 'normandie american '),
+    (r'nouveau brunswick', ' '),
+    (r'westphalia', 'westfalen'),
+    (r'citta metropolitana di ', ' '),
+    (r'kommune', ''),
+    (r"politischer bezirk ", ' '),
+    (r'erry', 'ury'),
+    (r'ery', 'ury'),
+    (r'borg', 'burg'),
+    (r'bourg', 'burg'),
+    (r'urgh', 'urg'),
+    (r'mound', 'mund'),
+    (r'ourne', 'orn'),
+    (r'ney', 'ny'),
+    (r' de ', ' '),
+    (r' di ', ' '),
+    (r' du ', ' '),
+    (r' of ', ' '),
+    (r' departement', ' '),
+    (r'battle of ', 'battle of ,'),  # - battle of - add comma
+    (r'royal borough of windsor and maidenhead', 'berkshire'),
+    ]
+
+phrase_cleanup = [
+    # Phrase cleanup - replacements always applied: for database build, lookup, and match scoring
+    ('r.k. |r k ', 'rooms katholieke '),
+    ('sveti |saints |sainte |sint |saint |sankt |st\. ', 'st '),  # Normalize Saint to St
+    (r' co\.', ' county'),  # Normalize County
+    (r'united states of america', 'usa'),  # Normalize to USA
+    (r'united states', 'usa'),  # Normalize to USA
+    (r'town of ', ''),  # - remove town of
+    (r'city of ', ''),  # - remove city of
+    (r'near ', ' '),  # - remove near
+    (r'cimetiere', 'cemetery'),  # cimetière
+    ('  +', ' '),  # Strip multiple space
+    ('county of ([^,]+)', r'\g<1> county'),  # Normalize 'Township of X' to 'X Township'
+    ('township of ([^,]+)', r'\g<1> township'),  # Normalize 'Township of X' to 'X Township'
+    ('cathedral of ([^,]+)', r'\g<1> cathedral'),  # Normalize 'Township of X' to 'X Township'
+    ('palace of ([^,]+)', r'\g<1> palace'),  # Normalize 'Township of X' to 'X Township'
+    ('castle of ([^,]+)', r'\g<1> castle'),  # Normalize 'Township of X' to 'X Township'
+    (r',castle', ' castle'),  # -  remove extra comma
+    (r',palace', ' palace'),  # -  remove extra comma
+    (r',cathedral', ' cathedral'),  # -  remove extra comma
+    ]
 
 
 def normalize_for_scoring(text: str, iso: str) -> str:
@@ -40,21 +90,15 @@ def normalize_for_scoring(text: str, iso: str) -> str:
     #Returns:
 
     """
-    text = normalize_for_search(text, iso)
+    text = normalize(text, False)
     text = _remove_noise_words(text)
-    text = re.sub(', ', ',', text)
     return text
-
-
-def normalize_for_search(text: str, iso) -> str:
-    text = normalize(text=text, remove_commas=False)
-
-    return text
-
 
 def normalize(text: str, remove_commas: bool) -> str:
     """
-    Normalize text - Convert from UTF-8 to lowercase ascii.  Remove most punctuation. Remove commas if parameter set.   
+    Normalize text - Convert from UTF-8 to lowercase ascii.  
+    Remove commas if parameter set.   
+    Remove all non alphanumeric except $ and *  
     Then call _phrase_normalize() which normalizes common phrases with multiple spellings, such as saint to st   
     #Args:   
         text:  Text to normalize   
@@ -69,11 +113,11 @@ def normalize(text: str, remove_commas: bool) -> str:
     text = unidecode.unidecode(text)
     text = str(text).lower()
 
-    # remove most punctuation
+    # remove all non alphanumeric except $ and * and comma(if flag set)
     if remove_commas:
-        text = re.sub(r"[^a-zA-Z0-9 $*']+", " ", text)
+        text = re.sub(r"[^a-z0-9 $*']+", " ", text)
     else:
-        text = re.sub(r"[^a-zA-Z0-9 $*,']+", " ", text)
+        text = re.sub(r"[^a-z0-9 $*,']+", " ", text)
 
     text = _phrase_normalize(text)
     return text.strip(' ')
@@ -82,70 +126,20 @@ def normalize(text: str, remove_commas: bool) -> str:
 def _phrase_normalize(text: str) -> str:
     """ Strip spaces and normalize spelling for items such as Saint and County """
     # Replacement patterns to clean up entries
-    text = re.sub('r.k. |r k ', 'rooms katholieke ', text)
-    text = re.sub('sveti |saints |sainte |sint |saint |sankt |st. ', 'st ', text)  # Normalize Saint to St
-    text = re.sub(r' co\.', ' county', text)  # Normalize County
-    text = re.sub(r'united states of america', 'usa', text)  # Normalize to USA
-    text = re.sub(r'united states', 'usa', text)  # Normalize to USA
-    text = re.sub(r'town of ', '', text)  # - remove town of
-    text = re.sub(r'city of ', '', text)  # - remove city of
-    text = re.sub(r'near ', ' ', text)  # - remove near
-    text = re.sub(r'cimetiere', 'cemetery', text)   # cimetière
-
+    
     if 'amt' not in text:
         text = re.sub(r'^mt ', 'mount ', text)
+        
+    for pattern, replace in phrase_cleanup:
+        text = re.sub(pattern, replace, text)
 
-    text = re.sub('  +', ' ', text)  # Strip multiple space
-    text = re.sub('county of ([^,]+)', r'\g<1> county', text)  # Normalize 'Township of X' to 'X Township'
-    text = re.sub('township of ([^,]+)', r'\g<1> township', text)  # Normalize 'Township of X' to 'X Township'
-
-    text = re.sub('cathedral of ([^,]+)', r'\g<1> cathedral', text)  # Normalize 'Township of X' to 'X Township'
-    text = re.sub('palace of ([^,]+)', r'\g<1> palace', text)  # Normalize 'Township of X' to 'X Township'
-    text = re.sub('castle of ([^,]+)', r'\g<1> castle', text)  # Normalize 'Township of X' to 'X Township'
-
-    text = re.sub(r',castle', ' castle', text)  # - castle  - remove extra comma
-    text = re.sub(r',palace', ' palace', text)  # - palace  - remove extra comma
-    text = re.sub(r',cathedral', ' cathedral', text)  # - palace  - remove extra comma
-
-    #text = re.sub(r'battle of ', 'battle of ,', text)  # - battle of - add comma
-    text = re.sub(r'k\. at ', ' ', text)  # - killed at  - remove extra comma
-    text = re.sub(r'killed ', ' ', text)  # - killed at  - remove extra comma
     return text
-
 
 def _remove_noise_words(text: str):
-    # Calculate score with noise word removal / normalization
-    # inp = re.sub('shire', '', inp)
-
-    # Clean up odd case for Normandy American cemetery having only English spelling of Normandy in France
-    text = re.sub(r"normandy american ", 'normandie american ', text)
-    text = re.sub(r'nouveau brunswick', ' ', text)
-    text = re.sub(r'westphalia', 'westfalen', text)
-    text = re.sub(r'city of ', ' ', text)
-    text = re.sub(r'citta metropolitana di ', ' ', text)
-    text = re.sub(r'town of ', ' ', text)
-    text = re.sub(r'kommune', '', text)
-    text = re.sub(r"politischer bezirk ", ' ', text)
-    text = re.sub(r'erry', 'ury', text)
-    text = re.sub(r'ery', 'ury', text)
-    text = re.sub(r'borg', 'burg', text)
-    text = re.sub(r'bourg', 'burg', text)
-    text = re.sub(r'urgh', 'urg', text)
-    text = re.sub(r'mound', 'mund', text)
-    text = re.sub(r'ourne', 'orn', text)
-    text = re.sub(r'ney', 'ny', text)
-    text = re.sub(r' de ', ' ', text)
-    text = re.sub(r' di ', ' ', text)
-    text = re.sub(r' du ', ' ', text)
-    text = re.sub(r' of ', ' ', text)
-    text = re.sub(r' departement', ' ', text)
-    text = re.sub(r'battle of ', 'battle of ,', text)  # - battle of - add comma
-    text = re.sub(r'k\. at ', ' ', text)  # - killed at  - remove extra comma
-    text = re.sub(r'killed ', ' ', text)  # - killed at  - remove extra comma
-    text = re.sub(r'royal borough of windsor and maidenhead', 'berkshire', text)
-
+    # Calculate score with noise words removed    
+    for pattern, replace in noise_words:
+        text = re.sub(pattern, replace, text)
     return text
-
 
 def remove_aliase(input_words, res_words) -> (str, str):
     if "middlesex" in input_words and "greater london" in res_words:
@@ -238,7 +232,7 @@ def add_aliases_to_database(geo_files: GeodataBuild):
 
 def admin1_normalize(admin1_name: str, iso):
     """ Normalize historic or colloquial Admin1 names to standard """
-    admin1_name = normalize_for_search(admin1_name, iso)
+    admin1_name = normalize(admin1_name, False)
     if iso == 'de':
         admin1_name = re.sub(r'bayern', 'bavaria', admin1_name)
         admin1_name = re.sub(r'westphalia', 'westfalen', admin1_name)
@@ -246,7 +240,6 @@ def admin1_normalize(admin1_name: str, iso):
     if iso == 'fr':
         admin1_name = re.sub(r'normandy', 'normandie', admin1_name)
         admin1_name = re.sub(r'brittany', 'bretagne', admin1_name)
-
         admin1_name = re.sub(r'burgundy', 'bourgogne franche comte', admin1_name)
         admin1_name = re.sub(r'franche comte', 'bourgogne franche comte', admin1_name)
         admin1_name = re.sub(r'aquitaine', 'nouvelle aquitaine', admin1_name)
@@ -273,15 +266,14 @@ def admin2_normalize(admin2_name: str, iso) -> (str, bool):
         admin2_name: 
         iso: 
 
-    Returns: (result, modified) - result is new string, modified - True if modified
+    Returns: TUPLE (result, modified) - result is new string, modified - True if modified
 
     """
-    admin2_name = normalize_for_search(admin2_name, iso)
+    admin2_name = normalize(admin2_name, False)
 
     mod = False
 
     if iso == 'gb':
-        # res = re.sub(r'middlesex', ' ', res)
         admin2_name = re.sub(r'breconshire', 'sir powys', admin2_name)
         mod = True
 
@@ -305,6 +297,7 @@ def country_normalize(country_name) -> (str, bool):
         'belgie': 'belgium',
         'brasil': 'brazil',
         'danmark': 'denmark',
+        'eire': 'ireland',
         'magyarorszag': 'hungary',
         'italia': 'italy',
         'espana': 'spain',

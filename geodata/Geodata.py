@@ -51,7 +51,8 @@ Provide place lookup gazeteer based on files from geonames.org
     """
 
     def __init__(self, directory_name: str, progress_bar, enable_spell_checker,
-                 show_message, exit_on_error, languages_list_dct, feature_code_list_dct, supported_countries_dct):
+                 show_message, exit_on_error, languages_list_dct, feature_code_list_dct, 
+                 supported_countries_dct):
         """
             Init
 
@@ -242,7 +243,7 @@ Provide place lookup gazeteer based on files from geonames.org
             place.place_type = Loc.PlaceType.CITY
             self.geo_build.geodb.lookup_place(place=place)
         else:
-            self.logger.warning(f'2) UNKNOWN lookup type {typ} or name is blank')
+            self.logger.debug(f'2)  name for type {typ} is blank')
 
     def find_best_match(self, location: str, place: Loc) -> bool:
         """

@@ -135,7 +135,7 @@ class Loc:
             return
         elif token_count > 0:
             #  COUNTRY - right-most token should be country
-            self.country_name = Normalize.normalize_for_search(tokens[-1], "")
+            self.country_name = Normalize.normalize(tokens[-1], False)
             self.target = self.country_name
 
             # Validate country
@@ -173,7 +173,7 @@ class Loc:
                 tokens[-2] = '_'
 
             self.prefix = self.prefix.strip(',')
-            self.prefix = Normalize.normalize_for_search(self.prefix, '')
+            self.prefix = Normalize.normalize(self.prefix, False)
             
         #if token_count > 2:
             #  3rd to last token is Admin2
@@ -193,7 +193,7 @@ class Loc:
 
         if token_count > 2:
             # Additional token, take first as city
-            self.city1 = Normalize.normalize_for_search(tokens[0], self.country_iso)
+            self.city1 = Normalize.normalize(tokens[0], False)
             self.target = self.city1
             self.place_type = PlaceType.CITY
 
@@ -241,7 +241,7 @@ class Loc:
         parser.add_argument("-c", "--country", help=argparse.SUPPRESS)
         try:
             options = parser.parse_args(args)
-            self.city1 = Normalize.normalize_for_search(tokens[0], self.country_iso)
+            self.city1 = Normalize.normalize(tokens[0], False)
             self.target = self.city1
             if options.iso:
                 self.country_iso = options.iso.lower()
@@ -305,7 +305,7 @@ class Loc:
             nm = f"{city}{admin2}{admin1}{str(self.country_name)}"
 
         # normalize prefix
-        self.prefix = Normalize.normalize_for_search(self.prefix, self.country_iso)
+        self.prefix = Normalize.normalize(self.prefix, False)
 
         if len(self.prefix) > 0:
             self.prefix_commas = ', '

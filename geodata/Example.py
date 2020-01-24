@@ -38,7 +38,7 @@ class Example:
         # Set up standard logging.  
         logging.getLogger(__name__)
         fmt = "%(levelname)s %(name)s.%(funcName)s %(lineno)d: %(message)s"
-        logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, format=fmt)  # Change this to logging.DEBUG for more detail
+        logging.basicConfig(level=logging.INFO, stream=sys.stdout, format=fmt)  # Change this to logging.DEBUG for more detail
 
         # Initialize
         directory = os.path.join(str(Path.home()), "Documents", "geoname_data")
@@ -88,6 +88,7 @@ if __name__ == "__main__":
         'cant* cath*,england',  # wildcards
         'd*,--feature=CSTL,--iso=GB',  # search by feature type= castle
         'cardiff, wales',  # good location
+        'cardiff kommune, wales',  # good location
         'carddif, wales',  # misspelled 
         'lindering, wales',  # poor match quality
         'phoenix, england',  # doesnt exist
@@ -97,11 +98,12 @@ if __name__ == "__main__":
         'Thetford Abbey, , england',
         'tretwr, llnfhngl cwm du, breconshire, england,',
         'kathedrale winchester,england',
+        'bemposta palace,paris,france',
         ]
 
     locations2 = [
-        'Nogent Le Roi,france'
+        'bemposta palace,paris,france'
         ]
 
-    for name in locations2:
+    for name in locations:
         ex.lookup_place(name)
