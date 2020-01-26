@@ -25,6 +25,7 @@ import os
 import re
 import sys
 import time
+from collections import Counter
 from datetime import timedelta
 from operator import itemgetter
 from tkinter import messagebox
@@ -256,8 +257,9 @@ class GeoDB:
                                    result=Result.SOUNDEX_MATCH))
         else:
             # No admin1 - lookup by name, country
+            query_list.clear()
+
             if '*' in lookup_target:
-                query_list.clear()
 
                 query_list.append(Query(where="name LIKE ? AND country = ?",
                                         args=(pattern, place.country_iso),
@@ -268,9 +270,9 @@ class GeoDB:
                                         result=Result.WORD_MATCH))
 
         # lookup by Soundex , country
-        #query_list.append(Query(where="sdx = ? AND country = ?",
-        #                        args=(sdx, place.country_iso),
-        #                        result=Result.SOUNDEX_MATCH))
+        query_list.append(Query(where="sdx = ? AND country = ?",
+                                args=(sdx, place.country_iso),
+                                result=Result.SOUNDEX_MATCH))
         
         # Try to find feature type and lookup by that
         self.add_query_by_feature(query_list, lookup_target, place.country_iso)
@@ -278,6 +280,7 @@ class GeoDB:
         # Try each query in list
         place.georow_list, place.result_type = self.process_query_list(select_string=self.select_str, from_tbl='main.geodata',
                                                                        query_list=query_list)
+        #self.logger.debug(place.georow_list)
 
     def wide_search_admin2(self, place: Loc):
         """
@@ -1125,7 +1128,7 @@ class GeoDB:
         result_type = Result.NO_MATCH
         #self.debug(f'=======PROCESS QUERY {from_tbl}')
         
-        for query in query_list:
+        for idx,query in enumerate(query_list):
             # Skip query if it's a wildcard and wildcards are disabled
             if use_wildcards is False and query.result in FUZZY_LOOKUP:
                 continue
@@ -1145,6 +1148,10 @@ class GeoDB:
                 self.debug(f'SELECT from {from_tbl} where {query.where} val={query.args} ')
                 result_list = self.db.select(select_string, query.where, from_tbl,
                                              query.args)
+                #self.logger.debug(result_list)
+
+                if query.result==Result.SOUNDEX_MATCH:
+                    self.logger.debug(result_list)
                 
                 if row_list:
                     row_list.extend(result_list)
@@ -1176,7 +1183,7 @@ class GeoDB:
         if self.detailed_debug:
             self.logger.debug(text)
 
-    def word_match(self, select_string, where, from_tbl, args):
+    def word_match(self, select_string, where, from_tbl, args)->[]:
         """
         Perform a wildcard match on each word in args[0], and then   
         merges the results into a single result.  During the merge, we note if   
@@ -1199,39 +1206,40 @@ class GeoDB:
             from_tbl:  
             args: args[0] has the words to search for   
 
-        #Returns:   
+        #Returns:   List of matches   
 
         """
         self.debug(f'WORD MATCH from {from_tbl} where {where} val={args} ')
-
+        count = Counter()
+        dict = {}
+        max_matches = 0
         words = args[0].split()
-        results = []  # the entire merged list of result rows
-        res_flags = []  # list of flags, matching results list, 'True' to keep
+
         if len(words) == 0:
             return []
         
         for word in words:
             # redo tuple for each word; select_string still has LIKE
+            word = re.sub(r'%','',word)
+            if len(word) < 4:
+                continue
             n_args = (f'%{word.strip(" ")}%', *args[1:])
-            result = self.db.select(select_string, where, from_tbl, n_args)
-            for idx, row in enumerate(result):
-                #if idx > 100:
-                #    break
-                # check if already in overall list
-                for indx, r_row in enumerate(results):
-                    if row[Entry.ID] == r_row[Entry.ID]:
-                        # if has same ID as in overall list, mark to keep
-                        res_flags[indx] = True
-                        break
-                else:  # this result row did not match anything
-                    results.append(row)  # add it to overall list
-                    # if reasonable number of results for this word, flag to
-                    # keep the result
-                    res_flags.append(len(result) < 50)
-        # strip out any results not flagged (too many to be interesting)
-        result = [results[indx] for indx in range(len(results)) if
-                  res_flags[indx]]
-        return result
+            db_results = self.db.select(select_string, where, from_tbl, n_args)
+            if len(db_results) < 50:
+                for db_row in db_results:
+                    # Add item to Dict and to Counter
+                    dbid = db_row[Entry.ID]
+                    ct = count[dbid]
+                    if ct == 0:
+                        dict[dbid] = db_row
+                        count[dbid] = 1
+                    else:
+                        count[dbid] = 2
+                    if count[dbid] > max_matches:
+                        max_matches = count[dbid] 
+    
+        # Return list with items that had most word matches
+        return [dict[dbid] for dbid in count if count[dbid] == max_matches]
 
     def assign_scores(self, place, target_feature):
         """
@@ -1243,7 +1251,7 @@ class GeoDB:
         result_place: Loc = Loc.Loc()
 
         min_score = 9999
-        original_prefix = place.prefix #+ ' ' + place.extra   + ' ' + place.target
+        original_prefix = place.prefix 
 
         # Remove redundant terms in prefix by converting it to dictionary (then back to list)
         # prefix_list = list(dict.fromkeys(original_prefix.split(' ')))
@@ -1284,6 +1292,7 @@ class GeoDB:
             result_place.prefix = Normalize.normalize(place.prefix, True)
             update[GeoUtil.Entry.PREFIX] = result_place.prefix
             place.georow_list[idx] = tuple(update)  # Convert back from list to tuple
+            #self.logger.debug(f'{update[GeoUtil.Entry.SCORE]:.1f} {update[GeoUtil.Entry.NAME]} [{update[GeoUtil.Entry.PREFIX]}]')
 
         if min_score < MatchScore.Score.VERY_GOOD + 2:
             place.result_type = GeoUtil.Result.STRONG_MATCH

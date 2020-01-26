@@ -104,7 +104,7 @@ Provide place lookup gazeteer based on files from geonames.org
 
         place.parse_place(place_name=location, geo_files=self.geo_build)
 
-        res = self.is_country_valid(place)
+        self.is_country_valid(place)
         if place.result_type == GeoUtil.Result.NOT_SUPPORTED:
             return place.result_type
 
@@ -133,45 +133,37 @@ Provide place lookup gazeteer based on files from geonames.org
             self.find_feature(place)
             return place.result_type
 
-        self.is_country_valid(place)
-
-        if place.result_type == GeoUtil.Result.NOT_SUPPORTED:
-            # The country in this entry is not supported
-            self.process_results(place=place, flags=flags)
-            return place.result_type
-
         # After parsing, last token is either country or underscore. 
         # Second to last is either Admin1 or underscore
         # If >2 tokens:  token[0] is placed in City and in Prefix
         # If >3 tokens:  token[1] is placed in Admin2 and appended to Prefix
 
-        # 1) Try lookup as determined by standard parsing:  either city, state/province, or country
+        # 1) Try lookup based on standard parsing: lookup city, county, state/province, or country as parsed
         self.logger.debug(f'  1) Standard, based on parsing.  pref [{place.prefix}] type={place.place_type}')
-
         self.geo_build.geodb.lookup_place(place=place)
-        self.log_results(place.georow_list)
+        #self.log_results(place.georow_list)
         if place.georow_list:
             result_list.extend(place.georow_list)
 
         # Restore items
         self._restore_fields(place, self.save_place)
 
-        # Try Admin2 as city 
+        # 2) Try Admin2 parsed field as a city 
         for typ in [Loc.PlaceType.ADMIN2]:
             place.georow_list.clear()
             self.find_type_as_city(place, typ)
-            self.log_results(place.georow_list)
+            #self.log_results(place.georow_list)
 
             if place.georow_list:
                 result_list.extend(place.georow_list)
             self._restore_fields(place, self.save_place)
 
-        # 3) Try city as Admin2 
+        # 3) Try city parsed field as Admin2 
         place.georow_list.clear()
         self.logger.debug(f'  3)  Lookup with City as Adm2.  Target={place.city1}  pref [{place.prefix}] ')
         self._lookup_city_as_admin2(place=place, result_list=result_list2)
         result_list.extend(result_list2)
-        self.log_results(place.georow_list)
+        #self.log_results(place.georow_list)
 
         #  Move result_list into place georow list
         place.georow_list.clear()
@@ -198,8 +190,8 @@ Provide place lookup gazeteer based on files from geonames.org
 
     def find_type_as_city(self, place: Loc, typ):
         """
-            Do a lookup using the field as specifed by typ.  E.g. if typ is PlaceType.ADMIN1 then   
-            use the place.admin1_name field to do the lookup   
+            Do a lookup using the field specifed by typ as a city name.  E.g. if typ is PlaceType.ADMIN1 then   
+            use the place.admin1_name field to do the city lookup   
         #Args:   
             place: Loc instance   
             typ: Loc.PlaceType - Specifies which field to use as target for lookup   
@@ -359,6 +351,19 @@ Provide place lookup gazeteer based on files from geonames.org
             place.result_type = GeoUtil.Result.PARTIAL_MATCH
 
         place.set_place_type_text()
+        
+    def distance(self, lat_a:float, lon_a:float, lat_b:float, lon_b:float):
+        """
+        Returns rectilinear distance in degrees between two lat/longs   
+        Args:   
+            lat_a: latitude of point A   
+            lon_a: longitude of point A   
+            lat_b: latitude of point B   
+            lon_b: longitude of point B   
+        Returns: Rectilinear distance between two points   
+
+        """
+        return abs(lat_a - lat_b) + abs(lon_a - lon_b)
 
     def filter_results(self, place: Loc):
         """
@@ -398,7 +403,7 @@ Provide place lookup gazeteer based on files from geonames.org
         geoid_dict = {}  # Key is GEOID.  Value is List index
 
         # Find and remove if two entries are duplicates - defined as two items with:
-        #  1) same GEOID or 2) same name and similar lat/lon (within Box Distance of 0.6 degrees)
+        #  1) same GEOID or 2) same name and lat/lon is within Box Distance of 0.6 degrees
         for geo_row in rows_sorted_by_latlon:
             # self.logger.debug(f'{geo_row[GeoUtil.Entry.NAME]},{geo_row[GeoUtil.Entry.FEAT]} '
             #                  f'{geo_row[GeoUtil.Entry.SCORE]:.1f} {geo_row[GeoUtil.Entry.ADM2]}, '
@@ -414,8 +419,6 @@ Provide place lookup gazeteer based on files from geonames.org
             old_row = list(geo_row)
             geo_row = tuple(old_row)
 
-            # if geo_row[GeoUtil.Entry.SCORE] > MatchScore.Score.POOR:
-            #    pass
             if geo_row[GeoUtil.Entry.NAME] != prev_geo_row[GeoUtil.Entry.NAME]:
                 # Add this item to georow list since it has a different name.  Also add its idx to geoid dict
                 place.georow_list.append(geo_row)
@@ -430,8 +433,8 @@ Provide place lookup gazeteer based on files from geonames.org
                     place.georow_list[row_idx] = geo_row
                     self.logger.debug(f'Better score {geo_row[GeoUtil.Entry.SCORE]} < '
                                       f'{old_row[GeoUtil.Entry.SCORE]} {geo_row[GeoUtil.Entry.NAME]}')
-            elif abs(float(prev_geo_row[GeoUtil.Entry.LAT]) - float(geo_row[GeoUtil.Entry.LAT])) + \
-                    abs(float(prev_geo_row[GeoUtil.Entry.LON]) - float(geo_row[GeoUtil.Entry.LON])) > self.distance_cutoff:
+            elif self.distance(float(prev_geo_row[GeoUtil.Entry.LAT]), float(prev_geo_row[GeoUtil.Entry.LON]),
+                                   float(geo_row[GeoUtil.Entry.LAT]), float(geo_row[GeoUtil.Entry.LON]) ) > self.distance_cutoff:
                 # Add this item to georow list since Lat/lon is different from previous item.  Also add its idx to geoid dict 
                 place.georow_list.append(geo_row)
                 geoid_dict[geo_row[GeoUtil.Entry.ID]] = georow_idx
@@ -487,10 +490,6 @@ Provide place lookup gazeteer based on files from geonames.org
                 place.georow_list.append(geo_row)
                 self.logger.debug(f'Score {score:.1f} [{geo_row[GeoUtil.Entry.PREFIX]}] {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
                                   f' {geo_row[GeoUtil.Entry.ADM1]}')
-
-            # if score > min_score + weak_threshold:
-            #    self.logger.debug(f'Score gap greater than {weak_threshold:.1f}. min={min_score:.1f} curr={score:.1f}')
-            #    break
 
         self.logger.debug(f'min={min_score:.1f}, gap2={gap_threshold:.1f} strong cutoff={min_score + gap_threshold:.1f}'
                           f' weak cutoff={min_score + weak_threshold:.1f}')

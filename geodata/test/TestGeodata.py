@@ -95,6 +95,14 @@ class TestGeodata(unittest.TestCase):
 
 
     # ======= TEST Event Year handling
+    
+    def test_place_name17(self):
+        title = "City - Rooms-Katholieke begraafplaats ‘Buitenveldert’, Amsterdam"
+        lat, name = self.run_test(title, "Rooms-Katholieke begraafplaats ‘Buitenveldert’, Amsterdam, netherlands")
+        self.assertEqual("'Buitenveldert' Amsterdam, Rooms Katholieke Begraafplaats,  Apeldoorn,  Gelderland, Netherlands",
+                         name, title)
+
+    
     def test_eventyear01(self):
         title = "City - good - and after city start"
         self.place.event_year = 1541
@@ -115,15 +123,6 @@ class TestGeodata(unittest.TestCase):
     
 
     # ====== TEST find first match, find geoid
-    def test_findfirst01(self):
-        title = "City - find first"
-        entry = "Berlin,,,Germany"
-
-        print("*****TEST: {}".format(title))
-        TestGeodata.geodata.find_best_match(entry, self.place)
-        lat = float(self.place.lat)
-
-        self.assertEqual(52.52437, lat, title)
 
     def test_findgeoid01(self):
         title = "City - find first"
@@ -584,12 +583,6 @@ class TestGeodata(unittest.TestCase):
         lat, name = self.run_test(title, "Amsterdam, Spiegelplein 9")
         self.assertEqual("Spiegelplein 9, Amsterdam,  Amsterdam,  Noord Holland, Netherlands", name, title)
 
-    def test_place_name17(self):
-        title = "City - Rooms-Katholieke begraafplaats ‘Buitenveldert’, Amsterdam"
-        lat, name = self.run_test(title, "Rooms-Katholieke begraafplaats ‘Buitenveldert’, Amsterdam, netherlands")
-        self.assertEqual("'Buitenveldert' Amsterdam, Rooms Katholieke Begraafplaats,  Apeldoorn,  Gelderland, Netherlands",
-                         name, title)
-
     def test_place_name18(self):
         title = "City - Troyes, Aube,  , France"
         lat, name = self.run_test(title, "Troyes, L'Aube,  , France")
@@ -682,7 +675,7 @@ class TestGeodata(unittest.TestCase):
     def test_place_name131(self):
         title = "County  verify not found "
         lat, name = self.run_test(title, "tretwr, llnfhngl cwm du, breconshire, wales,")
-        self.assertEqual("Tretwr Llnfhngl, Cwm Du, Sir Powys, Wales, United Kingdom", name, title)
+        self.assertEqual("Llnfhngl Cwm Du, Tretower, Sir Powys, Wales, United Kingdom", name, title)
         # llanfihangel cwmdu with bwlch and cathedine
 
     def test_place_name132(self):
@@ -724,21 +717,22 @@ class TestGeodata(unittest.TestCase):
         title = "Quierzy,Departement De L'Aisne,  , France"
         lat, name = self.run_test(title, "Quierzy,Departement De L'Aisne,  ,  France")
         self.assertEqual("Quierzy, Departement De L'Aisne, Hauts De France, France", name, title)
-
-    def test_place_name139(self):
-        title = "Chartres,Eure Et Loir, Beauce Centre,  France"
-        lat, name = self.run_test(title, "Chartres,D'Eure Et Loir, Beauce Centre,  France")
-        self.assertEqual("Chartres, Departement D'Eure Et Loir, Centre Val De Loire, France", name, title)
         
     def test_place_name141(self):
         title = "County - good with prefix Bruce County"
-        lat, name = self.run_test(title, "abcd, Bruce County, Ontario, Canada")
-        self.assertEqual("Abcd, Bruce County, Ontario, Canada", name, title)
+        lat, name = self.run_test(title, "Bruce County, Ontario, Canada")
+        self.assertEqual("Bruce County, Ontario, Canada", name, title)
     
     def test_place_name142(self):
         title = "County - Spilsby, Lincolnshire, , "
         lat, name = self.run_test(title, "Spilsby, Lincolnshire, , ")
         self.assertEqual("Spilsby, Lincolnshire, England, United Kingdom", name, title)
+        
+    
+    def test_place_name139(self):
+        title = "Chartres,Eure Et Loir, Beauce Centre,  France"
+        lat, name = self.run_test(title, "Chartres,D'Eure Et Loir,  ,  France")
+        self.assertEqual("Chartres, Departement D'Eure Et Loir, Centre Val De Loire, France", name, title)
 
 if __name__ == '__main__':
     unittest.main()

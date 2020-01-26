@@ -99,11 +99,13 @@ if __name__ == "__main__":
         'tretwr, llnfhngl cwm du, breconshire, england,',
         'kathedrale winchester,england',
         'bemposta palace,paris,france',
+        "'Buitenveldert' Amsterdam, Rooms Katholieke Begraafplaats,  Apeldoorn,  Gelderland, Netherland",
+        'cathedral winchester,,england',
         ]
 
     locations2 = [
-        'bemposta palace,paris,france'
+        'Chartres,Eure Et Loir,  ,  France',
         ]
 
-    for name in locations:
+    for name in locations2:
         ex.lookup_place(name)

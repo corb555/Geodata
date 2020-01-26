@@ -363,7 +363,7 @@ class DB:
         """
         Set 'PRAGMA optimize'
         """
-        self.logger.info(' Database Optimize pragma')
+        self.logger.debug(' Database Optimize pragma')
         for txt in ['PRAGMA optimize',
                     ]:
             self.set_pragma(txt)

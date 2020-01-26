@@ -25,8 +25,8 @@ from geodata import GeoUtil, Loc, Normalize, Geodata
 
 
 class Score:
-    VERY_GOOD = 19
-    GOOD = 40
+    VERY_GOOD = 30
+    GOOD = 65
     POOR = 85
     VERY_POOR = 120
 
@@ -41,16 +41,16 @@ class MatchScore:
         self.logger = logging.getLogger(__name__)
 
         # Weighting for each input term match - prefix, city, adm2, adm1, country
-        self.token_weight = [0.0, 1.0, 0.6, 0.8, 0.9, 0, 0, 0]
+        self.token_weight = [0.0, 1.0, 0.6, 0.7, 0.7]
 
         # Weighting for each part of score
         self.wildcard_penalty = -41.0
         self.first_token_match_bonus = 40.0
         self.wrong_order_penalty = -3.0
-        self.prefix_weight = 1.9
-
-        self.feature_weight = 0.12
-        self.result_weight = 0.17  # weight for match score of Result name
+        
+        self.prefix_weight = 2.0
+        self.feature_weight = 0.10
+        self.result_weight = 0.19  # weight for match score of Result name
         self.input_weight = 1.0 - self.result_weight - self.feature_weight  # Weight for match score of user input name
 
         # Out weight + Feature weight must be less than 1.0.
@@ -122,7 +122,7 @@ class MatchScore:
             target_tkn_len[it] = len(target_tokens[it])
 
         # Remove sequences that match in target and result
-        result_words, target_words = GeoUtil.remove_matching_sequences(text1=result_words, text2=target_words, min_len=3)
+        result_words, target_words = GeoUtil.remove_matching_sequences(text1=result_words, text2=target_words, min_len=2)
 
         # Calculate score for input match
         self.in_score = self._calculate_input_score(target_tkn_len, target_tokens, target_words, res_tokens)
@@ -144,7 +144,7 @@ class MatchScore:
 
         # Prefix penalty for length of prefix
         if target_tkn_len[0] > 0:
-            prefix_penalty = 3 + target_tkn_len[0]
+            prefix_penalty = 4 + target_tkn_len[0]
         else:
             prefix_penalty = 0
 

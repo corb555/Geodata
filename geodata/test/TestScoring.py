@@ -46,7 +46,7 @@ class TestScoring(unittest.TestCase):
 
         ("toronto, canada", "toronto, canada", 'PPL', MatchScore.Score.VERY_GOOD, 3.5),  # 2
 
-        ("chelsea,,england", "winchelsea, east sussex, england, united kingdom", 'PP1M', MatchScore.Score.VERY_GOOD, 29.25),  # 3
+        ("chelsea,,england", "winchelsea, east sussex, england, united kingdom", 'PP1M', MatchScore.Score.GOOD, 29.25),  # 3
         ("chelsea,,england", "chelsea, greater london, england, united kingdom", 'PP1M', MatchScore.Score.VERY_GOOD, 29.25),  # 4
 
         ("sonderburg,denmark", "sonderborg kommune,region syddanmark, denmark", 'PP1M', MatchScore.Score.VERY_GOOD, 45.13636363636364),  # 5
@@ -61,7 +61,7 @@ class TestScoring(unittest.TestCase):
         ("Domfront, Normandy", "Domfront-En-Champagne, Sarthe, Pays De La Loire, France", 'PP1M', MatchScore.Score.POOR, 63.00000000000001),  # 11
         ("Domfront, Normandy", "Domfront, Department De L'Orne, Normandie, France", 'PP1M', MatchScore.Score.GOOD, 1),  # 12
 
-        ("St Quentin, Aisne, Picardy, France", "St Quentin, Departement De L'Aisne, Hauts De France, France", 'PP1M', MatchScore.Score.VERY_GOOD, 1),
+        ("St Quentin, Aisne, Picardy, France", "St Quentin, Departement De L'Aisne, Hauts De France, France", 'PP1M', MatchScore.Score.GOOD, 1),
         # 13
 
         ("Old Bond Street, London, Middlesex, England", " , London, Greater London, England, United Kingdom", 'PP1M', MatchScore.Score.GOOD, 1),  # 14
@@ -188,13 +188,13 @@ class TestScoring(unittest.TestCase):
     def test_one(self):
         self.run_test_score(0)
     
-    """
-    def test_output(self):
-        for i in range(0, len(TestScoring.test_values)-1):
-            with self.subTest(i=i):
-                score = self.run_test_outscore(i)
-                self.assertEqual(TestScoring.test_values[i][4], score,
-                                 msg=TestScoring.test_values[i][0])
+    
+    #def test_output(self):
+    #    for i in range(0, len(TestScoring.test_values)-1):
+    #        with self.subTest(i=i):
+    #            score = self.run_test_outscore(i)
+    #            self.assertEqual(TestScoring.test_values[i][4], score,
+    #                             msg=TestScoring.test_values[i][0])
 
     def test_score(self):
         for i in range(0, len(TestScoring.test_values)-1):
@@ -205,7 +205,7 @@ class TestScoring(unittest.TestCase):
                 self.assertGreaterEqual(score, TestScoring.test_values[i][3] - TestScoring.delta,
                                         msg=TestScoring.test_values[i][0])
     
-
+    """
     # ===== TEST INPUT WORD REMOVAL
 
     def test_in01(self):

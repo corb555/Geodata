@@ -126,8 +126,8 @@ def _remove_matching_seq(text1: str, text2: str, attempts: int, min_len: int) ->
     if match.size >= min_len:
         # Remove matched sequence from inp and out
         item = text1[match.a:match.a + match.size]
-        text2 = re.sub(item, '', text2, count=1)
-        text1 = re.sub(item, '', text1, count=1)
+        text2 = re.sub(item, '', text2, count=4)
+        text1 = re.sub(item, '', text1, count=4)
         if attempts > 0:
             # Call recursively to get next largest match and remove it
             text1, text2 = _remove_matching_seq(text1, text2, attempts - 1, min_len)

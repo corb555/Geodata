@@ -243,13 +243,14 @@ class Loc:
             options = parser.parse_args(args)
             self.city1 = Normalize.normalize(tokens[0], False)
             self.target = self.city1
+            self.place_type = PlaceType.ADVANCED_SEARCH
+
             if options.iso:
                 self.country_iso = options.iso.lower()
             if options.country:
                 self.country_iso = options.country.lower()
             if options.feature:
                 self.feature = options.feature.upper()
-            self.place_type = PlaceType.ADVANCED_SEARCH
         except Exception as e:
             self.logger.debug(e)
         self.logger.debug(f'ADV SEARCH: targ={self.city1} iso={self.country_iso} feat={self.feature} typ={self.place_type}')
