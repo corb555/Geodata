@@ -565,6 +565,9 @@ Provide place lookup gazeteer based on files from geonames.org
             True if valid   
 
         """
+        if not event_year:
+            return True
+        
         # Try looking up start year by state/province
         place_year = admin1_name_start_year.get(f'{country_iso}.{admin1.lower()}')
         if place_year is None:
@@ -573,7 +576,7 @@ Provide place lookup gazeteer based on files from geonames.org
         if place_year is None:
             place_year = -1
 
-        if event_year + pad_years < place_year and event_year != 0:
+        if event_year + pad_years < place_year:
             # self.logger.debug(f'Invalid year:  incorporation={place_year}  event={event_year} loc={admin1},{iso} pad={padding}')
             return False
         else:
