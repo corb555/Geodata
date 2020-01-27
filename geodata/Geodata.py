@@ -76,7 +76,7 @@ Provide place lookup gazeteer based on files from geonames.org
                                                    feature_code_list_dct=feature_code_list_dct,
                                                    supported_countries_dct=supported_countries_dct)
         self.save_place: Loc = Loc.Loc()
-        self.match_scoring = MatchScore.MatchScore()
+        #self.match_scoring = MatchScore.MatchScore()
         self.miss_diag_file = None
         self.distance_cutoff = 0.6  # Value to determine if two lat/longs are similar based on Rectilinear Distance
 

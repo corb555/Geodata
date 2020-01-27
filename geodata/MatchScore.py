@@ -39,26 +39,35 @@ class MatchScore:
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
+        self.logger.info('===MATCH INIT===')
+        self.token_weight = []
+        self.prefix_weight = 0.0
+        self.feature_weight = 0.0
+        self.result_weight = 0.0
+        self.input_weight = 0.0
 
         # Weighting for each input term match - prefix, city, adm2, adm1, country
-        self.token_weight = [0.0, 1.0, 0.6, 0.7, 0.7]
+        token_weight = [0.0, 1.0, 0.6, 0.7, 0.7]
+        self.set_weighting(token_weight=token_weight, prefix_weight=2.0, feature_weight=0.10, result_weight=0.19)
 
         # Weighting for each part of score
-        self.wildcard_penalty = -41.0
-        self.first_token_match_bonus = 40.0
-        self.wrong_order_penalty = -3.0
-        
-        self.prefix_weight = 2.0
-        self.feature_weight = 0.10
-        self.result_weight = 0.19  # weight for match score of Result name
-        self.input_weight = 1.0 - self.result_weight - self.feature_weight  # Weight for match score of user input name
+        self.wildcard_penalty = -10.0
+
+        self.in_score = 99.0
+        self.out_score = 99.0
+
+    def set_weighting(self, token_weight: [], prefix_weight: float, feature_weight: float, result_weight: float):
+        # Weighting for each input term match - prefix, city, adm2, adm1, country
+        self.token_weight = token_weight
+        self.prefix_weight = prefix_weight
+        self.feature_weight = feature_weight
+        self.result_weight = result_weight
+        self.input_weight = 1.0 - result_weight - feature_weight
+        self.logger.info(f'***SET*** out={self.result_weight} pref={self.prefix_weight}, tok1={self.token_weight[1]}')
 
         # Out weight + Feature weight must be less than 1.0.
         if self.result_weight + self.feature_weight > 1.0:
             self.logger.error('Out weight + Feature weight must be less than 1.0')
-
-        self.in_score = 99.0
-        self.out_score = 99.0
 
     def match_score(self, target_place: Loc, result_place: Loc) -> float:
         """
@@ -130,11 +139,11 @@ class MatchScore:
         # Calculate score for output match
         self.out_score = self._calculate_output_score(result_words, result_place.original_entry)
 
-        if not target_place.standard_parse:
+        #if not target_place.standard_parse:
             # If Tokens were not in hierarchical order, give penalty
-            parse_penalty = self.wrong_order_penalty
-        else:
-            parse_penalty = 0.0
+        #    parse_penalty = self.wrong_order_penalty
+        #else:
+        #    parse_penalty = 0.0
 
         if '*' in target_place.original_entry:
             # if it was a wildcard search it's hard to rank - add a penalty
@@ -144,7 +153,7 @@ class MatchScore:
 
         # Prefix penalty for length of prefix
         if target_tkn_len[0] > 0:
-            prefix_penalty = 4 + target_tkn_len[0]
+            prefix_penalty = 5 + target_tkn_len[0]
         else:
             prefix_penalty = 0
 
@@ -153,8 +162,8 @@ class MatchScore:
 
         # Add up scores - Each item is appx 0-100 and weighted
         score: float = self.in_score * self.input_weight + self.out_score * self.result_weight + feature_score * self.feature_weight + \
-                       wildcard_penalty + prefix_penalty * self.prefix_weight + parse_penalty
-
+                       wildcard_penalty + prefix_penalty * self.prefix_weight #+ parse_penalty
+        
         #self.logger.debug(f'SCORE {score:.1f} res=[{result_place.original_entry}] pref=[{target_place.prefix}]\n'
         #                  f'inp=[{",".join(target_tokens)}]  outSc={self.out_score * self.result_weight:.1f}% '
         #                  f'inSc={self.in_score * self.input_weight:.1f}% feat={feature_score * self.feature_weight:.1f} {result_place.feature}  '
@@ -187,8 +196,8 @@ class MatchScore:
                 if idx == 1:
                     # If the full first or second token of the result is in input then improve score
                     # Bonus for a full match as against above partial matches
-                    if res_tokens[idx] in inp_tokens[idx]:
-                        in_score -= self.first_token_match_bonus
+                    #if res_tokens[idx] in inp_tokens[idx]:
+                    #    in_score -= self.first_token_match_bonus
                     # If exact match of term, give bonus
                     if inp_tokens[idx] == res_tokens[idx]:
                         if idx == 0:
