@@ -24,7 +24,6 @@ from collections import namedtuple
 from tkinter import messagebox
 from typing import Dict
 
-# import SpellCheck
 from geodata import GeoUtil, Loc, Country, GeoDB, Normalize, CachedDictionary, AlternateNames
 
 DB_MINIMUM_RECORDS = 1000
@@ -44,7 +43,7 @@ class GeodataBuild:
 
     """
 
-    def __init__(self, directory: str, progress_bar, enable_spell_checker,
+    def __init__(self, directory: str, progress_bar, 
                  show_message, exit_on_error, languages_list_dct, feature_code_list_dct, supported_countries_dct):
         """
         Read in datafiles needed for geodata, filter them and create a sql db.
@@ -55,7 +54,6 @@ class GeodataBuild:
         # Args:
             directory: base directory
             progress_bar: TKHelper progress bar or None
-            enable_spell_checker: True for spell checker. NOT CURRENTLY SUPPORTED
             show_message: True to show message boxes to user on errors
             exit_on_error:  True to exit on serious errors
             languages_list_dct: dictionary containing the ISO-2 languages we want to load from alternateNames
@@ -75,7 +73,6 @@ class GeodataBuild:
         self.cache_changed: bool = False
         sub_dir = GeoUtil.get_cache_directory(self.directory)
         self.country = None
-        self.enable_spell_checker: bool = enable_spell_checker
         self.languages_list_dct = languages_list_dct
         self.feature_code_list_dct = feature_code_list_dct
         self.supported_countries_dct = supported_countries_dct
@@ -83,15 +80,6 @@ class GeodataBuild:
 
         for item in self.languages_list_dct:
             self.lang_list.append(item)
-
-        """
-        REMOVED spell check.  Although it works and finds some additional locations it significantly reduces performance.
-        if self.enable_spell_checker:
-            self.spellcheck:SpellCheck.SpellCheck = SpellCheck.SpellCheck(progress=self.progress_bar,directory=sub_dir,
-                                                    countries_dict=self.supported_countries_dct)
-        else:
-        """
-        self.spellcheck = None
 
         if not os.path.exists(sub_dir):
             self.logger.warning(f'Directory] {sub_dir} NOT FOUND')
@@ -141,7 +129,7 @@ class GeodataBuild:
         if os.path.exists(db_path):
             # DB was Found
             self.logger.debug(f'DB found at {db_path}')
-            self.geodb = GeoDB.GeoDB(db_path=db_path, spellcheck=self.spellcheck,
+            self.geodb = GeoDB.GeoDB(db_path=db_path, 
                                      show_message=self.show_message, exit_on_error=self.exit_on_error,
                                      set_speed_pragmas=True, db_limit=query_limit)
 
@@ -177,7 +165,7 @@ class GeodataBuild:
                     os.remove(db_path)
                     self.logger.debug('Database deleted')
 
-                self.geodb = GeoDB.GeoDB(db_path=db_path, spellcheck=self.spellcheck,
+                self.geodb = GeoDB.GeoDB(db_path=db_path, 
                                          show_message=self.show_message, exit_on_error=self.exit_on_error,
                                          set_speed_pragmas=True, db_limit=query_limit)
                 self.create_geonames_database()

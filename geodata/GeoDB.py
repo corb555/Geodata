@@ -33,9 +33,6 @@ from tkinter import messagebox
 from geodata import GeoUtil, Loc, Country, MatchScore, Normalize, DB, QueryList
 from geodata.GeoUtil import Query, Result, Entry, get_soundex
 
-
-# from util import SpellCheck
-
 FUZZY_LOOKUP = [Result.WILDCARD_MATCH, Result.WORD_MATCH, Result.SOUNDEX_MATCH]
 
 class GeoDB:
@@ -43,13 +40,12 @@ class GeoDB:
     geoname database routines.  Add items to geoname DB, look up items, create tables, indices
     """
 
-    def __init__(self, db_path, spellcheck,
+    def __init__(self, db_path, 
                  show_message: bool, exit_on_error: bool, set_speed_pragmas: bool, db_limit: int):
         """
             geoname data database init. Open database if present otherwise raise error
         # Args:
             db_path: full path to database file
-            spellcheck: True if Spellcheck should be enabled.  NOT CURRENTLY SUPPORTED.  Must be False
             show_message: If True, show messagebox to user on error
             exit_on_error: If True, exit if significant error occurs
             set_speed_pragmas: If True, set DB pragmas for maximum performance. 
@@ -62,10 +58,7 @@ class GeoDB:
         self.start = 0
         self.match = MatchScore.MatchScore()
         self.select_str = 'name, country, admin1_id, admin2_id, lat, lon, f_code, geoid, sdx'
-        if spellcheck:
-            raise ValueError('Spellcheck is not currently supported')
 
-        self.spellcheck = spellcheck
         self.use_wildcards = True
         self.total_time = 0
         self.total_lookups = 0
@@ -165,7 +158,7 @@ class GeoDB:
             self.logger.debug(f'LOOKUP: {len(place.georow_list)} matches for type={lookup_type}  '
                               f'targ={place.target} nm=[{place.get_five_part_title()}]\n')
         else:
-            # self.debug(f'LOOKUP. No match:for {lookup_type}  targ={place.target} nm=[{place.get_five_part_title()}]\n')
+            self.debug(f'LOOKUP. No match:for {lookup_type}  targ={place.target} nm=[{place.get_five_part_title()}]\n')
             place.georow_list = []
             
     def add_query_by_feature(self, query_list, lookup_target, iso):
@@ -186,7 +179,7 @@ class GeoDB:
         # Returns:   
             None.  place.georow_list is updated with list of matches   
         """
-        self.debug('WIDE SEARCH CITY')
+        self.logger.debug(f'WIDE SEARCH CITY: [{place.target}]')
 
         lookup_target = place.target
         if len(place.target) == 0:
@@ -195,7 +188,7 @@ class GeoDB:
         pattern = self.create_wildcard(lookup_target)
 
         sdx = get_soundex(lookup_target)
-        self.debug(f'CITY lkp targ=[{lookup_target}] adm1 id=[{place.admin1_id}]'
+        self.logger.debug(f'CITY lkp targ=[{lookup_target}] adm1 id=[{place.admin1_id}]'
                           f' adm2 id=[{place.admin2_id}] iso=[{place.country_iso}] patt =[{pattern}] sdx={sdx} pref={place.prefix}')
 
         query_list = []
@@ -224,7 +217,7 @@ class GeoDB:
                                     args=(sdx,),
                                     result=Result.SOUNDEX_MATCH))
             
-            place.georow_list, place.result_type = self.process_query_list(select_string=self.select_str,
+            place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str,
                                                                            from_tbl='main.geodata',
                                                                            query_list=query_list)
             # self.debug(place.georow_list)
@@ -278,7 +271,7 @@ class GeoDB:
         self.add_query_by_feature(query_list, lookup_target, place.country_iso)
 
         # Try each query in list
-        place.georow_list, place.result_type = self.process_query_list(select_string=self.select_str, from_tbl='main.geodata',
+        place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.geodata',
                                                                        query_list=query_list)
         #self.logger.debug(place.georow_list)
 
@@ -304,7 +297,7 @@ class GeoDB:
         QueryList.QueryList.build_query_list(typ=QueryList.Typ.ADMIN2, query_list=query_list, place=place)
 
         # self.debug(f'Admin2 lookup=[{lookup_target}] country=[{place.country_iso}]')
-        place.georow_list, place.result_type = self.process_query_list(select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
+        place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
         if len(place.georow_list) == 0:
             # Try city rather than County match.
@@ -349,7 +342,7 @@ class GeoDB:
 
         query_list = []
         QueryList.QueryList.build_query_list(typ=QueryList.Typ.ADMIN1, query_list=query_list, place=place)
-        place.georow_list, place.result_type = self.process_query_list(select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
+        place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
         # Sort places in match_score order
         if len(place.georow_list) > 0:
@@ -387,7 +380,7 @@ class GeoDB:
                   result=Result.SOUNDEX_MATCH)
             ]
 
-        place.georow_list, place.result_type = self.process_query_list(select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
+        place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
     def wide_search_admin1_id(self, place: Loc):
         """
@@ -432,7 +425,7 @@ class GeoDB:
                                 args=(sdx, 'ADM1'),
                                 result=Result.SOUNDEX_MATCH))
 
-        place.georow_list, place.result_type = self.process_query_list(select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
+        place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
         self.assign_scores(place, 'ADM1')
         # Sort places in match_score order
@@ -488,7 +481,7 @@ class GeoDB:
                                     args=(self.create_county_wildcard(lookup_target), place.country_iso, 'ADM2'),
                                     result=Result.WILDCARD_MATCH))
 
-        place.georow_list, place.result_type = self.process_query_list(select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
+        place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
         self.assign_scores(place, 'ADM2')
 
@@ -519,7 +512,8 @@ class GeoDB:
                   args=(lookup_target, place.country_iso, 'ADM1'),
                   result=Result.STRONG_MATCH)
             ]
-        row_list, res = self.process_query_list(select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
+        row_list = []
+        res = self.process_query_list(result_list=row_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
         if len(row_list) > 0:
             row = row_list[0]
@@ -550,7 +544,8 @@ class GeoDB:
                   args=(admin1_id, iso, 'ADM1'),
                   result=Result.STRONG_MATCH)
             ]
-        row_list, res = self.process_query_list(select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
+        row_list = []
+        res = self.process_query_list(result_list=row_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
         if len(row_list) > 0:
             row = row_list[0]
@@ -584,7 +579,8 @@ class GeoDB:
                   args=(admin2_id, iso),
                   result=Result.PARTIAL_MATCH)]
 
-        row_list, res = self.process_query_list(select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
+        row_list = []
+        res = self.process_query_list(result_list=row_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
         if len(row_list) > 0:
             row = row_list[0]
@@ -611,10 +607,10 @@ class GeoDB:
                   args=(place.target,),
                   result=Result.STRONG_MATCH)
             ]
-        place.georow_list, place.result_type = self.process_query_list(select_string=self.select_str,
+        place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str,
                                                                        from_tbl='main.geodata', query_list=query_list)
         if len(place.georow_list) == 0:
-            place.georow_list, place.result_type = self.process_query_list(select_string=self.select_str,
+            place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str,
                                                                            from_tbl='main.admin', query_list=query_list)
         else:
             place.georow_list = place.georow_list[:1]
@@ -668,7 +664,7 @@ class GeoDB:
                   args=(place.target,),
                   result=Result.STRONG_MATCH)
             ]
-        place.georow_list, place.result_type = self.process_query_list(select_string=self.select_str,
+        place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str,
                                                                        from_tbl='main.geodata', query_list=query_list)
 
     def lookup_admin_dbid(self, place: Loc) -> None:
@@ -678,7 +674,7 @@ class GeoDB:
                   args=(place.target,),
                   result=Result.STRONG_MATCH)
             ]
-        place.georow_list, place.result_type = self.process_query_list(select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
+        place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
     def get_country_name(self, iso: str) -> str:
         """
@@ -701,7 +697,8 @@ class GeoDB:
                   args=(iso, 'ADM0'),
                   result=Result.STRONG_MATCH)]
 
-        row_list, res = self.process_query_list(select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
+        row_list = []
+        res = self.process_query_list(result_list=row_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
         if len(row_list) > 0:
             res = row_list[0][Entry.NAME]
@@ -733,13 +730,7 @@ class GeoDB:
                                 args=(lookup_target, 'ADM0'),
                                 result=Result.STRONG_MATCH))
 
-        if self.spellcheck:
-            pattern = self.spellcheck.fix_spelling(lookup_target)
-            query_list.append(Query(where="name LIKE ?  AND f_code = ? ",
-                                    args=(pattern, 'ADM0'),
-                                    result=Result.WILDCARD_MATCH))
-
-        place.georow_list, place.result_type = self.process_query_list(select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
+        place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
         self.assign_scores(place, 'ADM0')
 
@@ -787,14 +778,16 @@ class GeoDB:
                       result=Result.PARTIAL_MATCH)]
 
         # Search main DB
-        place.georow_list, place.result_type = self.process_query_list(select_string=self.select_str,
+        place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str,
                                                                        from_tbl='main.geodata',
                                                                        query_list=query_list)
 
         # self.debug(f'main Result {place.georow_list}')
 
         # Search admin DB
-        admin_list, place.result_type = self.process_query_list(select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
+        admin_list = []
+        place.result_type = self.process_query_list(result_list=admin_list,select_string=self.select_str, from_tbl='main.admin', 
+                                                                query_list=query_list)
         place.georow_list.extend(admin_list)
         # self.debug(f'admin Result {place.georow_list}')
 
@@ -1038,10 +1031,6 @@ class GeoDB:
             # Add name to dictionary.  Used by AlternateNames for fast lookup during DB build
             self.geoid_main_dict[geo_row[Entry.ID]] = row_id
 
-        # Add item to Spell Check dictionary
-        if self.spellcheck:
-            self.spellcheck.insert(geo_row[Entry.NAME], geo_row[Entry.ISO])
-
         return row_id
 
     def insert_alternate_name(self, alternate_name: str, geoid: str, lang: str):
@@ -1092,7 +1081,8 @@ class GeoDB:
                       args=('%',),
                       result=Result.STRONG_MATCH)]
             select_str = '*'
-            row_list, res = self.process_query_list(select_string=select_str, from_tbl='main.version', query_list=query_list)
+            row_list = []
+            res = self.process_query_list(result_list=row_list, select_string=select_str, from_tbl='main.version', query_list=query_list)
             if len(row_list) > 0:
                 ver = int(row_list[0][1])
                 self.logger.debug(f'Database Version = {ver}')
@@ -1102,15 +1092,16 @@ class GeoDB:
         self.logger.debug('No version table.  Version is 1')
         return 1
     
-    def process_query_list(self, select_string, from_tbl: str, query_list: [Query]):
-        row_list = []
-        row_list, result_type =  self._process_queries(select_string, from_tbl, query_list, False)
-        row_list1, result_type =  self._process_queries(select_string, from_tbl, query_list, True)
-        row_list.extend(row_list1)
+    def process_query_list(self, result_list, select_string, from_tbl: str, query_list: [Query]):
+        result_type =  self._process_queries(select_string, from_tbl, query_list, False, result_list)
+        result_type1 =  self._process_queries(select_string, from_tbl, query_list, True, result_list)
 
-        return row_list, result_type
+        if result_type in GeoUtil.successful_match:
+            return result_type
+        else:
+            return result_type1
 
-    def _process_queries(self, select_string, from_tbl: str, query_list: [Query], use_wildcards):
+    def _process_queries(self, select_string, from_tbl: str, query_list: [Query], use_wildcards, row_list):
         """
         Do a lookup for each query in the query_list.  Stop when self.max_query_results is reached    
         #Args:   
@@ -1123,7 +1114,6 @@ class GeoDB:
 
         """
         # Perform each SQL query in the list
-        row_list = []
 
         result_type = Result.NO_MATCH
         #self.debug(f'=======PROCESS QUERY {from_tbl}')
@@ -1140,24 +1130,14 @@ class GeoDB:
 
                 result_list2 = self.word_match(select_string, query.where, from_tbl,
                                                query.args)
-                if row_list:
-                    row_list.extend(result_list2)
-                else:
-                    row_list = result_list2
+                row_list.extend(result_list2)
             else:
                 self.debug(f'SELECT from {from_tbl} where {query.where} val={query.args} ')
                 result_list = self.db.select(select_string, query.where, from_tbl,
                                              query.args)
                 #self.logger.debug(result_list)
-
-                if query.result==Result.SOUNDEX_MATCH:
-                    self.logger.debug(result_list)
+                row_list.extend(result_list)
                 
-                if row_list:
-                    row_list.extend(result_list)
-                else:
-                    row_list = result_list
-
             if len(row_list) > 0:
                 result_type = query.result
 
@@ -1176,8 +1156,8 @@ class GeoDB:
                     
             if len(row_list) > self.max_query_results:
                 break
-
-        return row_list, result_type
+                
+        return result_type
     
     def debug(self, text):
         if self.detailed_debug:
@@ -1252,7 +1232,7 @@ class GeoDB:
 
         min_score = 9999
         original_prefix = place.prefix 
-
+        
         # Remove redundant terms in prefix by converting it to dictionary (then back to list)
         # prefix_list = list(dict.fromkeys(original_prefix.split(' ')))
         # original_prefix = ' '.join(list(prefix_list))
@@ -1261,6 +1241,7 @@ class GeoDB:
         for idx, rw in enumerate(place.georow_list):
             place.prefix = original_prefix
             self.copy_georow_to_place(row=rw, place=result_place)
+            
             result_place.original_entry = result_place.get_long_name(None)
 
             if len(place.prefix) > 0 and result_place.prefix == '':
@@ -1297,8 +1278,8 @@ class GeoDB:
         if min_score < MatchScore.Score.VERY_GOOD + 2:
             place.result_type = GeoUtil.Result.STRONG_MATCH
             
-        if min_score > MatchScore.Score.POOR:
-            place.georow_list.clear()
+        #if min_score > MatchScore.Score.POOR:
+        #    place.georow_list.clear()
 
     def create_tables(self):
         """

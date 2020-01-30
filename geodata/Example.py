@@ -42,7 +42,7 @@ class Example:
 
         # Initialize
         directory = os.path.join(str(Path.home()), "Documents", "geoname_data")
-        self.geodata = Geodata.Geodata(directory_name=directory, progress_bar=None, enable_spell_checker=False,
+        self.geodata = Geodata.Geodata(directory_name=directory, progress_bar=None, 
                                        show_message=True, exit_on_error=True,
                                        languages_list_dct={'en'},
                                        feature_code_list_dct=features,

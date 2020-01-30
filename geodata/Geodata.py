@@ -50,7 +50,7 @@ Provide place lookup gazeteer based on files from geonames.org
    
     """
 
-    def __init__(self, directory_name: str, progress_bar, enable_spell_checker,
+    def __init__(self, directory_name: str, progress_bar, 
                  show_message, exit_on_error, languages_list_dct, feature_code_list_dct, 
                  supported_countries_dct):
         """
@@ -59,7 +59,6 @@ Provide place lookup gazeteer based on files from geonames.org
         #Args:
             directory_name: directory where geoname.org files are.  DB will be in 'cache' folder under this   
             progress_bar: tkhelper progress bar or None   
-            enable_spell_checker: If True then use SpellChecker (CURRENTLY NOT SUPPORTED)   
             show_message: show TKInter message dialog on error   
             exit_on_error: exit on significant error   
             languages_list_dct: Dictionary of ISO-2 languages to import from AlternateNamesV2.txt   
@@ -70,7 +69,6 @@ Provide place lookup gazeteer based on files from geonames.org
         self.directory: str = directory_name
         self.progress_bar = progress_bar  # progress_bar
         self.geo_build = GeodataBuild.GeodataBuild(self.directory, progress_bar=self.progress_bar,
-                                                   enable_spell_checker=enable_spell_checker,
                                                    show_message=show_message, exit_on_error=exit_on_error,
                                                    languages_list_dct=languages_list_dct,
                                                    feature_code_list_dct=feature_code_list_dct,
@@ -234,6 +232,7 @@ Provide place lookup gazeteer based on files from geonames.org
             place.target = place.city1
             place.place_type = Loc.PlaceType.CITY
             self.geo_build.geodb.lookup_place(place=place)
+            self.logger.debug(f'admin2 as city. Found {len(place.georow_list)} results.')
         else:
             self.logger.debug(f'2)  name for type {typ} is blank')
 
@@ -585,7 +584,7 @@ Provide place lookup gazeteer based on files from geonames.org
     @staticmethod
     def _feature_priority(feature: str):
         """
-        Returns 0-100 for feature priority.  Lowest is most significant feature, such as PP1M - city with 1 million people  
+        Returns 0-100 for feature priority.  PP1M - city with 1 million people is zero 
 
         #Args:   
             feature:   
@@ -648,11 +647,11 @@ default = ["ADM1", "ADM2", "ADM3", "ADM4", "ADMF", "CH", "CSTL", "CMTY", "EST ",
 # These scores are also used for match ranking score
 # Note: PP1M, P1HK, P10K do not exist in Geonames and are created by geodata.geodatafiles
 feature_priority = {
-    'PP1M': 90, 'ADM1': 88, 'PPLA': 88, 'PPLC': 88, 'PP1K': 75, 'PPLA2': 85, 'P10K': 81, 'P1HK': 85,
-    'PPL' : 50, 'PPLA3': 65, 'ADMF': 65, 'PPLA4': 63, 'ADMX': 60, 'PAL': 40, 'ISL': 50,
-    'ADM2': 73, 'PPLG': 68, 'RGN': 65, 'AREA': 65, 'MILB': 40, 'NVB': 65, 'PPLF': 63, 'ADM0': 85, 'PPLL': 50, 'PPLQ': 55, 'PPLR': 55,
-    'CH'  : 40, 'MSQE': 40, 'SYG': 40, 'CMTY': 40, 'CSTL': 40, 'EST': 40, 'PPLS': 50, 'PPLW': 50, 'PPLX': 75, 'BTL': 20,
-    'HSTS': 40, 'PRK': 40, 'HSP': 0, 'VAL': 0, 'MT': 0, 'ADM3': 30, 'ADM4': 0, 'DEFAULT': 0, 'MNMT': 40
+    'PP1M': 100, 'ADM1': 96, 'PPLA': 96, 'PPLC': 96, 'PP1K': 82, 'PPLA2': 93, 'P10K': 89, 'P1HK': 93,
+    'PPL' : 55, 'PPLA3': 71, 'ADMF': 71, 'PPLA4': 69, 'ADMX': 66, 'PAL': 44, 'ISL': 55,
+    'ADM2': 80, 'PPLG': 75, 'RGN': 71, 'AREA': 71, 'MILB': 44, 'NVB': 71, 'PPLF': 69, 'ADM0': 93, 'PPLL': 55, 'PPLQ': 60, 'PPLR': 60,
+    'CH'  : 44, 'MSQE': 44, 'SYG': 44, 'CMTY': 44, 'CSTL': 44, 'EST': 44, 'PPLS': 55, 'PPLW': 55, 'PPLX': 82, 'BTL': 22,
+    'HSTS': 42, 'PRK': 42, 'HSP': 0, 'VAL': 0, 'MT': 0, 'ADM3': 32, 'ADM4': 0, 'DEFAULT': 0, 'MNMT': 44
     }
 
 ResultFlags = collections.namedtuple('ResultFlags', 'limited filtered')

@@ -28,7 +28,7 @@ class Score:
     VERY_GOOD = 30
     GOOD = 65
     POOR = 85
-    VERY_POOR = 120
+    VERY_POOR = 100
 
 
 class MatchScore:
@@ -39,35 +39,52 @@ class MatchScore:
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.logger.info('===MATCH INIT===')
         self.token_weight = []
         self.prefix_weight = 0.0
         self.feature_weight = 0.0
         self.result_weight = 0.0
         self.input_weight = 0.0
 
-        # Weighting for each input term match - prefix, city, adm2, adm1, country
-        token_weight = [0.0, 1.0, 0.6, 0.7, 0.7]
-        self.set_weighting(token_weight=token_weight, prefix_weight=2.0, feature_weight=0.10, result_weight=0.19)
+        # Weighting for each input term match -  adm2, adm1, country
+        token_weight = [.12, .1, .1]
+        self.set_weighting(token_weight=token_weight, prefix_weight=.94, feature_weight=0.10, result_weight=0.3)
 
         # Weighting for each part of score
         self.wildcard_penalty = -10.0
-
         self.in_score = 99.0
         self.out_score = 99.0
 
     def set_weighting(self, token_weight: [], prefix_weight: float, feature_weight: float, result_weight: float):
-        # Weighting for each input term match - prefix, city, adm2, adm1, country
-        self.token_weight = token_weight
-        self.prefix_weight = prefix_weight
-        self.feature_weight = feature_weight
-        self.result_weight = result_weight
-        self.input_weight = 1.0 - result_weight - feature_weight
-        self.logger.info(f'***SET*** out={self.result_weight} pref={self.prefix_weight}, tok1={self.token_weight[1]}')
+        """
+        Set weighting of score components
+        Args:
+            token_weight: List with Weights for match of County, State/Province, Country. City is always 1.0   
+            prefix_weight:   Weighting for prefix
+            feature_weight:  Weighting for Feature match
+            result_weight:   Weighting for % of DB result that didnt match the target
 
+        Returns:
+
+        """
+        self.token_weight = [0.0, 1.0]  # prefix weight is zero and city is 1.0
+        # Weighting for each input term match -  city, adm2, adm1, country
+        self.token_weight += list(token_weight)
+        self.token_weight = [abs(ele) for ele in self.token_weight]
+
+        self.prefix_weight = abs(prefix_weight)
+        self.feature_weight = abs(feature_weight)
+        self.result_weight = abs(result_weight)
         # Out weight + Feature weight must be less than 1.0.
         if self.result_weight + self.feature_weight > 1.0:
             self.logger.error('Out weight + Feature weight must be less than 1.0')
+            self.result_weight = 1.0 - self.feature_weight
+        self.input_weight = 1.0 - result_weight - feature_weight
+
+    def remove_if_input_empty(self, target_tokens, res_tokens):
+        # Remove terms in Result if input for that term was empty
+        for ix, term in enumerate(target_tokens):
+            if len(term) == 0 and ix < len(res_tokens):
+                res_tokens[ix] = ''
 
     def match_score(self, target_place: Loc, result_place: Loc) -> float:
         """
@@ -80,26 +97,25 @@ class MatchScore:
             A) Heuristic:
             1) Create 5 part title (prefix, city, county, state/province, country)
             2) Normalize text - Normalize.normalize_for_scoring()
-            3) Remove sequences over 3 chars that match in target and result
-            4) Calculate inscore - percent of characters in input that didn't match output.  Weighted by term (county is lower weight)
+            3) Remove sequences of 2 chars or more that match in target and result
+            4) Calculate inscore - percent of characters in input that didn't match result.  Weight by term (city,,county,state,ctry)
                     Exact match of city term gets a bonus
-            5) Calculate outscore - percent of characters in output that didn't match input
+            5) Calculate result score - percent of characters in db result that didn't match input
 
-            B) Score components (All are weighted except Prefix and Parse):
-            in_score - percent of characters in input that didnt match output
-            out_score - percent of characters in output that didnt match input
-            feature_score - Geodata.feature_priority().  adjustment based on Feature type.  More important features (larger city)
-            get lower result
-            wildcard_penalty - score is raised by 41 if it includes a wildcard
-            prefix_penalty -  score is raised by length of Prefix
-            parse_penalty - score is raised by 3 if lookup was done with terms out of order
+            B) Score components (All are weighted except Prefix and Parse):   
+            in_score - (0-100) - percent of characters in input that didnt match output   
+            out_score - (0-100) - percent of characters in output that didnt match input   
+            feature_score - (0-100)  More important features get lower result.   
+            City with 1M population is zero.  Valley is 100.  Geodata.feature_priority().  
+            wildcard_penalty - score is raised by X if it includes a wildcard   
+            prefix_penalty -  score is raised by length of Prefix   
 
-            C) A standard text difference, such as Levenstein, was not used because those treat both strings as equal,
-            whereas this treats the User text as more important than DB result text and also weights each token.  A user's
-            text might commonly be something like: Paris, France and a DB result of Paris, Paris, Ile De France, France.
-            The Levenstein distance would be large, but with this heuristic, the middle terms can have lower weights, and
-            having all the input matched can be weighted higher than mismatches on the county and province.  This heuristic gives
-            a score of -9 for Paris, France.
+            C) A standard text difference, such as Levenstein, was not used because those treat both strings as equal,   
+            whereas this treats the User text as more important than DB result text and also weights each token.  A user's   
+            text might commonly be something like: Paris, France and a DB result of Paris, Paris, Ile De France, France.   
+            The Levenstein distance would be large, but with this heuristic, the middle terms can have lower weights, and   
+            having all the input matched can be weighted higher than mismatches on the county and province.  This heuristic gives   
+            a score of -9 for Paris, France.   
 
         # Args:
             target_place:  Loc  with users entry.
@@ -121,6 +137,11 @@ class MatchScore:
         target_words = target_place.get_five_part_title()
         target_words = Normalize.normalize_for_scoring(target_words, target_place.country_iso)
         target_tokens = target_words.split(',')
+
+        # Remove terms in Result if input for that term was empty
+        self.remove_if_input_empty(target_tokens, res_tokens)
+
+        # update prefix
         target_tokens[0] = Loc.Loc.matchscore_prefix(target_tokens[0], result_words)
 
         target_words, result_words = Normalize.remove_aliase(target_words, result_words)
@@ -139,32 +160,27 @@ class MatchScore:
         # Calculate score for output match
         self.out_score = self._calculate_output_score(result_words, result_place.original_entry)
 
-        #if not target_place.standard_parse:
-            # If Tokens were not in hierarchical order, give penalty
-        #    parse_penalty = self.wrong_order_penalty
-        #else:
-        #    parse_penalty = 0.0
-
         if '*' in target_place.original_entry:
-            # if it was a wildcard search it's hard to rank - add a penalty
+            # if it was a wildcard search it's hard to rank - add adjustment
             wildcard_penalty = self.wildcard_penalty
         else:
             wildcard_penalty = 0.0
 
-        # Prefix penalty for length of prefix
-        if target_tkn_len[0] > 0:
-            prefix_penalty = 5 + target_tkn_len[0]
-        else:
-            prefix_penalty = 0
+        # Prefix penalty 
+        prefix_penalty = self._calculate_prefix_penalty(target_tkn_len[0])
 
         # Feature score is to ensure "important" places get higher rank (large city, etc)
         feature_score = Geodata.Geodata._feature_priority(result_place.feature)
 
-        # Add up scores - Each item is appx 0-100 and weighted
+        # Add up scores - Each item is 0-100 and then weighted, except wildcard penalty
         score: float = self.in_score * self.input_weight + self.out_score * self.result_weight + feature_score * self.feature_weight + \
-                       wildcard_penalty + prefix_penalty * self.prefix_weight #+ parse_penalty
-        
-        #self.logger.debug(f'SCORE {score:.1f} res=[{result_place.original_entry}] pref=[{target_place.prefix}]\n'
+                       prefix_penalty * self.prefix_weight + wildcard_penalty
+
+        # self.logger.info(f'Weights: city={self.token_weight[1]:.1f} cty={self.token_weight[2]:.1f} st={self.token_weight[3]:.1f}'
+        #                 f' ctry={self.token_weight[4]:.1f} targ={self.input_weight:.1f} res={self.result_weight:.1f}'
+        #                 f' pref={self.prefix_weight:.1f}')
+
+        # self.logger.debug(f'SCORE {score:.1f} res=[{result_place.original_entry}] pref=[{target_place.prefix}]\n'
         #                  f'inp=[{",".join(target_tokens)}]  outSc={self.out_score * self.result_weight:.1f}% '
         #                  f'inSc={self.in_score * self.input_weight:.1f}% feat={feature_score * self.feature_weight:.1f} {result_place.feature}  '
         #                  f'wild={wildcard_penalty} pref={prefix_penalty * self.prefix_weight:.1f}')
@@ -186,7 +202,7 @@ class MatchScore:
 
         # Calculate percent of USER INPUT text that was unmatched, then apply weighting
         for idx, tk in enumerate(inp_tokens):
-            if inp_len[idx] > 0:
+            if inp_len[idx] > 0 and idx < len(self.token_weight):
                 unmatched_percent = int(100.0 * len(unmatched_input_tokens[idx].strip(' ')) / inp_len[idx])
                 in_score += unmatched_percent * self.token_weight[idx]
                 self.score_diags += f'  {idx}) [{tk}][{unmatched_input_tokens[idx]}] {unmatched_percent}% * {self.token_weight[idx]} '
@@ -196,7 +212,7 @@ class MatchScore:
                 if idx == 1:
                     # If the full first or second token of the result is in input then improve score
                     # Bonus for a full match as against above partial matches
-                    #if res_tokens[idx] in inp_tokens[idx]:
+                    # if res_tokens[idx] in inp_tokens[idx]:
                     #    in_score -= self.first_token_match_bonus
                     # If exact match of term, give bonus
                     if inp_tokens[idx] == res_tokens[idx]:
@@ -241,6 +257,12 @@ class MatchScore:
         self.score_diags += f'\noutrem=[{unmatched}]'
 
         return out_score
+
+    def _calculate_prefix_penalty(self, prefix_len):
+        if prefix_len > 0:
+            return 10
+        else:
+            return 0
 
     @staticmethod
     def _adjust_adm_score(score, feat):
