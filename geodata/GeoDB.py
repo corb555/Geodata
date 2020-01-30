@@ -1002,7 +1002,8 @@ class GeoDB:
                   args=(geoid,),
                   result=Result.STRONG_MATCH)]
         select = 'name, lang'
-        row_list, res = self.process_query_list(select_string=select, from_tbl='main.altname', query_list=query_list)
+        row_list = []
+        res = self.process_query_list(result_list=row_list, select_string=select, from_tbl='main.altname', query_list=query_list)
         if len(row_list) > 0:
             return row_list[0][0], row_list[0][1]
         else:
@@ -1093,6 +1094,17 @@ class GeoDB:
         return 1
     
     def process_query_list(self, result_list, select_string, from_tbl: str, query_list: [Query]):
+        """
+        
+        Args:
+            result_list: 
+            select_string: 
+            from_tbl: 
+            query_list: 
+
+        Returns: Result type.  Result list contains matches
+
+        """
         result_type =  self._process_queries(select_string, from_tbl, query_list, False, result_list)
         result_type1 =  self._process_queries(select_string, from_tbl, query_list, True, result_list)
 
