@@ -141,22 +141,22 @@ class QueryList:
         pattern = QueryList.create_wildcard(place.target)
 
         if len(place.country_iso) == 0:
-            query_list.append(Query(where="name = ?  AND f_code=?",
-                                    args=(place.target, 'ADM2'),
+            query_list.append(Query(where="name = ?  ",
+                                    args=(place.target),
                                     result=Result.PARTIAL_MATCH))
         else:
-            query_list.append(Query(where="name = ? AND country = ? AND f_code=?",
-                                    args=(place.target, place.country_iso, 'ADM2'),
+            query_list.append(Query(where="name = ? AND country = ? ",
+                                    args=(place.target, place.country_iso),
                                     result=Result.PARTIAL_MATCH))
 
-        query_list.append(Query(where="name LIKE ? AND country = ? AND f_code=?",
-                                args=(place.target, place.country_iso, 'ADM2'),
+        query_list.append(Query(where="name LIKE ? AND country = ? ",
+                                args=(place.target, place.country_iso),
                                 result=Result.PARTIAL_MATCH))
 
         if '*' in place.target:
             query_list.clear()
-            query_list.append(Query(where="name LIKE ? AND country = ? AND f_code=?",
-                                    args=(pattern, place.country_iso, 'ADM2'),
+            query_list.append(Query(where="name LIKE ? AND country = ? ",
+                                    args=(pattern, place.country_iso),
                                     result=Result.WILDCARD_MATCH))
         else:
             query_list.append(Query(
@@ -229,7 +229,7 @@ class QueryList:
 
     @staticmethod
     def query_list_admin2_id(query_list, place: Loc):
-        """Search for Admin1 entry"""
+        """Search for Admin2 entry"""
         # sdx = get_soundex(place.target)
         pattern = QueryList.create_wildcard(place.target)
 

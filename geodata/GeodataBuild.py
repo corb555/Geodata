@@ -64,9 +64,9 @@ class GeodataBuild:
         self.geodb = None
         self.show_message = show_message
         self.exit_on_error = exit_on_error
-        self.required_db_version = 2
-        # Message to user upgrading from DB version earlier than current (2)
-        self.db_upgrade_text = 'Adding support for non-English output'
+        self.required_db_version = 3
+        # Message to user upgrading from earlier DB version  
+        self.db_upgrade_text = 'Moved county data from admin table to geodata table to improve performance'
         self.directory: str = directory
         self.progress_bar = progress_bar
         self.line_num = 0
@@ -179,6 +179,7 @@ class GeodataBuild:
         # Returns:
             True if error
         """
+        # todo determine why some entries are duplicates
         # DB didnt exist.  Create tables.
         if self.geodb is None:
             self.logger.error('Cannot create DB: geodb is None')

@@ -48,8 +48,6 @@ class Example:
                                        feature_code_list_dct=features,
                                        supported_countries_dct={'fr', 'gb', 'ca'})
 
-        # Weighting for each input term match - prefix, city, adm2, adm1, country
-        # token_weight = [0.0, 1.0, 0.6, 0.7, 0.7]
 
         # Open Geoname database - city names, lat/long, etc.  Create database if not found
         error = self.geodata.open(repair_database=True, query_limit=105)
@@ -57,7 +55,8 @@ class Example:
             print(f"Missing geoname Files in {directory}: download gb.txt or allcountries.txt from geonames.org")
             raise ValueError('Missing files from geonames.org')
         
-        token_weight = [-0.027, 0.601, 3.48, -0.170, 0.179]
+        # Weighting for each input term match -  adm2, adm1, country
+        token_weight = [ 3.48, -0.170, 0.179]
         self.geodata.geo_build.geodb.match.set_weighting(token_weight=token_weight, prefix_weight=2.59,
                                                          feature_weight=-0.264,
                                                          result_weight=0.749)

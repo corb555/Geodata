@@ -65,15 +65,15 @@ class TestScoring(unittest.TestCase):
     # MATCH SCORING TEST CASES
     score_test_cases = [
         # 0Target, 1Result, 2Feature, 3Expected Score, 4 xxx
-        ("Spilsby, Lincolnshire, , ", "Lincolnshire, Erie County, Ohio, United States", 'P10K', 95),  # 0
+        ("Spilsby, Lincolnshire, , ", "Lincolnshire, Erie County, Ohio, United States", 'P10K', 47),  # 0
         ("toronto,ontario,canada", "toronto,ontario,canada", 'PP1M', 0),  # 1
 
         ("toronto, canada", "toronto, canada", 'PPL', 5),  # 2
 
-        ("chelsea,,england", "winchelsea, east sussex, england, united kingdom", 'PP1M', 70),  # 3
+        ("chelsea,,england", "winchelsea, east sussex, england, united kingdom", 'PP1M', 35),  # 3
         ("chelsea,,england", "chelsea, greater london, england, united kingdom", 'PP1M', 6),  # 4
 
-        ("sonderburg,denmark", "sonderborg kommune,region syddanmark, denmark", 'PP1M', 6),  # 5
+        ("sonderburg,denmark", "sonderborg kommune,region syddanmark, denmark", 'PP1M', 19),  # 5
 
         ("Paris, France", "Paris,, France", 'PP1M', 0),  # 6
         ("Paris, France.", "Paris,, France", 'PP1M', 0),  # 7
@@ -88,14 +88,14 @@ class TestScoring(unittest.TestCase):
         ("St Quentin, Aisne, Picardy, France", "St Quentin, Departement De L'Aisne, Hauts De France, France", 'PP1M', 12),
         # 13
 
-        ("Old Bond Street, London,  , England,United Kingdom", " , London, Greater London, England, United Kingdom", 'PP1M', 30),  # 14
+        ("Old Bond Street, London,  , England,United Kingdom", " , London, Greater London, England, United Kingdom", 'PP1M', 45),  # 14
         ("Old Bond Street, London, Middlesex, England,United Kingdom", " , Museum Of London, Greater London, England, United Kingdom", 'PPL',
-         MatchScore.Score.POOR, 1),  # 15
+          55),  # 15
 
-        ("zxq, xyzzy", " , London, Greater London, England, United Kingdom", ' ', 150),  # 16
+        ("zxq, xyzzy", " , London, Greater London, England, United Kingdom", ' ', 120),  # 16
 
-        ("St. Margaret, Westminster, London, England", "London,England,United Kingdom", 'PPL', 150),  # 17
-        ("St. Margaret, Westminster, London, England", "Westminster Cathedral, Greater London, England", 'PPL',115),  # 18
+        ("St. Margaret, Westminster, London, England", "London,England,United Kingdom", 'PPL', 100),  # 17
+        ("St. Margaret, Westminster, London, England", "Westminster Cathedral, Greater London, England", 'PPL',49),  # 18
 
         ("Canada", "Canada", 'ADM0', 9),  # 19
         ("France", ",France", 'ADM0', 9),  # 20
@@ -104,7 +104,7 @@ class TestScoring(unittest.TestCase):
         ("barton, lancashire, england, united kingdom", "barton, cambridgeshire, england, united kingdom", 'PPLL', 25),
         # 22
 
-        ("testerton, norfolk, , england", "norfolk,england, united kingdom", "ADM2", 96),  # 23
+        ("testerton, norfolk, , england", "norfolk,england, united kingdom", "ADM2", 35),  # 23
         ("testerton, norfolk, , england", "testerton, norfolk, england,united kingdom", "PPLL", 11),  # 24
 
         ("Holborn, Middlesex, England", "Holborn, Greater London, England, United Kingdom", 'PP1M', 5),  # 25
@@ -113,7 +113,7 @@ class TestScoring(unittest.TestCase):
 
         ("Berlin, , deutschland", "Berlin, Germany", 'PP1M', 6),  # 28
         ("Berl*n, , deutschland", "Berlin, Germany", 'PP1M', 12),  # 29
-        ("toronto,nova scotia, canada", "toronto,ontario,canada", 'PPL', 40),  # 30
+        ("toronto,nova scotia, canada", "toronto,ontario,canada", 'PPL', 24),  # 30
 
         ]
 

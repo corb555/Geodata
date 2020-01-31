@@ -146,22 +146,16 @@ Provide place lookup gazeteer based on files from geonames.org
         # Restore items
         self._restore_fields(place, self.save_place)
 
-        # 2) Try Admin2 parsed field as a city 
+        # 2) Try second token (Admin2) as a city 
         for typ in [Loc.PlaceType.ADMIN2]:
-            place.georow_list.clear()
-            self.find_type_as_city(place, typ)
-            #self.log_results(place.georow_list)
-
-            if place.georow_list:
-                result_list.extend(place.georow_list)
-            self._restore_fields(place, self.save_place)
-
-        # 3) Try city parsed field as Admin2 
-        place.georow_list.clear()
-        self.logger.debug(f'  3)  Lookup with City as Adm2.  Target={place.city1}  pref [{place.prefix}] ')
-        self._lookup_city_as_admin2(place=place, result_list=result_list2)
-        result_list.extend(result_list2)
-        #self.log_results(place.georow_list)
+            if place.admin2_name != '':
+                place.georow_list.clear()
+                self.find_type_as_city(place, typ)
+                #self.log_results(place.georow_list)
+    
+                if place.georow_list:
+                    result_list.extend(place.georow_list)
+                self._restore_fields(place, self.save_place)
 
         #  Move result_list into place georow list
         place.georow_list.clear()
@@ -282,7 +276,7 @@ Provide place lookup gazeteer based on files from geonames.org
         self.geo_build.geodb.get_geoid(place=place)
         if len(place.georow_list) > 0:
             # Copy geo row to Place
-            self.geo_build.geodb.copy_georow_to_place(row=place.georow_list[0], place=place)
+            self.geo_build.geodb.copy_georow_to_place(row=place.georow_list[0], place=place, fast=True)
             # place.original_entry = place.get_long_name(None)
             place.result_type = GeoUtil.Result.STRONG_MATCH
         else:
@@ -344,7 +338,7 @@ Provide place lookup gazeteer based on files from geonames.org
             place.place_type = Loc.PlaceType.COUNTRY
 
         if place.result_type in GeoUtil.successful_match and len(place.georow_list) > 0:
-            self.geo_build.geodb.copy_georow_to_place(row=place.georow_list[0], place=place)
+            self.geo_build.geodb.copy_georow_to_place(row=place.georow_list[0], place=place, fast=False)
         elif len(place.georow_list) > 0 and place.result_type != GeoUtil.Result.NOT_SUPPORTED:
             # self.logger.debug(f'***RESULT={place.result_type} Setting to Partial')
             place.result_type = GeoUtil.Result.PARTIAL_MATCH
@@ -480,15 +474,16 @@ Provide place lookup gazeteer based on files from geonames.org
             # Range to display when there is a strong match
             if (min_score <= MatchScore.Score.VERY_GOOD and score > min_score + gap_threshold) or score > min_score + weak_threshold:
                 if (min_score <= MatchScore.Score.VERY_GOOD and score > min_score + gap_threshold):
-                    self.logger.debug(f'STRONG SKIP Score {score:.1f}  {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
+                    self.logger.debug(f'SKIP Score {score:.1f}  {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
                                       f' {geo_row[GeoUtil.Entry.ADM1]} [{geo_row[GeoUtil.Entry.PREFIX]}]')
                 else:
-                    self.logger.debug(f'WEAK SKIP Score {score:.1f}  {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
+                    self.logger.debug(f'WSKIP Score {score:.1f}  {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
                                       f' {geo_row[GeoUtil.Entry.ADM1]}')
             else:
                 place.georow_list.append(geo_row)
-                self.logger.debug(f'Score {score:.1f} [{geo_row[GeoUtil.Entry.PREFIX]}] {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
-                                  f' {geo_row[GeoUtil.Entry.ADM1]}')
+                self.logger.debug(f'Score {score:.1f} [{geo_row[GeoUtil.Entry.PREFIX]}] {geo_row[GeoUtil.Entry.NAME]}, '
+                                  f'ADM2={geo_row[GeoUtil.Entry.ADM2]},'
+                                  f' ADM1={geo_row[GeoUtil.Entry.ADM1]}')
 
         self.logger.debug(f'min={min_score:.1f}, gap2={gap_threshold:.1f} strong cutoff={min_score + gap_threshold:.1f}'
                           f' weak cutoff={min_score + weak_threshold:.1f}')
@@ -648,7 +643,7 @@ default = ["ADM1", "ADM2", "ADM3", "ADM4", "ADMF", "CH", "CSTL", "CMTY", "EST ",
 # Note: PP1M, P1HK, P10K do not exist in Geonames and are created by geodata.geodatafiles
 feature_priority = {
     'PP1M': 100, 'ADM1': 96, 'PPLA': 96, 'PPLC': 96, 'PP1K': 82, 'PPLA2': 93, 'P10K': 89, 'P1HK': 93,
-    'PPL' : 55, 'PPLA3': 71, 'ADMF': 71, 'PPLA4': 69, 'ADMX': 66, 'PAL': 44, 'ISL': 55,
+    'PPL' : 55, 'PPLA3': 71, 'ADMF': 71, 'PPLA4': 69, 'ADMX': 66, 'PAL': 44, 'ISL': 50, 'SQR' : 50,
     'ADM2': 80, 'PPLG': 75, 'RGN': 71, 'AREA': 71, 'MILB': 44, 'NVB': 71, 'PPLF': 69, 'ADM0': 93, 'PPLL': 55, 'PPLQ': 60, 'PPLR': 60,
     'CH'  : 44, 'MSQE': 44, 'SYG': 44, 'CMTY': 44, 'CSTL': 44, 'EST': 44, 'PPLS': 55, 'PPLW': 55, 'PPLX': 82, 'BTL': 22,
     'HSTS': 42, 'PRK': 42, 'HSP': 0, 'VAL': 0, 'MT': 0, 'ADM3': 32, 'ADM4': 0, 'DEFAULT': 0, 'MNMT': 44

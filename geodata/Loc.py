@@ -105,7 +105,7 @@ class Loc:
         #Returns:   
             Fields in Loc (city, adm1, adm2, iso) are updated based on parsing. self.status has Result status code   
         """
-        self.logger.debug('PARSE')
+        self.logger.debug(f'PARSE {place_name}')
         self.clear()
         self.original_entry = place_name
 

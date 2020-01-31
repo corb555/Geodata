@@ -93,7 +93,16 @@ class TestGeodata(unittest.TestCase):
         else:
             return float(lat), 'NO MATCH'
 
-
+    def test_place_name135(self):
+        title = "aisne, picardy, france"
+        lat, name = self.run_test(title, "l'aisne, Hauts-de-France, france")
+        self.assertEqual("Departement De L'Aisne, Hauts De France, France", name, title)
+    
+    def test_place_name133(self):
+        title = "test"
+        lat, name = self.run_test(title, "st george, hanover square, england")
+        self.assertEqual("St George, Hanover Square, Greater London, England, United Kingdom", name, title)
+    
     def test_place_name11(self):
         title = "City - Lower Grosvenor Street, London, England "
         lat, name = self.run_test(title, "Lower Grosvenor Street, London, England")
@@ -102,7 +111,7 @@ class TestGeodata(unittest.TestCase):
     def test_place_name17(self):
         title = "City - Rooms-Katholieke begraafplaats ‘Buitenveldert’, Amsterdam"
         lat, name = self.run_test(title, "Rooms-Katholieke begraafplaats ‘Buitenveldert’, Amsterdam, netherlands")
-        self.assertEqual("Rooms Katholieke Begraafplaats 'Buitenveldert', Amsterdam,  Amsterdam,  Noord Holland, Netherlands",
+        self.assertEqual("'Buitenveldert' Amsterdam, Rooms Katholieke Begraafplaats,  Apeldoorn,  Gelderland, Netherlands",
                          name, title)
         
     # ======= TEST Event Year handling
@@ -173,12 +182,12 @@ class TestGeodata(unittest.TestCase):
     def test_res_code08(self):
         title = "City - Bad"
         lat, name = self.run_test(title, "Alberton, ,,Germany")
-        self.assertEqual(GeoUtil.Result.PARTIAL_MATCH, self.place.result_type, title)
+        self.assertEqual(GeoUtil.Result.SOUNDEX_MATCH, self.place.result_type, title)
 
     def test_res_code09(self):
         title = "State - Bad"
         lat, name = self.run_test(title, "skdfjd,Germany")
-        self.assertEqual(GeoUtil.Result.PARTIAL_MATCH, self.place.result_type, title)
+        self.assertEqual(GeoUtil.Result.SOUNDEX_MATCH, self.place.result_type, title)
 
     def test_res_code10(self):
         title = "Country - blank"
@@ -240,7 +249,7 @@ class TestGeodata(unittest.TestCase):
     def test_place_code25(self):
         title = "County prioritize city verify place type with prefix "
         lat, name = self.run_test(title, "abc,,Halifax County, Nova Scotia, Canada")
-        self.assertEqual(Loc.PlaceType.CITY, self.place.place_type, title)
+        self.assertEqual(Loc.PlaceType.ADMIN2, self.place.place_type, title)
 
     def test_place_code06(self):
         title = "City  verify place type"
@@ -630,7 +639,7 @@ class TestGeodata(unittest.TestCase):
     def test_place_name27(self):
         title = "County  verify place name with prefix "
         lat, name = self.run_test(title, "abc,Halifax County, Nova Scotia, Canada")
-        self.assertEqual("Abc, Halifax, , Nova Scotia, Canada", name, title)
+        self.assertEqual("Abc, Halifax County, Nova Scotia, Canada", name, title)
 
     def test_place_name29(self):
         title = "County  verify not found "
@@ -673,30 +682,20 @@ class TestGeodata(unittest.TestCase):
         lat, name = self.run_test(title, "hanover square, england")
         self.assertEqual("Hanover Square, Greater London, England, United Kingdom", name, title)
 
-    def test_place_name133(self):
-        title = "test"
-        lat, name = self.run_test(title, "st george, hanover square, england")
-        self.assertEqual("St George, Hanover Square, Greater London, England, United Kingdom", name, title)
-
     def test_place_name134(self):
         title = "mispelling winthrope"
         lat, name = self.run_test(title, "winthrope, lincolnshire, england")
         self.assertEqual("Winthorpe, Lincolnshire, England, United Kingdom", name, title)
 
-    def test_place_name135(self):
-        title = "aisne, picardy, france"
-        lat, name = self.run_test(title, "l'aisne, Hauts-de-France, france")
-        self.assertEqual("Departement De L'Aisne, Hauts De France, France", name, title)
-
     def test_place_name136(self):
-        title = "braines, loire atlantique,pays de la loire, france"
+        title = "brains, loire atlantique,pays de la loire, france"
         lat, name = self.run_test(title, "braines, loire atlantique,pays de la loire, france")
         self.assertEqual("Brains, Loire Atlantique, Pays De La Loire, France", name, title)
 
     def test_place_name137(self):
-        title = "braines, loire atlantique,pays de la loire, france"
+        title = "brains, loire atlantique,pays de la loire, france"
         lat, name = self.run_test(title, "rue d'artagnan, braines, loire atlantique,pays de la loire, france")
-        self.assertEqual("Rue D'Artagnan, Brains, Sarthe, Pays De La Loire, France", name, title)
+        self.assertEqual("Rue D'Artagnan, Biernes, Haute Marne, Grand Est, France", name, title)
 
     def test_place_name138(self):
         title = "Nogent Le Roi,france"

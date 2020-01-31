@@ -47,7 +47,7 @@ class MatchScore:
 
         # Weighting for each input term match -  adm2, adm1, country
         token_weight = [.12, .1, .1]
-        self.set_weighting(token_weight=token_weight, prefix_weight=.94, feature_weight=0.10, result_weight=0.3)
+        self.set_weighting(token_weight=token_weight, prefix_weight=1.7, feature_weight=0.10, result_weight=0.3)
 
         # Weighting for each part of score
         self.wildcard_penalty = -10.0
@@ -180,7 +180,7 @@ class MatchScore:
         #                 f' ctry={self.token_weight[4]:.1f} targ={self.input_weight:.1f} res={self.result_weight:.1f}'
         #                 f' pref={self.prefix_weight:.1f}')
 
-        # self.logger.debug(f'SCORE {score:.1f} res=[{result_place.original_entry}] pref=[{target_place.prefix}]\n'
+        #self.logger.debug(f'SCORE {score:.1f} res=[{result_place.original_entry}] pref=[{target_place.prefix}]\n'
         #                  f'inp=[{",".join(target_tokens)}]  outSc={self.out_score * self.result_weight:.1f}% '
         #                  f'inSc={self.in_score * self.input_weight:.1f}% feat={feature_score * self.feature_weight:.1f} {result_place.feature}  '
         #                  f'wild={wildcard_penalty} pref={prefix_penalty * self.prefix_weight:.1f}')
@@ -260,7 +260,7 @@ class MatchScore:
 
     def _calculate_prefix_penalty(self, prefix_len):
         if prefix_len > 0:
-            return 10
+            return 5 + prefix_len
         else:
             return 0
 
