@@ -222,7 +222,7 @@ def add_aliases_to_database(geo_files: GeodataBuild):
         # Lookup main entry and get GEOID
         geo_files.geodb.lookup_place(place)
         if place.result_type in GeoUtil.successful_match and len(place.georow_list) > 0:
-            geo_files.geodb.copy_georow_to_place(row=place.georow_list[0], place=place)
+            geo_files.geodb.copy_georow_to_place(row=place.georow_list[0], place=place, fast=True)
             # place.format_full_nm(geodata.geo_files.output_replace_dct)
 
         geo_row[GeoDB.Entry.ID] = place.geoid
