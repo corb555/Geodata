@@ -408,8 +408,8 @@ class GeoDB:
         # Try each query then calculate best match - each query gets less exact
         if place.country_iso == '':
 
-            query_list.append(Query(where="name LIKE ? AND f_code = ?",
-                                    args=(pattern, 'ADM1'),
+            query_list.append(Query(where="name = ? AND f_code = ?",
+                                    args=(lookup_target, 'ADM1'),
                                     result=Result.WILDCARD_MATCH))
         else:
             query_list.append(Query(where="name LIKE ? AND country = ?  AND f_code = ?",
@@ -423,6 +423,7 @@ class GeoDB:
         place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
         self.assign_scores(place, 'ADM1', fast=True)
+        
         # Sort places in match_score order
         if len(place.georow_list) > 0:
             sorted_list = sorted(place.georow_list, key=itemgetter(GeoUtil.Entry.SCORE))
@@ -1292,7 +1293,7 @@ class GeoDB:
             result_place.prefix = Normalize.normalize(place.prefix, True)
             update[GeoUtil.Entry.PREFIX] = result_place.prefix
             place.georow_list[idx] = tuple(update)  # Convert back from list to tuple
-            self.debug(f'{update[GeoUtil.Entry.SCORE]:.1f} {update[GeoUtil.Entry.NAME]} [{update[GeoUtil.Entry.PREFIX]}]')
+            self.logger.debug(f'{update[GeoUtil.Entry.SCORE]:.1f} {update[GeoUtil.Entry.NAME]} [{update[GeoUtil.Entry.PREFIX]}]')
 
         if min_score < MatchScore.Score.VERY_GOOD + 2:
             place.result_type = GeoUtil.Result.STRONG_MATCH

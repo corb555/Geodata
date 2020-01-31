@@ -48,18 +48,11 @@ class Example:
                                        feature_code_list_dct=features,
                                        supported_countries_dct={'fr', 'gb', 'ca'})
 
-
         # Open Geoname database - city names, lat/long, etc.  Create database if not found
         error = self.geodata.open(repair_database=True, query_limit=105)
         if error:
             print(f"Missing geoname Files in {directory}: download gb.txt or allcountries.txt from geonames.org")
             raise ValueError('Missing files from geonames.org')
-        
-        # Weighting for each input term match -  adm2, adm1, country
-        token_weight = [ 3.48, -0.170, 0.179]
-        self.geodata.geo_build.geodb.match.set_weighting(token_weight=token_weight, prefix_weight=2.59,
-                                                         feature_weight=-0.264,
-                                                         result_weight=0.749)
 
     def lookup_place(self, location_name):
         # Create Location instance.  This will hold search parameters and result
@@ -112,8 +105,8 @@ if __name__ == "__main__":
         'Lathom,Lancashire,england'
         ]
 
-    locations2 = [
-        'Chartres,Eure Et Loir,  ,  France',
+    locations = [
+        'early county , ga',
         ]
 
     for name in locations:
