@@ -27,6 +27,11 @@ features = ["ADM1", "ADM2", "ADM3", "ADM4", "ADMF", "CH", "CSTL", "CMTY", "EST "
             "PPLC", "PPLG", "PPLH", "PPLL", "PPLQ", "PPLX", "PRK", "PRN", "PRSH", "RUIN", "RLG", "STG", "SQR", "SYG", "VAL"]
 
 
+def run_test(title: str, pref: str, result:str)->str:
+    print("*****TEST: {}".format(title))
+    return Loc.Loc.matchscore_prefix(pref, result)
+
+
 class TestClearPrefix(unittest.TestCase):
     geodata = None
     spell_check = None
@@ -45,25 +50,21 @@ class TestClearPrefix(unittest.TestCase):
         #self.place: Loc.Loc = Loc.Loc()
         pass
 
-    def run_test(self, title: str, pref: str, result:str)->str:
-        print("*****TEST: {}".format(title))
-        return Loc.Loc.matchscore_prefix(pref, result)
-
     def test_place_name01(self):
         title = "rue d'artagnan"
-        name = self.run_test(title, "rue d'artagnan, braines",
+        name = run_test(title, "rue d'artagnan, braines",
                              'braines, loire atlantique,pays de la loire, france')
         self.assertEqual("rue d'artagnan", name, title)
 
     def test_place_name02(self):
         title = "Country  verify place name"
-        name = self.run_test(title, "Chartres,D'Eure Et Loir",
+        name = run_test(title, "Chartres,D'Eure Et Loir",
                              "Chartres, Departement D'Eure Et Loir, Centre Val De Loire, France")
         self.assertEqual("", name, title)
 
     def test_place_name03(self):
         title = "Country  verify place name"
-        name = self.run_test(title, "Newberry, Wiltshire",
+        name = run_test(title, "Newberry, Wiltshire",
                              "Newbury, Wiltshire, England, United Kingdom")
         self.assertEqual("", name, title)
 

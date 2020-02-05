@@ -42,7 +42,7 @@ class Example:
 
         # Initialize
         directory = os.path.join(str(Path.home()), "Documents", "geoname_data")
-        self.geodata = Geodata.Geodata(directory_name=directory, progress_bar=None, 
+        self.geodata = Geodata.Geodata(directory_name=directory, display_progress=None,
                                        show_message=True, exit_on_error=True,
                                        languages_list_dct={'en'},
                                        feature_code_list_dct=features,
@@ -63,8 +63,8 @@ class Example:
 
         if match:
             # Create full name for result
-            name = f'{place.get_long_name(None)}'
-            print(f'   Best match for {location_name}:\n {name}  Prefix=[{place.prefix}{place.prefix_commas}] Score= {place.score:.1f}\n')
+            nm = f'{place.get_long_name(None)}'
+            print(f'   Best match for {location_name}:\n {nm}  Prefix=[{place.prefix}{place.prefix_commas}] Score= {place.score:.1f}\n')
         else:
             if place.result_type == Geodata.GeoUtil.Result.NOT_SUPPORTED:
                 print(f'   NO match for {location_name}:\n Country {place.country_name} not in supported country list')
@@ -105,7 +105,7 @@ if __name__ == "__main__":
         'Lathom,Lancashire,england'
         ]
 
-    locations = [
+    locations2 = [
         'early county , ga',
         ]
 

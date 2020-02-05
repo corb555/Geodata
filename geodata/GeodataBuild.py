@@ -20,6 +20,7 @@ import logging
 import os
 import sys
 import time
+import tkinter
 from collections import namedtuple
 from tkinter import messagebox
 from typing import Dict
@@ -43,7 +44,7 @@ class GeodataBuild:
 
     """
 
-    def __init__(self, directory: str, progress_bar, 
+    def __init__(self, directory: str, display_progress,
                  show_message, exit_on_error, languages_list_dct, feature_code_list_dct, supported_countries_dct):
         """
         Read in datafiles needed for geodata, filter them and create a sql db.
@@ -53,7 +54,7 @@ class GeodataBuild:
             supported_countries_dct = {'us','gb','at'}
         # Args:
             directory: base directory
-            progress_bar: TKHelper progress bar or None
+            display_progress: None or Handler called with percent_done:int, msg:str
             show_message: True to show message boxes to user on errors
             exit_on_error:  True to exit on serious errors
             languages_list_dct: dictionary containing the ISO-2 languages we want to load from alternateNames
@@ -63,12 +64,13 @@ class GeodataBuild:
         self.logger = logging.getLogger(__name__)
         self.geodb = None
         self.show_message = show_message
+            
         self.exit_on_error = exit_on_error
         self.required_db_version = 3
         # Message to user upgrading from earlier DB version  
         self.db_upgrade_text = 'Moved county data from admin table to geodata table to improve performance'
         self.directory: str = directory
-        self.progress_bar = progress_bar
+        self.progress_bar = display_progress
         self.line_num = 0
         self.cache_changed: bool = False
         sub_dir = GeoUtil.get_cache_directory(self.directory)
@@ -138,7 +140,13 @@ class GeodataBuild:
             if ver != self.required_db_version:
                 # Wrong version
                 err_msg = f'Database version will be upgraded:\n\n{self.db_upgrade_text}\n\n' \
-                    f'Upgrading database from V{ver} to V{self.required_db_version}.'
+                    f'Upgrading database from V {ver} to V {self.required_db_version}.'
+                self.geodb.close()
+                os.remove(db_path)
+                self.logger.info('DB version is out of date.  Database deleted')
+                if self.show_message:
+                    messagebox.showinfo('Database Deleted. Will rebuild on start up', err_msg)
+                sys.exit()
             else:
                 # Correct Version.  Make sure DB has reasonable number of records
                 count = self.geodb.get_row_count()
@@ -157,13 +165,16 @@ class GeodataBuild:
             # DB error detected - rebuild database if flag set
             if self.show_message:
                 messagebox.showinfo('Database Error', err_msg)
+
             self.logger.debug(err_msg)
 
             if repair_database:
                 if os.path.exists(db_path):
                     self.geodb.close()
                     os.remove(db_path)
-                    self.logger.debug('Database deleted')
+                    self.logger.info('Database deleted')
+                    if self.show_message:
+                        messagebox.showinfo('Database Deleted. Will rebuild on start up', err_msg)
 
                 self.geodb = GeoDB.GeoDB(db_path=db_path, 
                                          show_message=self.show_message, exit_on_error=self.exit_on_error,
@@ -185,7 +196,7 @@ class GeodataBuild:
             self.logger.error('Cannot create DB: geodb is None')
             return True
 
-        self.geodb.create_tables()
+        self.create_tables()
         self.geodb.insert_version(self.required_db_version)
 
         self.country = Country.Country(progress=self.progress_bar, geo_files=self, lang_list=self.lang_list)
@@ -234,8 +245,8 @@ class GeodataBuild:
         # Create Indices
         start_time = time.time()
         self.progress("3) Final Step: Creating Indices for Database...", 95)
-        self.geodb.create_geoid_index()
-        self.geodb.create_indices()
+        self.create_geoid_index()
+        self.create_indices()
         self.logger.debug(f'Indices done.  Elapsed ={time.time() - start_time}')
 
         # Set Database Version
@@ -307,12 +318,12 @@ class GeodataBuild:
             return True
 
     @staticmethod
-    def _update_geo_row_name(geo_row, name):
+    def update_geo_row_name(geo_row, name):
         """
-            Update the name entry and soundex entry with a name
+            Update the name entry and soundex entry with a new location name
         #Args:
-            geo_row:
-            name:
+            geo_row: 
+            name: location name
         """
         geo_row[GeoDB.Entry.NAME] = Normalize.normalize(name, remove_commas=True)
         geo_row[GeoDB.Entry.SDX] = GeoUtil.get_soundex(geo_row[GeoDB.Entry.NAME])
@@ -328,7 +339,7 @@ class GeodataBuild:
             None
         """
         geo_row = [None] * GeoDB.Entry.MAX
-        self._update_geo_row_name(geo_row=geo_row, name=geoname_row.name)
+        self.update_geo_row_name(geo_row=geo_row, name=geoname_row.name)
 
         geo_row[GeoDB.Entry.ISO] = geoname_row.iso.lower()
         geo_row[GeoDB.Entry.ADM1] = geoname_row.admin1_id
@@ -351,7 +362,7 @@ class GeodataBuild:
         # Also add abbreviations for USA states
         if geo_row[GeoDB.Entry.ISO] == 'us' and geoname_row.feat_code == 'ADM1':
             # geo_row[GeoDB.Entry.NAME] = geo_row[GeoDB.Entry.ADM1].lower()
-            self._update_geo_row_name(geo_row=geo_row, name=geo_row[GeoDB.Entry.ADM1])
+            self.update_geo_row_name(geo_row=geo_row, name=geo_row[GeoDB.Entry.ADM1])
             self.geodb.insert(geo_row=geo_row, feat_code=geoname_row.feat_code)
 
     def get_supported_countries(self) -> [str, int]:
@@ -375,3 +386,74 @@ class GeodataBuild:
     def close(self):
         if self.geodb:
             self.geodb.close()
+
+    def create_tables(self):
+        """
+        Create all the tables needed for the geoname database
+        """
+        # name, country, admin1_id, admin2_id, lat, lon, f_code, geoid
+        sql_geodata_table = """CREATE TABLE IF NOT EXISTS geodata    (
+                id           integer primary key autoincrement not null,
+                name     text,
+                country     text,
+                admin1_id     text,
+                admin2_id text,
+                lat      text,
+                lon       text,
+                f_code      text,
+                geoid      text,
+                sdx     text
+                                    );"""
+
+        # name, country, admin1_id, admin2_id, lat, lon, f_code, geoid
+        sql_admin_table = """CREATE TABLE IF NOT EXISTS admin    (
+                id           integer primary key autoincrement not null,
+                name     text,
+                country     text,
+                admin1_id     text,
+                admin2_id text,
+                lat      text,
+                lon       text,
+                f_code      text,
+                geoid      text,
+                sdx     text
+                                    );"""
+
+        # name, country, admin1_id, admin2_id, lat, lon, f_code, geoid
+        sql_alt_name_table = """CREATE TABLE IF NOT EXISTS altname    (
+                id           integer primary key autoincrement not null,
+                name     text,
+                lang     text,
+                geoid      text
+                                    );"""
+
+        # name, country, admin1_id, admin2_id, lat, lon, f_code, geoid
+        sql_version_table = """CREATE TABLE IF NOT EXISTS version    (
+                id           integer primary key autoincrement not null,
+                version     integer
+                                    );"""
+
+        for tbl in [sql_geodata_table, sql_admin_table, sql_version_table, sql_alt_name_table]:
+            self.geodb.db.create_table(tbl)
+
+    def create_geoid_index(self):
+        """
+        Create database indices for GEOID
+        """
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS geoid_idx ON geodata(geoid)')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS admgeoid_idx ON admin(geoid)')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS altnamegeoid_idx ON altname(geoid)')
+
+    def create_indices(self):
+        """
+        Create indices for geoname database
+        """
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS name_idx ON geodata(name, country )')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS admin1_idx ON geodata(admin1_id )')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS sdx_idx ON geodata(sdx )')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_admin2_idx ON geodata(admin1_id, admin2_id, f_code)')
+
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_name_idx ON admin(name, country )')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_admin1_idx ON admin(admin1_id, f_code)')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_country_idx ON admin(country, f_code)')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_sdx_idx ON admin(sdx )')

@@ -4,8 +4,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 
     <title>geodata.Geodata API documentation</title>
-    <meta name="description" content="Provide a place lookup gazeteer based on files from geonames.org.   
-  These are the primary locatio..." />
+    <meta name="description" content="Provides a place lookup gazeteer based on files from geonames.org.   
+  Provides the location lookup..." />
 
   <link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,300' rel='stylesheet' type='text/css'>
   
@@ -1063,13 +1063,14 @@ table {
     <li class="mono"><a href="#geodata.Geodata.Geodata.__init__">__init__</a></li>
     <li class="mono"><a href="#geodata.Geodata.Geodata.close">close</a></li>
     <li class="mono"><a href="#geodata.Geodata.Geodata.close_diag_file">close_diag_file</a></li>
+    <li class="mono"><a href="#geodata.Geodata.Geodata.distance">distance</a></li>
     <li class="mono"><a href="#geodata.Geodata.Geodata.filter_results">filter_results</a></li>
     <li class="mono"><a href="#geodata.Geodata.Geodata.find_best_match">find_best_match</a></li>
-    <li class="mono"><a href="#geodata.Geodata.Geodata.find_by_type">find_by_type</a></li>
     <li class="mono"><a href="#geodata.Geodata.Geodata.find_feature">find_feature</a></li>
     <li class="mono"><a href="#geodata.Geodata.Geodata.find_geoid">find_geoid</a></li>
     <li class="mono"><a href="#geodata.Geodata.Geodata.find_matches">find_matches</a></li>
     <li class="mono"><a href="#geodata.Geodata.Geodata.is_country_valid">is_country_valid</a></li>
+    <li class="mono"><a href="#geodata.Geodata.Geodata.log_results">log_results</a></li>
     <li class="mono"><a href="#geodata.Geodata.Geodata.open">open</a></li>
     <li class="mono"><a href="#geodata.Geodata.Geodata.open_diag_file">open_diag_file</a></li>
     <li class="mono"><a href="#geodata.Geodata.Geodata.process_results">process_results</a></li>
@@ -1095,16 +1096,15 @@ table {
 
   <header id="section-intro">
   <h1 class="title"><span class="name">geodata.Geodata</span> module</h1>
-  <p>Provide a place lookup gazeteer based on files from geonames.org. <br />
-  These are the primary location lookup methods for the geodata package.  </p>
+  <p>Provides a place lookup gazeteer based on files from geonames.org. <br />
+  Provides the location lookup methods for the geodata package.  </p>
 <ul>
-<li>Creates a local place database using files from geonames.org  </li>
+<li>Creates a local sqlite3 place database of geonames.org data  </li>
 <li>Parses lookup text and returns multiple matches ranked by closeness to lookup term  </li>
 <li>Provides latitude/longitude  </li>
-<li>Wildcard search of place database  </li>
-<li>Phonetic/Soundex search of place database  </li>
-<li>Feature search of place database by feature type (e.g. mountain, cemetery, palace)  </li>
-<li>Ability to filter database to only include specified countries, languages, and feature types   </li>
+<li>Supports Wildcard search, Phonetic/Soundex search, and Word search of place database names  </li>
+<li>Search by feature type (e.g. mountain, cemetery, palace, etc)  </li>
+<li>Database can be filtered to only include specified countries, languages, and feature types   </li>
 </ul>
 <p>Main routines for Geodata package: <br />
     example.py - a sample demonstrating place lookups using geodata <br />
@@ -1159,7 +1159,7 @@ table {
       <p id="geodata.Geodata.Geodata" class="name">class <span class="ident">Geodata</span></p>
       
   
-    <div class="desc"><p>Provide place lookup gazeteer based on files from geonames.org</p></div>
+    <div class="desc"><p>Provide a place lookup gazeteer based on files from geonames.org</p></div>
   <div class="source_cont">
 </div>
 
@@ -1174,7 +1174,7 @@ table {
             
   <div class="item">
     <div class="name def" id="geodata.Geodata.Geodata.__init__">
-    <p>def <span class="ident">__init__</span>(</p><p>self, directory_name, progress_bar, enable_spell_checker, show_message, exit_on_error, languages_list_dct, feature_code_list_dct, supported_countries_dct)</p>
+    <p>def <span class="ident">__init__</span>(</p><p>self, directory_name, display_progress, show_message, exit_on_error, languages_list_dct, feature_code_list_dct, supported_countries_dct)</p>
     </div>
     
 
@@ -1183,10 +1183,9 @@ table {
     <div class="desc"><p>Init</p>
 <h1>Args:</h1>
 <div class="codehilite"><pre><span></span><span class="n">directory_name</span><span class="p">:</span> <span class="n">directory</span> <span class="n">where</span> <span class="n">geoname</span><span class="o">.</span><span class="n">org</span> <span class="n">files</span> <span class="n">are</span><span class="o">.</span>  <span class="n">DB</span> <span class="n">will</span> <span class="n">be</span> <span class="ow">in</span> <span class="s1">&#39;cache&#39;</span> <span class="n">folder</span> <span class="n">under</span> <span class="n">this</span>   
-<span class="n">progress_bar</span><span class="p">:</span> <span class="n">tkhelper</span> <span class="n">progress</span> <span class="n">bar</span> <span class="ow">or</span> <span class="bp">None</span>   
-<span class="n">enable_spell_checker</span><span class="p">:</span> <span class="n">If</span> <span class="bp">True</span> <span class="n">then</span> <span class="n">use</span> <span class="n">SpellChecker</span> <span class="p">(</span><span class="n">CURRENTLY</span> <span class="n">NOT</span> <span class="n">SUPPORTED</span><span class="p">)</span>   
-<span class="n">show_message</span><span class="p">:</span> <span class="n">show</span> <span class="n">TKInter</span> <span class="n">message</span> <span class="n">dialog</span> <span class="n">on</span> <span class="n">error</span>   
-<span class="n">exit_on_error</span><span class="p">:</span> <span class="nb">exit</span> <span class="n">on</span> <span class="n">significant</span> <span class="n">error</span>   
+<span class="n">display_progress</span><span class="p">:</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">function</span> <span class="n">to</span> <span class="n">display</span> <span class="n">progress</span><span class="p">(</span><span class="n">percent_done</span><span class="p">:</span><span class="nb">int</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span><span class="nb">str</span><span class="p">)</span>  
+<span class="n">show_message</span><span class="p">:</span> <span class="n">If</span> <span class="bp">True</span> <span class="o">-</span> <span class="n">show</span> <span class="n">TKInter</span> <span class="n">message</span> <span class="n">dialog</span> <span class="n">on</span> <span class="n">error</span>   
+<span class="n">exit_on_error</span><span class="p">:</span> <span class="n">If</span> <span class="bp">True</span> <span class="o">-</span> <span class="nb">exit</span> <span class="n">on</span> <span class="n">significant</span> <span class="n">error</span>   
 <span class="n">languages_list_dct</span><span class="p">:</span> <span class="n">Dictionary</span> <span class="n">of</span> <span class="n">ISO</span><span class="o">-</span><span class="mi">2</span> <span class="n">languages</span> <span class="n">to</span> <span class="kn">import</span> <span class="nn">from</span> <span class="nn">AlternateNamesV2.txt</span>   
 <span class="n">feature_code_list_dct</span><span class="p">:</span> <span class="n">Dictionary</span> <span class="n">of</span> <span class="n">Geoname</span> <span class="n">Feature</span> <span class="n">codes</span> <span class="n">to</span> <span class="kn">import</span> <span class="nn">into</span> <span class="nn">DB</span>   
 <span class="n">supported_countries_dct</span><span class="p">:</span> <span class="n">Dictionary</span> <span class="n">of</span> <span class="n">ISO</span><span class="o">-</span><span class="mi">2</span> <span class="n">Country</span> <span class="n">codes</span> <span class="n">to</span> <span class="kn">import</span> <span class="nn">into</span> <span class="nn">DB</span>
@@ -1223,6 +1222,27 @@ table {
   
     <div class="desc"><p>Close diagnostic file   </p>
 <p>Returns:</p></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="geodata.Geodata.Geodata.distance">
+    <p>def <span class="ident">distance</span>(</p><p>lat_a, lon_a, lat_b, lon_b)</p>
+    </div>
+    
+
+    
+  
+    <div class="desc"><p>Returns rectilinear distance in degrees between two lat/longs <br />
+Args: <br />
+    lat_a: latitude of point A <br />
+    lon_a: longitude of point A <br />
+    lat_b: latitude of point B <br />
+    lon_b: longitude of point B <br />
+Returns: Rectilinear distance between two points</p></div>
   <div class="source_cont">
 </div>
 
@@ -1275,31 +1295,6 @@ Duplicates are defined as two items with:<br />
 
 <h1>Returns: None</h1>
 <div class="codehilite"><pre><span></span><span class="n">place</span> <span class="k">is</span> <span class="n">updated</span> <span class="k">with</span> <span class="c1">-- lat, lon, district, city, country_iso, result code</span>
-</pre></div></div>
-  <div class="source_cont">
-</div>
-
-  </div>
-  
-            
-  <div class="item">
-    <div class="name def" id="geodata.Geodata.Geodata.find_by_type">
-    <p>def <span class="ident">find_by_type</span>(</p><p>self, place, typ)</p>
-    </div>
-    
-
-    
-  
-    <div class="desc"><p>Do a lookup using the field as specifed by typ.  E.g. if typ is PlaceType.ADMIN1 then <br />
-    use the place.admin1_name field to do the lookup   </p>
-<h1>Args:</h1>
-<div class="codehilite"><pre><span></span><span class="nv">place</span>: <span class="nv">Loc</span> <span class="nv">instance</span>   
-<span class="nv">typ</span>: <span class="nv">Loc</span>.<span class="nv">PlaceType</span> <span class="o">-</span> <span class="nv">Specifies</span> <span class="nv">which</span> <span class="nv">field</span> <span class="nv">to</span> <span class="nv">use</span> <span class="nv">as</span> <span class="nv">target</span> <span class="k">for</span> <span class="nv">lookup</span>
-</pre></div>
-
-
-<h1>Returns:  None</h1>
-<div class="codehilite"><pre><span></span><span class="n">place</span><span class="p">.</span><span class="n">georow_list</span> <span class="k">is</span> <span class="n">updated</span> <span class="k">with</span> <span class="n">matches</span>
 </pre></div></div>
   <div class="source_cont">
 </div>
@@ -1403,6 +1398,20 @@ Duplicates are defined as two items with:<br />
   
             
   <div class="item">
+    <div class="name def" id="geodata.Geodata.Geodata.log_results">
+    <p>def <span class="ident">log_results</span>(</p><p>self, geo_row_list)</p>
+    </div>
+    
+
+    
+  
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
     <div class="name def" id="geodata.Geodata.Geodata.open">
     <p>def <span class="ident">open</span>(</p><p>self, repair_database, query_limit)</p>
     </div>
@@ -1473,6 +1482,16 @@ Duplicates are defined as two items with:<br />
   
           <h3>Instance variables</h3>
             <div class="item">
+            <p id="geodata.Geodata.Geodata.display_progress" class="name">var <span class="ident">display_progress</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
             <p id="geodata.Geodata.Geodata.distance_cutoff" class="name">var <span class="ident">distance_cutoff</span></p>
             
 
@@ -1503,27 +1522,7 @@ Duplicates are defined as two items with:<br />
 
             </div>
             <div class="item">
-            <p id="geodata.Geodata.Geodata.match_scoring" class="name">var <span class="ident">match_scoring</span></p>
-            
-
-            
-  
-  <div class="source_cont">
-</div>
-
-            </div>
-            <div class="item">
             <p id="geodata.Geodata.Geodata.miss_diag_file" class="name">var <span class="ident">miss_diag_file</span></p>
-            
-
-            
-  
-  <div class="source_cont">
-</div>
-
-            </div>
-            <div class="item">
-            <p id="geodata.Geodata.Geodata.progress_bar" class="name">var <span class="ident">progress_bar</span></p>
             
 
             

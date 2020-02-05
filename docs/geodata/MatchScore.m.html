@@ -1041,6 +1041,13 @@ table {
     <h1>Index</h1>
     <ul id="index">
 
+    <li class="set"><h3><a href="#header-functions">Functions</a></h3>
+      
+  <ul>
+    <li class="mono"><a href="#geodata.MatchScore.remove_if_input_empty">remove_if_input_empty</a></li>
+  </ul>
+
+    </li>
 
     <li class="set"><h3><a href="#header-classes">Classes</a></h3>
       <ul>
@@ -1051,6 +1058,7 @@ table {
   <ul>
     <li class="mono"><a href="#geodata.MatchScore.MatchScore.__init__">__init__</a></li>
     <li class="mono"><a href="#geodata.MatchScore.MatchScore.match_score">match_score</a></li>
+    <li class="mono"><a href="#geodata.MatchScore.MatchScore.set_weighting">set_weighting</a></li>
   </ul>
 
         </li>
@@ -1080,6 +1088,21 @@ table {
 
   <section id="section-items">
 
+    <h2 class="section-title" id="header-functions">Functions</h2>
+      
+  <div class="item">
+    <div class="name def" id="geodata.MatchScore.remove_if_input_empty">
+    <p>def <span class="ident">remove_if_input_empty</span>(</p><p>target_tokens, res_tokens)</p>
+    </div>
+    
+
+    
+  
+  <div class="source_cont">
+</div>
+
+  </div>
+  
 
     <h2 class="section-title" id="header-classes">Classes</h2>
       
@@ -1132,25 +1155,24 @@ of characters that didnt match plus other items - described in match_score()</p>
 <div class="codehilite"><pre><span></span><span class="nv">A</span><span class="ss">)</span> <span class="nv">Heuristic</span>:
 <span class="mi">1</span><span class="ss">)</span> <span class="nv">Create</span> <span class="mi">5</span> <span class="nv">part</span> <span class="nv">title</span> <span class="ss">(</span><span class="nv">prefix</span>, <span class="nv">city</span>, <span class="nv">county</span>, <span class="nv">state</span><span class="o">/</span><span class="nv">province</span>, <span class="nv">country</span><span class="ss">)</span>
 <span class="mi">2</span><span class="ss">)</span> <span class="nv">Normalize</span> <span class="nv">text</span> <span class="o">-</span> <span class="nv">Normalize</span>.<span class="nv">normalize_for_scoring</span><span class="ss">()</span>
-<span class="mi">3</span><span class="ss">)</span> <span class="nv">Remove</span> <span class="nv">sequences</span> <span class="nv">over</span> <span class="mi">3</span> <span class="nv">chars</span> <span class="nv">that</span> <span class="nv">match</span> <span class="nv">in</span> <span class="nv">target</span> <span class="nv">and</span> <span class="nb">result</span>
-<span class="mi">4</span><span class="ss">)</span> <span class="nv">Calculate</span> <span class="nv">inscore</span> <span class="o">-</span> <span class="nv">percent</span> <span class="nv">of</span> <span class="nv">characters</span> <span class="nv">in</span> <span class="nv">input</span> <span class="nv">that</span> <span class="nv">didn</span><span class="s1">&#39;</span><span class="s">t match output.  Weighted by term (county is lower weight)</span>
+<span class="mi">3</span><span class="ss">)</span> <span class="nv">Remove</span> <span class="nv">sequences</span> <span class="nv">of</span> <span class="mi">2</span> <span class="nv">chars</span> <span class="nv">or</span> <span class="nv">more</span> <span class="nv">that</span> <span class="nv">match</span> <span class="nv">in</span> <span class="nv">target</span> <span class="nv">and</span> <span class="nb">result</span>
+<span class="mi">4</span><span class="ss">)</span> <span class="nv">Calculate</span> <span class="nv">inscore</span> <span class="o">-</span> <span class="nv">percent</span> <span class="nv">of</span> <span class="nv">characters</span> <span class="nv">in</span> <span class="nv">input</span> <span class="nv">that</span> <span class="nv">didn</span><span class="s1">&#39;</span><span class="s">t match result.  Weight by term (city,,county,state,ctry)</span>
         <span class="nv">Exact</span> <span class="nv">match</span> <span class="nv">of</span> <span class="nv">city</span> <span class="nv">term</span> <span class="nv">gets</span> <span class="nv">a</span> <span class="nv">bonus</span>
-<span class="mi">5</span><span class="ss">)</span> <span class="nv">Calculate</span> <span class="nv">outscore</span> <span class="o">-</span> <span class="nv">percent</span> <span class="nv">of</span> <span class="nv">characters</span> <span class="nv">in</span> <span class="nv">output</span> <span class="nv">that</span> <span class="nv">didn</span><span class="s1">&#39;</span><span class="s">t match input</span>
+<span class="mi">5</span><span class="ss">)</span> <span class="nv">Calculate</span> <span class="nb">result</span> <span class="nv">score</span> <span class="o">-</span> <span class="nv">percent</span> <span class="nv">of</span> <span class="nv">characters</span> <span class="nv">in</span> <span class="nv">db</span> <span class="nb">result</span> <span class="nv">that</span> <span class="nv">didn</span><span class="s1">&#39;</span><span class="s">t match input</span>
 
-<span class="nv">B</span><span class="ss">)</span> <span class="nv">Score</span> <span class="nv">components</span> <span class="ss">(</span><span class="nv">All</span> <span class="nv">are</span> <span class="nv">weighted</span> <span class="nv">except</span> <span class="nv">Prefix</span> <span class="nv">and</span> <span class="nv">Parse</span><span class="ss">)</span>:
-<span class="nv">in_score</span> <span class="o">-</span> <span class="nv">percent</span> <span class="nv">of</span> <span class="nv">characters</span> <span class="nv">in</span> <span class="nv">input</span> <span class="nv">that</span> <span class="nv">didnt</span> <span class="nv">match</span> <span class="nv">output</span>
-<span class="nv">out_score</span> <span class="o">-</span> <span class="nv">percent</span> <span class="nv">of</span> <span class="nv">characters</span> <span class="nv">in</span> <span class="nv">output</span> <span class="nv">that</span> <span class="nv">didnt</span> <span class="nv">match</span> <span class="nv">input</span>
-<span class="nv">feature_score</span> <span class="o">-</span> <span class="nv">Geodata</span>.<span class="nv">feature_priority</span><span class="ss">()</span>.  <span class="nv">adjustment</span> <span class="nv">based</span> <span class="nv">on</span> <span class="nv">Feature</span> <span class="nv">type</span>.  <span class="nv">More</span> <span class="nv">important</span> <span class="nv">features</span> <span class="ss">(</span><span class="nv">larger</span> <span class="nv">city</span><span class="ss">)</span>
-<span class="nv">get</span> <span class="nv">lower</span> <span class="nb">result</span>
-<span class="nv">wildcard_penalty</span> <span class="o">-</span> <span class="nv">score</span> <span class="nv">is</span> <span class="nv">raised</span> <span class="nv">by</span> <span class="mi">41</span> <span class="k">if</span> <span class="nv">it</span> <span class="nv">includes</span> <span class="nv">a</span> <span class="nv">wildcard</span>
+<span class="nv">B</span><span class="ss">)</span> <span class="nv">Score</span> <span class="nv">components</span> <span class="ss">(</span><span class="nv">All</span> <span class="nv">are</span> <span class="nv">weighted</span> <span class="nv">except</span> <span class="nv">Prefix</span> <span class="nv">and</span> <span class="nv">Parse</span><span class="ss">)</span>:   
+<span class="nv">in_score</span> <span class="o">-</span> <span class="ss">(</span><span class="mi">0</span><span class="o">-</span><span class="mi">100</span><span class="ss">)</span> <span class="o">-</span> <span class="nv">percent</span> <span class="nv">of</span> <span class="nv">characters</span> <span class="nv">in</span> <span class="nv">input</span> <span class="nv">that</span> <span class="nv">didnt</span> <span class="nv">match</span> <span class="nv">output</span>   
+<span class="nv">out_score</span> <span class="o">-</span> <span class="ss">(</span><span class="mi">0</span><span class="o">-</span><span class="mi">100</span><span class="ss">)</span> <span class="o">-</span> <span class="nv">percent</span> <span class="nv">of</span> <span class="nv">characters</span> <span class="nv">in</span> <span class="nv">output</span> <span class="nv">that</span> <span class="nv">didnt</span> <span class="nv">match</span> <span class="nv">input</span>   
+<span class="nv">feature_score</span> <span class="o">-</span> <span class="ss">(</span><span class="mi">0</span><span class="o">-</span><span class="mi">100</span><span class="ss">)</span>  <span class="nv">More</span> <span class="nv">important</span> <span class="nv">features</span> <span class="nv">get</span> <span class="nv">lower</span> <span class="nb">result</span>.   
+<span class="nv">City</span> <span class="nv">with</span> <span class="mi">1</span><span class="nv">M</span> <span class="nv">population</span> <span class="nv">is</span> <span class="nv">zero</span>.  <span class="nv">Valley</span> <span class="nv">is</span> <span class="mi">100</span>.  <span class="nv">Geodata</span>.<span class="nv">feature_priority</span><span class="ss">()</span>.  
+<span class="nv">wildcard_penalty</span> <span class="o">-</span> <span class="nv">score</span> <span class="nv">is</span> <span class="nv">raised</span> <span class="nv">by</span> <span class="nv">X</span> <span class="k">if</span> <span class="nv">it</span> <span class="nv">includes</span> <span class="nv">a</span> <span class="nv">wildcard</span>   
 <span class="nv">prefix_penalty</span> <span class="o">-</span>  <span class="nv">score</span> <span class="nv">is</span> <span class="nv">raised</span> <span class="nv">by</span> <span class="nv">length</span> <span class="nv">of</span> <span class="nv">Prefix</span>
-<span class="nv">parse_penalty</span> <span class="o">-</span> <span class="nv">score</span> <span class="nv">is</span> <span class="nv">raised</span> <span class="nv">by</span> <span class="mi">3</span> <span class="k">if</span> <span class="nv">lookup</span> <span class="nv">was</span> <span class="nv">done</span> <span class="nv">with</span> <span class="nv">terms</span> <span class="nv">out</span> <span class="nv">of</span> <span class="nv">order</span>
 
-<span class="nv">C</span><span class="ss">)</span> <span class="nv">A</span> <span class="nv">standard</span> <span class="nv">text</span> <span class="nv">difference</span>, <span class="nv">such</span> <span class="nv">as</span> <span class="nv">Levenstein</span>, <span class="nv">was</span> <span class="nv">not</span> <span class="nv">used</span> <span class="nv">because</span> <span class="nv">those</span> <span class="nv">treat</span> <span class="nv">both</span> <span class="nv">strings</span> <span class="nv">as</span> <span class="nv">equal</span>,
-<span class="nv">whereas</span> <span class="nv">this</span> <span class="nv">treats</span> <span class="nv">the</span> <span class="nv">User</span> <span class="nv">text</span> <span class="nv">as</span> <span class="nv">more</span> <span class="nv">important</span> <span class="nv">than</span> <span class="nv">DB</span> <span class="nb">result</span> <span class="nv">text</span> <span class="nv">and</span> <span class="nv">also</span> <span class="nv">weights</span> <span class="nv">each</span> <span class="nv">token</span>.  <span class="nv">A</span> <span class="nv">user</span><span class="s1">&#39;</span><span class="s">s</span>
-<span class="nv">text</span> <span class="nv">might</span> <span class="nv">commonly</span> <span class="nv">be</span> <span class="nv">something</span> <span class="nv">like</span>: <span class="nv">Paris</span>, <span class="nv">France</span> <span class="nv">and</span> <span class="nv">a</span> <span class="nv">DB</span> <span class="nb">result</span> <span class="nv">of</span> <span class="nv">Paris</span>, <span class="nv">Paris</span>, <span class="nv">Ile</span> <span class="nv">De</span> <span class="nv">France</span>, <span class="nv">France</span>.
-<span class="nv">The</span> <span class="nv">Levenstein</span> <span class="nv">distance</span> <span class="nv">would</span> <span class="nv">be</span> <span class="nv">large</span>, <span class="nv">but</span> <span class="nv">with</span> <span class="nv">this</span> <span class="nv">heuristic</span>, <span class="nv">the</span> <span class="nv">middle</span> <span class="nv">terms</span> <span class="nv">can</span> <span class="nv">have</span> <span class="nv">lower</span> <span class="nv">weights</span>, <span class="nv">and</span>
-<span class="nv">having</span> <span class="nv">all</span> <span class="nv">the</span> <span class="nv">input</span> <span class="nv">matched</span> <span class="nv">can</span> <span class="nv">be</span> <span class="nv">weighted</span> <span class="nv">higher</span> <span class="nv">than</span> <span class="nv">mismatches</span> <span class="nv">on</span> <span class="nv">the</span> <span class="nv">county</span> <span class="nv">and</span> <span class="nv">province</span>.  <span class="nv">This</span> <span class="nv">heuristic</span> <span class="nv">gives</span>
+<span class="nv">C</span><span class="ss">)</span> <span class="nv">A</span> <span class="nv">standard</span> <span class="nv">text</span> <span class="nv">difference</span>, <span class="nv">such</span> <span class="nv">as</span> <span class="nv">Levenstein</span>, <span class="nv">was</span> <span class="nv">not</span> <span class="nv">used</span> <span class="nv">because</span> <span class="nv">those</span> <span class="nv">treat</span> <span class="nv">both</span> <span class="nv">strings</span> <span class="nv">as</span> <span class="nv">equal</span>,   
+<span class="nv">whereas</span> <span class="nv">this</span> <span class="nv">treats</span> <span class="nv">the</span> <span class="nv">User</span> <span class="nv">text</span> <span class="nv">as</span> <span class="nv">more</span> <span class="nv">important</span> <span class="nv">than</span> <span class="nv">DB</span> <span class="nb">result</span> <span class="nv">text</span> <span class="nv">and</span> <span class="nv">also</span> <span class="nv">weights</span> <span class="nv">each</span> <span class="nv">token</span>.  <span class="nv">A</span> <span class="nv">user</span><span class="s1">&#39;</span><span class="s">s   </span>
+<span class="nv">text</span> <span class="nv">might</span> <span class="nv">commonly</span> <span class="nv">be</span> <span class="nv">something</span> <span class="nv">like</span>: <span class="nv">Paris</span>, <span class="nv">France</span> <span class="nv">and</span> <span class="nv">a</span> <span class="nv">DB</span> <span class="nb">result</span> <span class="nv">of</span> <span class="nv">Paris</span>, <span class="nv">Paris</span>, <span class="nv">Ile</span> <span class="nv">De</span> <span class="nv">France</span>, <span class="nv">France</span>.   
+<span class="nv">The</span> <span class="nv">Levenstein</span> <span class="nv">distance</span> <span class="nv">would</span> <span class="nv">be</span> <span class="nv">large</span>, <span class="nv">but</span> <span class="nv">with</span> <span class="nv">this</span> <span class="nv">heuristic</span>, <span class="nv">the</span> <span class="nv">middle</span> <span class="nv">terms</span> <span class="nv">can</span> <span class="nv">have</span> <span class="nv">lower</span> <span class="nv">weights</span>, <span class="nv">and</span>   
+<span class="nv">having</span> <span class="nv">all</span> <span class="nv">the</span> <span class="nv">input</span> <span class="nv">matched</span> <span class="nv">can</span> <span class="nv">be</span> <span class="nv">weighted</span> <span class="nv">higher</span> <span class="nv">than</span> <span class="nv">mismatches</span> <span class="nv">on</span> <span class="nv">the</span> <span class="nv">county</span> <span class="nv">and</span> <span class="nv">province</span>.  <span class="nv">This</span> <span class="nv">heuristic</span> <span class="nv">gives</span>   
 <span class="nv">a</span> <span class="nv">score</span> <span class="nv">of</span> <span class="o">-</span><span class="mi">9</span> <span class="k">for</span> <span class="nv">Paris</span>, <span class="nv">France</span>.
 </pre></div>
 
@@ -1169,19 +1191,30 @@ of characters that didnt match plus other items - described in match_score()</p>
 
   </div>
   
-          <h3>Instance variables</h3>
-            <div class="item">
-            <p id="geodata.MatchScore.MatchScore.feature_weight" class="name">var <span class="ident">feature_weight</span></p>
             
+  <div class="item">
+    <div class="name def" id="geodata.MatchScore.MatchScore.set_weighting">
+    <p>def <span class="ident">set_weighting</span>(</p><p>self, token_weight, prefix_weight, feature_weight, result_weight)</p>
+    </div>
+    
 
-            
+    
   
+    <div class="desc"><p>Set weighting of score components
+Args:
+    token_weight: List with Weights for match of County, State/Province, Country. City is always 1.0 <br />
+    prefix_weight:   Weighting for prefix
+    feature_weight:  Weighting for Feature match
+    result_weight:   Weighting for % of DB result that didnt match the target</p>
+<p>Returns:</p></div>
   <div class="source_cont">
 </div>
 
-            </div>
+  </div>
+  
+          <h3>Instance variables</h3>
             <div class="item">
-            <p id="geodata.MatchScore.MatchScore.first_token_match_bonus" class="name">var <span class="ident">first_token_match_bonus</span></p>
+            <p id="geodata.MatchScore.MatchScore.feature_weight" class="name">var <span class="ident">feature_weight</span></p>
             
 
             
@@ -1262,16 +1295,6 @@ of characters that didnt match plus other items - described in match_score()</p>
             </div>
             <div class="item">
             <p id="geodata.MatchScore.MatchScore.wildcard_penalty" class="name">var <span class="ident">wildcard_penalty</span></p>
-            
-
-            
-  
-  <div class="source_cont">
-</div>
-
-            </div>
-            <div class="item">
-            <p id="geodata.MatchScore.MatchScore.wrong_order_penalty" class="name">var <span class="ident">wrong_order_penalty</span></p>
             
 
             

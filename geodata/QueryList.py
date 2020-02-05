@@ -142,7 +142,7 @@ class QueryList:
 
         if len(place.country_iso) == 0:
             query_list.append(Query(where="name = ?  ",
-                                    args=(place.target),
+                                    args=place.target,
                                     result=Result.PARTIAL_MATCH))
         else:
             query_list.append(Query(where="name = ? AND country = ? ",

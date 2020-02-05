@@ -17,16 +17,15 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 """
-Provide a place lookup gazeteer based on files from geonames.org.   
-  These are the primary location lookup methods for the geodata package.  
+Provides a place lookup gazeteer based on files from geonames.org.   
+  Provides the location lookup methods for the geodata package.  
            
-+ Creates a local place database using files from geonames.org  
++ Creates a local sqlite3 place database of geonames.org data  
 + Parses lookup text and returns multiple matches ranked by closeness to lookup term  
 + Provides latitude/longitude  
-+ Wildcard search of place database  
-+ Phonetic/Soundex search of place database  
-+ Feature search of place database by feature type (e.g. mountain, cemetery, palace)  
-+ Ability to filter database to only include specified countries, languages, and feature types   
++ Supports Wildcard search, Phonetic/Soundex search, and Word search of place database names  
++ Search by feature type (e.g. mountain, cemetery, palace, etc)  
++ Database can be filtered to only include specified countries, languages, and feature types   
    
    Main routines for Geodata package:   
     example.py - a sample demonstrating place lookups using geodata   
@@ -46,35 +45,34 @@ from geodata import GeoUtil, GeodataBuild, Loc, MatchScore
 
 class Geodata:
     """
-Provide place lookup gazeteer based on files from geonames.org  
+Provide a place lookup gazeteer based on files from geonames.org  
    
     """
 
-    def __init__(self, directory_name: str, progress_bar, 
-                 show_message, exit_on_error, languages_list_dct, feature_code_list_dct, 
+    def __init__(self, directory_name: str, display_progress,
+                 show_message:bool, exit_on_error:bool, languages_list_dct, feature_code_list_dct,
                  supported_countries_dct):
         """
             Init
 
         #Args:
             directory_name: directory where geoname.org files are.  DB will be in 'cache' folder under this   
-            progress_bar: tkhelper progress bar or None   
-            show_message: show TKInter message dialog on error   
-            exit_on_error: exit on significant error   
+            display_progress: None or function to display progress(percent_done:int, msg:str)  
+            show_message: If True - show TKInter message dialog on error   
+            exit_on_error: If True - exit on significant error   
             languages_list_dct: Dictionary of ISO-2 languages to import from AlternateNamesV2.txt   
             feature_code_list_dct: Dictionary of Geoname Feature codes to import into DB   
             supported_countries_dct: Dictionary of ISO-2 Country codes to import into DB   
         """
         self.logger = logging.getLogger(__name__)
         self.directory: str = directory_name
-        self.progress_bar = progress_bar  # progress_bar
-        self.geo_build = GeodataBuild.GeodataBuild(self.directory, progress_bar=self.progress_bar,
+        self.display_progress = display_progress  
+        self.geo_build = GeodataBuild.GeodataBuild(self.directory, display_progress=self.display_progress,
                                                    show_message=show_message, exit_on_error=exit_on_error,
                                                    languages_list_dct=languages_list_dct,
                                                    feature_code_list_dct=feature_code_list_dct,
                                                    supported_countries_dct=supported_countries_dct)
         self.save_place: Loc = Loc.Loc()
-        #self.match_scoring = MatchScore.MatchScore()
         self.miss_diag_file = None
         self.distance_cutoff = 0.6  # Value to determine if two lat/longs are similar based on Rectilinear Distance
 
@@ -119,7 +117,6 @@ Provide place lookup gazeteer based on files from geonames.org
 
         flags = ResultFlags(limited=False, filtered=False)
         result_list = []  # We will do different search types and append all results into result_list
-        result_list2 = []
 
         # self.logger.debug(f'== FIND LOCATION City=[{place.city1}] Adm2=[{place.admin2_name}]\
         # Adm1=[{place.admin1_name}] Pref=[{place.prefix}] Cntry=[{place.country_name}] iso=[{place.country_iso}]  Type={place.place_type} ')
@@ -150,7 +147,7 @@ Provide place lookup gazeteer based on files from geonames.org
         for typ in [Loc.PlaceType.ADMIN2]:
             if place.admin2_name != '':
                 place.georow_list.clear()
-                self.find_type_as_city(place, typ)
+                self._find_type_as_city(place, typ)
                 #self.log_results(place.georow_list)
     
                 if place.georow_list:
@@ -180,7 +177,7 @@ Provide place lookup gazeteer based on files from geonames.org
         # self.logger.debug(f'Status={place.status}')
         return place.result_type
 
-    def find_type_as_city(self, place: Loc, typ):
+    def _find_type_as_city(self, place: Loc, typ):
         """
             Do a lookup using the field specifed by typ as a city name.  E.g. if typ is PlaceType.ADMIN1 then   
             use the place.admin1_name field to do the city lookup   
@@ -208,7 +205,6 @@ Provide place lookup gazeteer based on files from geonames.org
         elif typ == Loc.PlaceType.PREFIX:
             # Try Prefix as City
             if place.prefix != '':
-                tmp = place.city1
                 place.city1 = place.prefix
                 # if '*' not in tmp:
                 #    place.prefix = tmp
@@ -265,10 +261,10 @@ Provide place lookup gazeteer based on files from geonames.org
         """
         Lookup by geoid   
         #Args:   
-            geoid:  
-            place:  
+            geoid:  Geonames.org geoid
+            place:  Location fields in place are updated
 
-        #Returns: None.   
+        #Returns: None. Location fields in Loc are updated
 
         """
         place.target = geoid
@@ -294,7 +290,6 @@ Provide place lookup gazeteer based on files from geonames.org
         """
         # Try City as ADMIN2
         place.standard_parse = False
-        #place.target = place.city1
         place.admin2_name = place.city1
         place.city1 = ''
         place.place_type = Loc.PlaceType.ADMIN2
@@ -313,7 +308,7 @@ Provide place lookup gazeteer based on files from geonames.org
 
         """
         self.logger.debug('Feature Search')
-        self.find_type_as_city(place, place.place_type)
+        self._find_type_as_city(place, place.place_type)
 
         if len(place.georow_list) > 0:
             # Build list - sort and remove duplicates
@@ -345,7 +340,8 @@ Provide place lookup gazeteer based on files from geonames.org
 
         place.set_place_type_text()
         
-    def distance(self, lat_a:float, lon_a:float, lat_b:float, lon_b:float):
+    @staticmethod
+    def distance(lat_a:float, lon_a:float, lat_b:float, lon_b:float):
         """
         Returns rectilinear distance in degrees between two lat/longs   
         Args:   
@@ -473,7 +469,7 @@ Provide place lookup gazeteer based on files from geonames.org
 
             # Range to display when there is a strong match
             if (min_score <= MatchScore.Score.VERY_GOOD and score > min_score + gap_threshold) or score > min_score + weak_threshold:
-                if (min_score <= MatchScore.Score.VERY_GOOD and score > min_score + gap_threshold):
+                if min_score <= MatchScore.Score.VERY_GOOD and score > min_score + gap_threshold:
                     self.logger.debug(f'SKIP Score {score:.1f}  {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
                                       f' {geo_row[GeoUtil.Entry.ADM1]} [{geo_row[GeoUtil.Entry.PREFIX]}]')
                 else:
@@ -512,8 +508,8 @@ Provide place lookup gazeteer based on files from geonames.org
         return self.geo_build.open_geodb(repair_database=repair_database, query_limit=query_limit)
 
     def _progress(self, msg: str, percent: int):
-        if self.progress_bar is not None:
-            self.progress_bar.update_progress(percent, msg)
+        if self.display_progress is not None:
+            self.display_progress(percent, msg)
         else:
             self.logger.debug(msg)
 
@@ -614,7 +610,8 @@ Provide place lookup gazeteer based on files from geonames.org
         if self.miss_diag_file:
             self.miss_diag_file.close()
 
-    def _restore_fields(self, place, save_place):
+    @staticmethod
+    def _restore_fields(place, save_place):
         # Restore fields that were overwritten
         place.city1 = save_place.city1
         place.admin2_name = save_place.admin2_name

@@ -127,7 +127,7 @@ class TestScoring(unittest.TestCase):
 
         # Load test data
         directory = os.path.join(str(Path.home()), "geoname_test")
-        TestScoring.geodata = Geodata.Geodata(directory_name=directory, progress_bar=None,
+        TestScoring.geodata = Geodata.Geodata(directory_name=directory, display_progress=None,
                                               show_message=True, exit_on_error=False,
                                               languages_list_dct={'en'},
                                               feature_code_list_dct=features,

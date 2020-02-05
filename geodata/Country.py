@@ -16,7 +16,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
-"""        Provide a dictionary of all country names and ISO-2 codes  
+"""        Provide a dictionary of all country names and ISO-2 codes
 """
 import logging
 from typing import Dict
@@ -91,7 +91,7 @@ class Country:
             # Create Geo_row
             # ('paris', 'fr', '07', '012', '12.345', '45.123', 'PPL')
             geo_row = [None] * GeoDB.Entry.MAX
-            self.geo_files._update_geo_row_name(geo_row=geo_row, name=ky)
+            self.geo_files.update_geo_row_name(geo_row=geo_row, name=ky)
             geo_row[GeoDB.Entry.ISO] = row[CnRow.ISO].lower()
             geo_row[GeoDB.Entry.ADM1] = ''
             geo_row[GeoDB.Entry.ADM2] = ''
@@ -117,7 +117,7 @@ class Country:
             # ('paris', 'fr', '07', '012', '12.345', '45.123', 'PPL')
             row = historic_names[ky]
             geo_row = [None] * GeoDB.Entry.MAX
-            self.geo_files._update_geo_row_name(geo_row=geo_row, name=ky)
+            self.geo_files.update_geo_row_name(geo_row=geo_row, name=ky)
             geo_row[GeoDB.Entry.ISO] = row[0].lower()
             geo_row[GeoDB.Entry.ADM1] = ''
             geo_row[GeoDB.Entry.ADM2] = ''

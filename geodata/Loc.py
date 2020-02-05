@@ -57,7 +57,36 @@ class Loc:
         Init
         """
         self.logger = logging.getLogger(__name__)
-        self.clear()
+        self.original_entry: str = ""
+        self.formatted_name: str = ''
+        self.lat: float = float('NaN')  # Latitude
+        self.lon: float = float('NaN')  # Longitude
+        self.country_iso: str = ""  # Country ISO code
+        self.country_name: str = ''
+        self.city1: str = ""  # City or entity name
+        self.admin1_name: str = ""  # Admin1 (State/province/etc)
+        self.admin1_id: str = ""  # Admin1 Geoname ID
+        self.admin2_name: str = ""  # Admin2 (county)
+        self.admin2_id = ""  # Admin2 Geoname ID
+        self.prefix: str = ""  # Prefix (entries prepended before geoname location)
+        self.feature: str = ''  # Geoname feature code
+        self.place_type: int = PlaceType.COUNTRY  # Is this a Country , Admin1 ,admin2 or city?
+        self.target: str = ''  # Target for lookup
+        self.geoid: str = ''  # Geoname GEOID
+        self.prefix_commas: str = ''
+        self.id = ''
+        self.enclosed_by = ''
+        self.standard_parse = True
+        self.updated_entry = ''
+        self.score = 9999
+
+        # Lookup result info
+        self.status: str = ""
+        self.status_detail: str = ""
+        self.result_type: int = GeoUtil.Result.NO_MATCH  # Result type of lookup
+        self.result_type_text: str = ''  # Text version of result type
+        self.georow_list: List[Tuple] = [()]  # List of items that matched this location
+        
         self.event_year: int = 0
 
     def clear(self):
@@ -74,7 +103,6 @@ class Loc:
         self.admin1_id: str = ""  # Admin1 Geoname ID
         self.admin2_id = ""  # Admin2 Geoname ID
         self.prefix: str = ""  # Prefix (entries before city)
-        # self.extra: str = ''  # Extra tokens that dont get put in prefix
         self.feature: str = ''  # Geoname feature code
         self.place_type: int = PlaceType.COUNTRY  # Is this a Country , Admin1 ,admin2 or city?
         self.target: str = ''  # Target for lookup
@@ -168,17 +196,13 @@ class Loc:
                     self.admin1_name = ''
                     # Add dummy token for admin1 position
                     tokens.insert(-1, '_')
-                    token_count = len(tokens)
+                    #token_count = len(tokens)
             else:
                 tokens[-2] = '_'
 
             self.prefix = self.prefix.strip(',')
             self.prefix = Normalize.normalize(self.prefix, False)
-            
-        #if token_count > 2:
-            #  3rd to last token is Admin2
-        #    self.admin2_name, mod = Normalize.admin2_normalize(tokens[-3], self.country_iso)
-            
+  
         # fill in country name if still missing - finding Admin1 will find country ISO
         if self.country_name == '' and self.country_iso != '':
             self.country_name = geo_files.geodb.get_country_name(self.country_iso)

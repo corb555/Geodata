@@ -1045,6 +1045,8 @@ table {
       
   <ul>
     <li class="mono"><a href="#geodata.Normalize.alias_list">alias_list</a></li>
+    <li class="mono"><a href="#geodata.Normalize.noise_words">noise_words</a></li>
+    <li class="mono"><a href="#geodata.Normalize.phrase_cleanup">phrase_cleanup</a></li>
   </ul>
 
     </li>
@@ -1058,7 +1060,6 @@ table {
     <li class="mono"><a href="#geodata.Normalize.country_normalize">country_normalize</a></li>
     <li class="mono"><a href="#geodata.Normalize.normalize">normalize</a></li>
     <li class="mono"><a href="#geodata.Normalize.normalize_for_scoring">normalize_for_scoring</a></li>
-    <li class="mono"><a href="#geodata.Normalize.normalize_for_search">normalize_for_search</a></li>
     <li class="mono"><a href="#geodata.Normalize.remove_aliase">remove_aliase</a></li>
   </ul>
 
@@ -1078,7 +1079,9 @@ table {
   <header id="section-intro">
   <h1 class="title"><span class="name">geodata.Normalize</span> module</h1>
   <p>Provide functions to normalize text strings by converting to lowercase, removing noisewords. <br />
-This is used by the lookup functions and the database build functions.</p>
+This is used by the lookup functions and the database build functions and match scoring <br />
+noise_words is a list of replacements only used for match scoring <br />
+phrase_cleanup is a list of replacements for db build, lookup and match scoring</p>
   
 
   </header>
@@ -1087,6 +1090,22 @@ This is used by the lookup functions and the database build functions.</p>
     <h2 class="section-title" id="header-variables">Module variables</h2>
       <div class="item">
       <p id="geodata.Normalize.alias_list" class="name">var <span class="ident">alias_list</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="geodata.Normalize.noise_words" class="name">var <span class="ident">noise_words</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
+      <div class="item">
+      <p id="geodata.Normalize.phrase_cleanup" class="name">var <span class="ident">phrase_cleanup</span></p>
       
   
   <div class="source_cont">
@@ -1137,7 +1156,7 @@ This is used by the lookup functions and the database build functions.</p>
 <p>Args:
     admin2_name: 
     iso: </p>
-<p>Returns: (result, modified) - result is new string, modified - True if modified</p></div>
+<p>Returns: TUPLE (result, modified) - result is new string, modified - True if modified</p></div>
   <div class="source_cont">
 </div>
 
@@ -1171,7 +1190,9 @@ modified - True if modified</p></div>
 
     
   
-    <div class="desc"><p>Normalize text - Convert from UTF-8 to lowercase ascii.  Remove most punctuation. Remove commas if parameter set. <br />
+    <div class="desc"><p>Normalize text - Convert from UTF-8 to lowercase ascii.<br />
+Remove commas if parameter set. <br />
+Remove all non alphanumeric except $ and *<br />
 Then call _phrase_normalize() which normalizes common phrases with multiple spellings, such as saint to st   </p>
 <h1>Args:</h1>
 <div class="codehilite"><pre><span></span><span class="nv">text</span>:  <span class="nv">Text</span> <span class="nv">to</span> <span class="nv">normalize</span>   
@@ -1206,20 +1227,6 @@ Then call _phrase_normalize() which normalizes common phrases with multiple spel
 
 
 <h1>Returns:</h1></div>
-  <div class="source_cont">
-</div>
-
-  </div>
-  
-      
-  <div class="item">
-    <div class="name def" id="geodata.Normalize.normalize_for_search">
-    <p>def <span class="ident">normalize_for_search</span>(</p><p>text, iso)</p>
-    </div>
-    
-
-    
-  
   <div class="source_cont">
 </div>
 

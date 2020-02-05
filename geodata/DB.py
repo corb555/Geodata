@@ -44,7 +44,6 @@ class DB:
         self.cur = None
         self.total_time = 0
         self.total_lookups = 0
-        self.use_wildcards = True
         self.show_message = show_message
         self.exit_on_error = exit_on_error
         self.err = ''
@@ -63,7 +62,7 @@ class DB:
         # Args:
             db_filename: database filename
         # Returns:
-            Connection object or None. Self.err is set to Exception text. Shows Messagebox and/or exits on error if flags set.   
+            Connection object or None. Self.err is set to Exception text. Shows Messagebox and/or exits on error if flags set.
         """
         self.err = ''
         try:
@@ -223,7 +222,7 @@ class DB:
         self.cur = self.conn.cursor()
         self.cur.execute('BEGIN')
 
-    def execute(self, sql, args)->int:
+    def execute(self, sql, args) -> int:
         """
         Execute a SQL statement
         # Args:
@@ -234,7 +233,10 @@ class DB:
         """
         self.err = ''
         try:
-            self.cur.execute(sql, args)
+            if args:
+                self.cur.execute(sql, args)
+            else:
+                self.cur.execute(sql)
         except Exception as e:
             if self.show_message:
                 messagebox.showwarning('Error', f'Database Error\n {e}')

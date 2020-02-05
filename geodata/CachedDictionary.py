@@ -39,7 +39,7 @@ class CachedDictionary:
         """
         Get value from dictionary
         # Args:
-            key: 
+            key:
 
         # Returns: value of key item
 
@@ -51,7 +51,7 @@ class CachedDictionary:
         """
         Set value from dictionary
         # Args:
-            key: 
+            key:
             val:
         # Returns: None
 

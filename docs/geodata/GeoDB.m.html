@@ -1040,6 +1040,13 @@ table {
   <div id="sidebar">
     <h1>Index</h1>
     <ul id="index">
+    <li class="set"><h3><a href="#header-variables">Module variables</a></h3>
+      
+  <ul>
+    <li class="mono"><a href="#geodata.GeoDB.FUZZY_LOOKUP">FUZZY_LOOKUP</a></li>
+  </ul>
+
+    </li>
 
 
     <li class="set"><h3><a href="#header-classes">Classes</a></h3>
@@ -1057,10 +1064,8 @@ table {
     <li class="mono"><a href="#geodata.GeoDB.GeoDB.copy_georow_to_place">copy_georow_to_place</a></li>
     <li class="mono"><a href="#geodata.GeoDB.GeoDB.create_admin1_wildcard">create_admin1_wildcard</a></li>
     <li class="mono"><a href="#geodata.GeoDB.GeoDB.create_county_wildcard">create_county_wildcard</a></li>
-    <li class="mono"><a href="#geodata.GeoDB.GeoDB.create_geoid_index">create_geoid_index</a></li>
-    <li class="mono"><a href="#geodata.GeoDB.GeoDB.create_indices">create_indices</a></li>
-    <li class="mono"><a href="#geodata.GeoDB.GeoDB.create_tables">create_tables</a></li>
     <li class="mono"><a href="#geodata.GeoDB.GeoDB.create_wildcard">create_wildcard</a></li>
+    <li class="mono"><a href="#geodata.GeoDB.GeoDB.debug">debug</a></li>
     <li class="mono"><a href="#geodata.GeoDB.GeoDB.feature_search">feature_search</a></li>
     <li class="mono"><a href="#geodata.GeoDB.GeoDB.get_admin1_alt_name">get_admin1_alt_name</a></li>
     <li class="mono"><a href="#geodata.GeoDB.GeoDB.get_admin1_name">get_admin1_name</a></li>
@@ -1076,7 +1081,6 @@ table {
     <li class="mono"><a href="#geodata.GeoDB.GeoDB.insert">insert</a></li>
     <li class="mono"><a href="#geodata.GeoDB.GeoDB.insert_alternate_name">insert_alternate_name</a></li>
     <li class="mono"><a href="#geodata.GeoDB.GeoDB.insert_version">insert_version</a></li>
-    <li class="mono"><a href="#geodata.GeoDB.GeoDB.lookup_admin_dbid">lookup_admin_dbid</a></li>
     <li class="mono"><a href="#geodata.GeoDB.GeoDB.lookup_main_dbid">lookup_main_dbid</a></li>
     <li class="mono"><a href="#geodata.GeoDB.GeoDB.lookup_place">lookup_place</a></li>
     <li class="mono"><a href="#geodata.GeoDB.GeoDB.make_georow">make_georow</a></li>
@@ -1114,6 +1118,15 @@ Provides a number of methods to lookup locations by name, feature, admin ID, etc
   </header>
 
   <section id="section-items">
+    <h2 class="section-title" id="header-variables">Module variables</h2>
+      <div class="item">
+      <p id="geodata.GeoDB.FUZZY_LOOKUP" class="name">var <span class="ident">FUZZY_LOOKUP</span></p>
+      
+  
+  <div class="source_cont">
+</div>
+
+      </div>
 
 
     <h2 class="section-title" id="header-classes">Classes</h2>
@@ -1137,7 +1150,7 @@ Provides a number of methods to lookup locations by name, feature, admin ID, etc
             
   <div class="item">
     <div class="name def" id="geodata.GeoDB.GeoDB.__init__">
-    <p>def <span class="ident">__init__</span>(</p><p>self, db_path, spellcheck, show_message, exit_on_error, set_speed_pragmas, db_limit)</p>
+    <p>def <span class="ident">__init__</span>(</p><p>self, db_path, show_message, exit_on_error, set_speed_pragmas, db_limit)</p>
     </div>
     
 
@@ -1146,7 +1159,6 @@ Provides a number of methods to lookup locations by name, feature, admin ID, etc
     <div class="desc"><p>geoname data database init. Open database if present otherwise raise error</p>
 <h1>Args:</h1>
 <div class="codehilite"><pre><span></span><span class="nv">db_path</span>: <span class="nv">full</span> <span class="nv">path</span> <span class="nv">to</span> <span class="nv">database</span> <span class="nv">file</span>
-<span class="nv">spellcheck</span>: <span class="nv">True</span> <span class="k">if</span> <span class="nv">Spellcheck</span> <span class="nv">should</span> <span class="nv">be</span> <span class="nv">enabled</span>.  <span class="nv">NOT</span> <span class="nv">CURRENTLY</span> <span class="nv">SUPPORTED</span>.  <span class="nv">Must</span> <span class="nv">be</span> <span class="nv">False</span>
 <span class="nv">show_message</span>: <span class="k">If</span> <span class="nv">True</span>, <span class="k">show</span> <span class="k">messagebox</span> <span class="nv">to</span> <span class="nv">user</span> <span class="nv">on</span> <span class="nv">error</span>
 <span class="nv">exit_on_error</span>: <span class="k">If</span> <span class="nv">True</span>, <span class="k">exit</span> <span class="k">if</span> <span class="nv">significant</span> <span class="nv">error</span> <span class="nv">occurs</span>
 <span class="nv">set_speed_pragmas</span>: <span class="k">If</span> <span class="nv">True</span>, <span class="nv">set</span> <span class="nv">DB</span> <span class="nv">pragmas</span> <span class="k">for</span> <span class="nv">maximum</span> <span class="nv">performance</span>. 
@@ -1179,7 +1191,7 @@ Provides a number of methods to lookup locations by name, feature, admin ID, etc
             
   <div class="item">
     <div class="name def" id="geodata.GeoDB.GeoDB.assign_scores">
-    <p>def <span class="ident">assign_scores</span>(</p><p>self, place, target_feature)</p>
+    <p>def <span class="ident">assign_scores</span>(</p><p>self, place, target_feature, fast)</p>
     </div>
     
 
@@ -1228,7 +1240,7 @@ Provides a number of methods to lookup locations by name, feature, admin ID, etc
             
   <div class="item">
     <div class="name def" id="geodata.GeoDB.GeoDB.copy_georow_to_place">
-    <p>def <span class="ident">copy_georow_to_place</span>(</p><p>self, row, place)</p>
+    <p>def <span class="ident">copy_georow_to_place</span>(</p><p>self, row, place, fast)</p>
     </div>
     
 
@@ -1295,51 +1307,6 @@ is the same at create_wildcard   </p>
   
             
   <div class="item">
-    <div class="name def" id="geodata.GeoDB.GeoDB.create_geoid_index">
-    <p>def <span class="ident">create_geoid_index</span>(</p><p>self)</p>
-    </div>
-    
-
-    
-  
-    <div class="desc"><p>Create database indices for GEOID</p></div>
-  <div class="source_cont">
-</div>
-
-  </div>
-  
-            
-  <div class="item">
-    <div class="name def" id="geodata.GeoDB.GeoDB.create_indices">
-    <p>def <span class="ident">create_indices</span>(</p><p>self)</p>
-    </div>
-    
-
-    
-  
-    <div class="desc"><p>Create indices for geoname database</p></div>
-  <div class="source_cont">
-</div>
-
-  </div>
-  
-            
-  <div class="item">
-    <div class="name def" id="geodata.GeoDB.GeoDB.create_tables">
-    <p>def <span class="ident">create_tables</span>(</p><p>self)</p>
-    </div>
-    
-
-    
-  
-    <div class="desc"><p>Create all the tables needed for the geoname database</p></div>
-  <div class="source_cont">
-</div>
-
-  </div>
-  
-            
-  <div class="item">
     <div class="name def" id="geodata.GeoDB.GeoDB.create_wildcard">
     <p>def <span class="ident">create_wildcard</span>(</p><p>pattern)</p>
     </div>
@@ -1354,6 +1321,20 @@ is the same at create_wildcard   </p>
 
 
 <h1>Returns: wildcard pattern</h1></div>
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+            
+  <div class="item">
+    <div class="name def" id="geodata.GeoDB.GeoDB.debug">
+    <p>def <span class="ident">debug</span>(</p><p>self, text)</p>
+    </div>
+    
+
+    
+  
   <div class="source_cont">
 </div>
 
@@ -1700,21 +1681,6 @@ is the same at create_wildcard   </p>
   
             
   <div class="item">
-    <div class="name def" id="geodata.GeoDB.GeoDB.lookup_admin_dbid">
-    <p>def <span class="ident">lookup_admin_dbid</span>(</p><p>self, place)</p>
-    </div>
-    
-
-    
-  
-    <div class="desc"><p>Search for DB ID in admin table</p></div>
-  <div class="source_cont">
-</div>
-
-  </div>
-  
-            
-  <div class="item">
     <div class="name def" id="geodata.GeoDB.GeoDB.lookup_main_dbid">
     <p>def <span class="ident">lookup_main_dbid</span>(</p><p>self, place)</p>
     </div>
@@ -1793,23 +1759,18 @@ is the same at create_wildcard   </p>
             
   <div class="item">
     <div class="name def" id="geodata.GeoDB.GeoDB.process_query_list">
-    <p>def <span class="ident">process_query_list</span>(</p><p>self, select_string, from_tbl, query_list)</p>
+    <p>def <span class="ident">process_query_list</span>(</p><p>self, result_list, select_string, from_tbl, query_list)</p>
     </div>
     
 
     
   
-    <div class="desc"><p>Do a lookup for each query in the query_list.  Stop when self.max_query_results is reached    </p>
-<h1>Args:</h1>
-<div class="codehilite"><pre><span></span><span class="n">select_string</span><span class="o">:</span> <span class="n">SQL</span> <span class="n">select</span> <span class="n">string</span>   
-<span class="n">from_tbl</span><span class="o">:</span> <span class="n">Table</span> <span class="n">to</span> <span class="n">query</span>   
-<span class="n">query_list</span><span class="o">:</span> <span class="n">A</span> <span class="n">list</span> <span class="n">of</span> <span class="n">SQL</span> <span class="n">queries</span>
-</pre></div>
-
-
-<h1>Returns:</h1>
-<div class="codehilite"><pre><span></span><span class="n">tuple</span> <span class="k">of</span> <span class="n">row_list</span> <span class="k">and</span> <span class="n">result_type</span>
-</pre></div></div>
+    <div class="desc"><p>Args:
+    result_list: 
+    select_string: 
+    from_tbl: 
+    query_list: </p>
+<p>Returns: Result type.  Result list contains matches</p></div>
   <div class="source_cont">
 </div>
 
@@ -2003,7 +1964,7 @@ or "Village" and "of" or "Bay" and "of" will show up in the results.   </p>
 </pre></div>
 
 
-<h1>Returns:</h1></div>
+<h1>Returns:   List of matches</h1></div>
   <div class="source_cont">
 </div>
 
@@ -2032,6 +1993,16 @@ or "Village" and "of" or "Bay" and "of" will show up in the results.   </p>
             </div>
             <div class="item">
             <p id="geodata.GeoDB.GeoDB.db_path" class="name">var <span class="ident">db_path</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="geodata.GeoDB.GeoDB.detailed_debug" class="name">var <span class="ident">detailed_debug</span></p>
             
 
             
@@ -2102,16 +2073,6 @@ or "Village" and "of" or "Bay" and "of" will show up in the results.   </p>
             </div>
             <div class="item">
             <p id="geodata.GeoDB.GeoDB.select_str" class="name">var <span class="ident">select_str</span></p>
-            
-
-            
-  
-  <div class="source_cont">
-</div>
-
-            </div>
-            <div class="item">
-            <p id="geodata.GeoDB.GeoDB.spellcheck" class="name">var <span class="ident">spellcheck</span></p>
             
 
             

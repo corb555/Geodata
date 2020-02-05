@@ -19,7 +19,7 @@
 
 # The tab separated columns in geoname.org file rows are as follows
 """
-Add alternate names for places using the Geonames.org Alternate names file 
+Add alternate names for places using the Geonames.org Alternate names file
 """
 from geodata import GeodataBuild, Loc, GeoUtil, GeoDB, FileReader
 
@@ -79,15 +79,15 @@ class AlternateNames(FileReader.FileReader):
         self.loc.georow_list = []
         if alt_tokens[ALT_LANG] == '':
             alt_tokens[ALT_LANG] = 'en'
-            
+
         # Alternate names are in multiple languages.  Only add if item is in requested lang list
         if alt_tokens[ALT_LANG] in self.lang_list:
             # Only Add this alias if  DB already has an entry (since geoname DB is filtered based on feature)
             if 'estminser' in alt_tokens[ALT_NAME]:
                 pass
- 
+
             # See if item has an entry with same GEOID in Main DB
-            dbid:str = str(self.geo_files.geodb.geoid_main_dict.get(alt_tokens[ALT_GEOID]))
+            dbid: str = str(self.geo_files.geodb.geoid_main_dict.get(alt_tokens[ALT_GEOID]))
             if dbid is not None:
                 self.loc.target = dbid
                 # Retrieve entry
@@ -109,7 +109,7 @@ class AlternateNames(FileReader.FileReader):
 
                 # Make sure this entry has a different name from existing entry
                 if update[ALT_NAME] != alt_tokens[ALT_NAME]:
-                    self.geo_files._update_geo_row_name(geo_row=update, name=alt_tokens[ALT_NAME])
+                    self.geo_files.update_geo_row_name(geo_row=update, name=alt_tokens[ALT_NAME])
                     new_row = tuple(update)  # Convert back to tuple
 
                     if 'ADM1' not in update[GeoDB.Entry.FEAT] and 'ADM2' not in update[GeoDB.Entry.FEAT]:
@@ -123,7 +123,6 @@ class AlternateNames(FileReader.FileReader):
                                                                    alt_tokens[ALT_GEOID], alt_tokens[ALT_LANG])
                         self.count += 1
 
-
     def cancel(self):
         """
         User requested cancel of database build.
@@ -131,4 +130,3 @@ class AlternateNames(FileReader.FileReader):
         :return: None
         """
         self.geo_files.geodb.db.commit()
-        # self.geo_files.geodb.clear_geoname_data()

@@ -1051,7 +1051,6 @@ table {
         <li class="mono"><a href="Country.m.html">geodata.Country</a></li>
         <li class="mono"><a href="DB.m.html">geodata.DB</a></li>
         <li class="mono"><a href="Example.m.html">geodata.Example</a></li>
-        <li class="mono"><a href="Features.m.html">geodata.Features</a></li>
         <li class="mono"><a href="FileReader.m.html">geodata.FileReader</a></li>
         <li class="mono"><a href="GeoDB.m.html">geodata.GeoDB</a></li>
         <li class="mono"><a href="GeoUtil.m.html">geodata.GeoUtil</a></li>
@@ -1060,7 +1059,9 @@ table {
         <li class="mono"><a href="Loc.m.html">geodata.Loc</a></li>
         <li class="mono"><a href="MatchScore.m.html">geodata.MatchScore</a></li>
         <li class="mono"><a href="Normalize.m.html">geodata.Normalize</a></li>
+        <li class="mono"><a href="Optimize.m.html">geodata.Optimize</a></li>
         <li class="mono"><a href="QueryList.m.html">geodata.QueryList</a></li>
+        <li class="mono"><a href="Test.m.html">geodata.Test</a></li>
         <li class="mono"><a href="__version__.m.html">geodata.__version__</a></li>
       </ul>
     </li>
@@ -1129,16 +1130,10 @@ table {
 
       </div>
       <div class="item">
-      <p class="name"><a href="Features.m.html">geodata.Features</a></p>
-      
-  
-
-      </div>
-      <div class="item">
       <p class="name"><a href="FileReader.m.html">geodata.FileReader</a></p>
       
   
-    <div class="desc"><p>Read a file and call a handler for each line.</p></div>
+    <div class="desc"><p>Read a file and call a handler for each line. Update progress bar if present.</p></div>
 
       </div>
       <div class="item">
@@ -1160,11 +1155,12 @@ Provides a number of methods to lookup locations by name, feature, admin ID, etc
       <p class="name"><a href="Geodata.m.html">geodata.Geodata</a></p>
       
   
-    <div class="desc"><p>Provide a place lookup gazeteer based on files from geonames.org. <br />
-  These are the primary location lookup methods for the geodata package.  </p>
+    <div class="desc"><p>Provides a place lookup gazeteer based on files from geonames.org. <br />
+  Provides the location lookup methods for the geodata package.  </p>
 <ul>
-<li>Creates a local place database using files from geonames.org  </li>
-<li>Parses lookup text and returns multiple matches ranked by closeness to lookup...</li>
+<li>Creates a local sqlite3 place database of geonames.org data  </li>
+<li>Parses lookup text and returns multiple matches ranked by closeness to lookup term<br />
++...</li>
 </ul></div>
 
       </div>
@@ -1195,7 +1191,16 @@ the lookup results</p></div>
       
   
     <div class="desc"><p>Provide functions to normalize text strings by converting to lowercase, removing noisewords. <br />
-This is used by the lookup functions and the database build functions.</p></div>
+This is used by the lookup functions and the database build functions and match scoring <br />
+noise_words is a list of replacements only used for match scoring <br />
+phrase_cleanup is a list of replacements for...</p></div>
+
+      </div>
+      <div class="item">
+      <p class="name"><a href="Optimize.m.html">geodata.Optimize</a></p>
+      
+  
+    <div class="desc"><p>Example program for Geodata gazeteer.</p></div>
 
       </div>
       <div class="item">
@@ -1203,6 +1208,12 @@ This is used by the lookup functions and the database build functions.</p></div>
       
   
     <div class="desc"><p>Build database queries for various lookups</p></div>
+
+      </div>
+      <div class="item">
+      <p class="name"><a href="Test.m.html">geodata.Test</a></p>
+      
+  
 
       </div>
       <div class="item">

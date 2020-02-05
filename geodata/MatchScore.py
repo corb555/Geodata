@@ -31,6 +31,20 @@ class Score:
     VERY_POOR = 100
 
 
+def _calculate_prefix_penalty(prefix_len):
+    if prefix_len > 0:
+        return 5 + prefix_len
+    else:
+        return 0
+
+
+def remove_if_input_empty(target_tokens, res_tokens):
+    # Remove terms in Result if input for that term was empty
+    for ix, term in enumerate(target_tokens):
+        if len(term) == 0 and ix < len(res_tokens):
+            res_tokens[ix] = ''
+
+
 class MatchScore:
     """
     Calculate a heuristic score for how well a result place name matches a target place name. The score is based on percent
@@ -79,12 +93,6 @@ class MatchScore:
             self.logger.error('Out weight + Feature weight must be less than 1.0')
             self.result_weight = 1.0 - self.feature_weight
         self.input_weight = 1.0 - result_weight - feature_weight
-
-    def remove_if_input_empty(self, target_tokens, res_tokens):
-        # Remove terms in Result if input for that term was empty
-        for ix, term in enumerate(target_tokens):
-            if len(term) == 0 and ix < len(res_tokens):
-                res_tokens[ix] = ''
 
     def match_score(self, target_place: Loc, result_place: Loc) -> float:
         """
@@ -139,7 +147,7 @@ class MatchScore:
         target_tokens = target_words.split(',')
 
         # Remove terms in Result if input for that term was empty
-        self.remove_if_input_empty(target_tokens, res_tokens)
+        remove_if_input_empty(target_tokens, res_tokens)
 
         # update prefix
         target_tokens[0] = Loc.Loc.matchscore_prefix(target_tokens[0], result_words)
@@ -167,7 +175,7 @@ class MatchScore:
             wildcard_penalty = 0.0
 
         # Prefix penalty 
-        prefix_penalty = self._calculate_prefix_penalty(target_tkn_len[0])
+        prefix_penalty = _calculate_prefix_penalty(target_tkn_len[0])
 
         # Feature score is to ensure "important" places get higher rank (large city, etc)
         feature_score = Geodata.Geodata._feature_priority(result_place.feature)
@@ -244,7 +252,7 @@ class MatchScore:
         orig_res_len = len(original_result)
         if orig_res_len > 0:
             # number of chars of DB RESULT text that matched target - scaled from 0 (20 or more matched) to 100 (0 matched)
-            out_score_1 = (20.0 - min((orig_res_len - len(unmatched)), 20.0)) * 5.0
+            out_score_1 = (20.0 - min(float(orig_res_len - len(unmatched)), 20.0)) * 5.0
             # self.logger.debug(f'matched {orig_res_len - len(unmatched)} [{unmatched}]')
 
             # Percent of unmatched
@@ -257,12 +265,6 @@ class MatchScore:
         self.score_diags += f'\noutrem=[{unmatched}]'
 
         return out_score
-
-    def _calculate_prefix_penalty(self, prefix_len):
-        if prefix_len > 0:
-            return 5 + prefix_len
-        else:
-            return 0
 
     @staticmethod
     def _adjust_adm_score(score, feat):

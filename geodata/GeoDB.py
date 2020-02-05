@@ -149,8 +149,6 @@ class GeoDB:
         else:
             # Lookup as City
             lookup_type = 'CITY'
-            #if place.admin2_id == '':
-            #    self.wide_search_admin2_id(place=place)
             self.wide_search_city(place)
 
         if place.georow_list:
@@ -160,16 +158,6 @@ class GeoDB:
         else:
             self.debug(f'LOOKUP. No match:for {lookup_type}  targ={place.target} nm=[{place.get_five_part_title()}]\n')
             place.georow_list = []
-            
-    def add_query_by_feature(self, query_list, lookup_target, iso):
-        # Scan target to see if we can determine what feature type it is
-        word, group = GeoUtil.get_feature_group(lookup_target)
-        if word != '':
-            targ = re.sub(word, '', lookup_target)
-            query_list.append(Query(where="name LIKE ? AND country LIKE ? AND f_code LIKE ?",
-                  args=(targ, iso, group),
-                  result=Result.WORD_MATCH))
-            self.logger.debug(f'Added Feature query name={targ} group={group}')
 
     def wide_search_city(self, place: Loc):
         """
@@ -296,7 +284,7 @@ class GeoDB:
         query_list = []
         QueryList.QueryList.build_query_list(typ=QueryList.Typ.ADMIN2, query_list=query_list, place=place)
 
-        # self.debug(f'Admin2 lookup=[{lookup_target}] country=[{place.country_iso}]')
+        self.debug(f'Admin2 lookup=[{place.target}] country=[{place.country_iso}]')
         place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.geodata', 
                                                     query_list=query_list)
 
@@ -305,10 +293,7 @@ class GeoDB:
             save_admin2 = place.admin2_name
             place.city1 = place.admin2_name
             place.admin2_name = ''
-            # self.debug(f'Try admin2 as city: [{place.target}]')
-
-            #self.wide_search_city(place)
-
+            self.debug(f'Try admin2 as city: [{place.target}]')
             if len(place.georow_list) == 0:
                 #  not found.  restore admin
                 place.admin2_name = save_admin2
@@ -510,7 +495,7 @@ class GeoDB:
                   result=Result.STRONG_MATCH)
             ]
         row_list = []
-        res = self.process_query_list(result_list=row_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
+        self.process_query_list(result_list=row_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
         if len(row_list) > 0:
             row = row_list[0]
@@ -542,13 +527,26 @@ class GeoDB:
                   result=Result.STRONG_MATCH)
             ]
         row_list = []
-        res = self.process_query_list(result_list=row_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
+        self.process_query_list(result_list=row_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
         if len(row_list) > 0:
             row = row_list[0]
             return row[Entry.NAME]
         else:
             return ''
+        
+    def get_admin1_name(self, place: Loc) -> str:
+        """
+             Get admin1 name using place.admin1_id
+
+        # Args:   
+            place:   place instance.  Uses  place.admin1_id for lookup
+
+        # Returns:
+            Admin1 name.  Place instance admin1_name is updated with DB result
+        """
+        place.admin1_name = self.get_admin1_name_direct(place.admin1_id, place.country_iso)
+        return place.admin1_name
 
     def get_admin2_name_direct(self, admin1_id, admin2_id, iso) -> str:
         """
@@ -579,7 +577,7 @@ class GeoDB:
                   result=Result.PARTIAL_MATCH))
 
         row_list = []
-        res = self.process_query_list(result_list=row_list, select_string=self.select_str, from_tbl='main.geodata', query_list=query_list)
+        self.process_query_list(result_list=row_list, select_string=self.select_str, from_tbl='main.geodata', query_list=query_list)
 
         if len(row_list) > 0:
             row = row_list[0]
@@ -589,6 +587,19 @@ class GeoDB:
         else:
             return ''
 
+    def get_admin2_name(self, place: Loc) -> str:
+        """
+             Get admin2 name using place.admin1_id and place.admin2_id
+
+        # Args:   
+            place:   place instance.  Uses  place.admin1_id and place.admin2_id for lookup
+
+        # Returns:
+            Admin2 name.  Place instance admin2_name is updated with DB result
+        """
+        place.admin2_name = self.get_admin2_name_direct(place.admin1_id, place.admin2_id, place.country_iso)
+        return place.admin2_name
+    
     def get_geoid(self, place: Loc) -> None:
         """
              Search for location using Geoid in place.target
@@ -632,52 +643,6 @@ class GeoDB:
             update[GeoUtil.Entry.SCORE] = int(score * 100)
             place.georow_list[idx] = tuple(update)
 
-    def get_admin1_name(self, place: Loc) -> str:
-        """
-             Get admin1 name using place.admin1_id
-
-        # Args:   
-            place:   place instance.  Uses  place.admin1_id for lookup
-
-        # Returns:
-            Admin1 name.  Place instance admin1_name is updated with DB result
-        """
-        self.debug(f'GET ADMIN1 NAME {place.admin1_id}')
-        place.admin1_name = self.get_admin1_name_direct(place.admin1_id, place.country_iso)
-        return place.admin1_name
-
-    def get_admin2_name(self, place: Loc) -> str:
-        """
-             Get admin2 name using place.admin1_id and place.admin2_id
-
-        # Args:   
-            place:   place instance.  Uses  place.admin1_id and place.admin2_id for lookup
-
-        # Returns:
-            Admin2 name.  Place instance admin2_name is updated with DB result
-        """
-        place.admin2_name = self.get_admin2_name_direct(place.admin1_id, place.admin2_id, place.country_iso)
-        return place.admin2_name
-
-    def lookup_main_dbid(self, place: Loc) -> None:
-        """Search for DB ID in main table"""
-        query_list = [
-            Query(where="id = ? ",
-                  args=(place.target,),
-                  result=Result.STRONG_MATCH)
-            ]
-        place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str,
-                                                                       from_tbl='main.geodata', query_list=query_list)
-
-    def lookup_admin_dbidZZZ(self, place: Loc) -> None:
-        """Search for DB ID in admin table"""
-        query_list = [
-            Query(where="id = ? ",
-                  args=(place.target,),
-                  result=Result.STRONG_MATCH)
-            ]
-        place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
-
     def get_country_name(self, iso: str) -> str:
         """
              return country name for specified ISO code 
@@ -700,7 +665,7 @@ class GeoDB:
                   result=Result.STRONG_MATCH)]
 
         row_list = []
-        res = self.process_query_list(result_list=row_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
+        self.process_query_list(result_list=row_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
         if len(row_list) > 0:
             res = row_list[0][Entry.NAME]
@@ -725,12 +690,11 @@ class GeoDB:
         lookup_target, modified = Normalize.country_normalize(place.country_name)
         if len(lookup_target) == 0:
             return ''
-        query_list = []
+        query_list = [Query(where="name = ? AND f_code = ? ",
+                            args=(lookup_target, 'ADM0'),
+                            result=Result.STRONG_MATCH)]
 
         # Add queries - each query gets less exact
-        query_list.append(Query(where="name = ? AND f_code = ? ",
-                                args=(lookup_target, 'ADM0'),
-                                result=Result.STRONG_MATCH))
 
         place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
@@ -793,6 +757,16 @@ class GeoDB:
                                                                     query_list=query_list)
             place.georow_list.extend(admin_list)
             # self.debug(f'admin Result {place.georow_list}')
+            
+    def lookup_main_dbid(self, place: Loc) -> None:
+        """Search for DB ID in main table"""
+        query_list = [
+            Query(where="id = ? ",
+                  args=(place.target,),
+                  result=Result.STRONG_MATCH)
+            ]
+        place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str,
+                                                                       from_tbl='main.geodata', query_list=query_list)
 
     def copy_georow_to_place(self, row, place: Loc, fast:bool):
         """
@@ -849,7 +823,7 @@ class GeoDB:
 
         try:
             place.score = row[Entry.SCORE]
-        except IndexError as e:
+        except IndexError :
             pass
 
     def clear_geoname_data(self):
@@ -859,28 +833,6 @@ class GeoDB:
         for tbl in ['geodata', 'admin']:
             # noinspection SqlWithoutWhere
             self.db.delete_table(tbl)
-
-    def create_geoid_index(self):
-        """
-        Create database indices for GEOID
-        """
-        self.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS geoid_idx ON geodata(geoid)')
-        self.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS admgeoid_idx ON admin(geoid)')
-        self.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS altnamegeoid_idx ON altname(geoid)')
-
-    def create_indices(self):
-        """
-        Create indices for geoname database
-        """
-        self.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS name_idx ON geodata(name, country )')
-        self.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS admin1_idx ON geodata(admin1_id )')
-        self.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS sdx_idx ON geodata(sdx )')
-        self.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_admin2_idx ON geodata(admin1_id, admin2_id, f_code)')
-
-        self.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_name_idx ON admin(name, country )')
-        self.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_admin1_idx ON admin(admin1_id, f_code)')
-        self.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_country_idx ON admin(country, f_code)')
-        self.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_sdx_idx ON admin(sdx )')
 
     @staticmethod
     def make_georow(name: str, iso: str, adm1: str, adm2: str, lat: float, lon: float, feat: str, geoid: str, sdx: str) -> ():
@@ -1007,7 +959,7 @@ class GeoDB:
                   result=Result.STRONG_MATCH)]
         select = 'name, lang'
         row_list = []
-        res = self.process_query_list(result_list=row_list, select_string=select, from_tbl='main.altname', query_list=query_list)
+        self.process_query_list(result_list=row_list, select_string=select, from_tbl='main.altname', query_list=query_list)
         if len(row_list) > 0:
             return row_list[0][0], row_list[0][1]
         else:
@@ -1022,7 +974,7 @@ class GeoDB:
         #Returns:   
             row_id for inserted row   
         """
-        # We split the data into 2  tables, 1) Admin: ADM0/ADM1,  and 2) city / county data
+        # We split the data into 2  tables, 1) admin: ADM0/ADM1,  and 2) geodata:  all other place types (city, county, ADM2, etc)
         if feat_code == 'ADM1' or feat_code == 'ADM0':
             sql = ''' INSERT OR IGNORE INTO admin(name,country, admin1_id,admin2_id,lat,lon,f_code, geoid, sdx)
                       VALUES(?,?,?,?,?,?,?,?,?) '''
@@ -1064,6 +1016,12 @@ class GeoDB:
 
         """
         self.db.begin()
+        
+        # Delete previous version from table
+        # noinspection SqlWithoutWhere
+        sql ='''DELETE FROM version;'''
+        args = None
+        self.db.execute(sql, args)
 
         sql = ''' INSERT OR IGNORE INTO version(version)
                   VALUES(?) '''
@@ -1087,7 +1045,7 @@ class GeoDB:
                       result=Result.STRONG_MATCH)]
             select_str = '*'
             row_list = []
-            res = self.process_query_list(result_list=row_list, select_string=select_str, from_tbl='main.version', query_list=query_list)
+            self.process_query_list(result_list=row_list, select_string=select_str, from_tbl='main.version', query_list=query_list)
             if len(row_list) > 0:
                 ver = int(row_list[0][1])
                 self.logger.debug(f'Database Version = {ver}')
@@ -1211,7 +1169,7 @@ class GeoDB:
         """
         self.debug(f'WORD MATCH from {from_tbl} where {where} val={args} ')
         count = Counter()
-        dict = {}
+        dct = {}
         max_matches = 0
         words = args[0].split()
 
@@ -1231,7 +1189,7 @@ class GeoDB:
                     dbid = db_row[Entry.ID]
                     ct = count[dbid]
                     if ct == 0:
-                        dict[dbid] = db_row
+                        dct[dbid] = db_row
                         count[dbid] = 1
                     else:
                         count[dbid] = 2
@@ -1239,7 +1197,17 @@ class GeoDB:
                         max_matches = count[dbid] 
     
         # Return list with items that had most word matches
-        return [dict[dbid] for dbid in count]
+        return [dct[dbid] for dbid in count]
+
+    def add_query_by_feature(self, query_list, lookup_target, iso):
+        # Scan target to see if we can determine what feature type it is
+        word, group = GeoUtil.get_feature_group(lookup_target)
+        if word != '':
+            targ = re.sub(word, '', lookup_target)
+            query_list.append(Query(where="name LIKE ? AND country LIKE ? AND f_code LIKE ?",
+                                    args=(targ, iso, group),
+                                    result=Result.WORD_MATCH))
+            self.logger.debug(f'Added Feature query name={targ} group={group}')
 
     def assign_scores(self, place, target_feature, fast):
         """
@@ -1298,54 +1266,3 @@ class GeoDB:
         if min_score < MatchScore.Score.VERY_GOOD + 2:
             place.result_type = GeoUtil.Result.STRONG_MATCH
             
-        #if min_score > MatchScore.Score.POOR:
-        #    place.georow_list.clear()
-
-    def create_tables(self):
-        """
-        Create all the tables needed for the geoname database
-        """
-        # name, country, admin1_id, admin2_id, lat, lon, f_code, geoid
-        sql_geodata_table = """CREATE TABLE IF NOT EXISTS geodata    (
-                id           integer primary key autoincrement not null,
-                name     text,
-                country     text,
-                admin1_id     text,
-                admin2_id text,
-                lat      text,
-                lon       text,
-                f_code      text,
-                geoid      text,
-                sdx     text
-                                    );"""
-
-        # name, country, admin1_id, admin2_id, lat, lon, f_code, geoid
-        sql_admin_table = """CREATE TABLE IF NOT EXISTS admin    (
-                id           integer primary key autoincrement not null,
-                name     text,
-                country     text,
-                admin1_id     text,
-                admin2_id text,
-                lat      text,
-                lon       text,
-                f_code      text,
-                geoid      text,
-                sdx     text
-                                    );"""
-
-        # name, country, admin1_id, admin2_id, lat, lon, f_code, geoid
-        sql_alt_name_table = """CREATE TABLE IF NOT EXISTS altname    (
-                id           integer primary key autoincrement not null,
-                name     text,
-                lang     text,
-                geoid      text
-                                    );"""
-
-        # name, country, admin1_id, admin2_id, lat, lon, f_code, geoid
-        sql_version_table = """CREATE TABLE IF NOT EXISTS version    (
-                id           integer primary key autoincrement not null,
-                version     integer
-                                    );"""
-
-        for tbl in [sql_geodata_table, sql_admin_table, sql_version_table, sql_alt_name_table]:
-            self.db.create_table(tbl)

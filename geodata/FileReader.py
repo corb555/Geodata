@@ -17,7 +17,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
-"""        Read a file and call a handler for each line.  """
+"""        Read a file and call a handler for each line. Update progress bar if present.  """
 import logging
 import os
 
