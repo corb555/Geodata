@@ -20,7 +20,6 @@ import logging
 import os
 import sys
 import time
-import tkinter
 from collections import namedtuple
 from tkinter import messagebox
 from typing import Dict

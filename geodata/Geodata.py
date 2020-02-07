@@ -584,10 +584,11 @@ Provide a place lookup gazeteer based on files from geonames.org
             0-100 for feature priority   
 
         """
-        f_prior = feature_priority.get(feature)
-        if f_prior is None:
-            f_prior = feature_priority.get('DEFAULT')
-        return 100.0 - float(f_prior)
+        res = feature_priority.get(feature)
+        if res:
+            return 100.0 - res 
+        else:
+            return 100.0 - feature_priority.get('DEFAULT')
 
     def open_diag_file(self, miss_diag_fname: str):
         """

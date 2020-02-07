@@ -154,7 +154,7 @@ class GeoDB:
         if place.georow_list:
             self.logger.debug(f'LOOKUP: {len(place.georow_list)} matches for type={lookup_type}  '
                               f'targ={place.target} nm=[{place.get_five_part_title()}]\n')
-            self.assign_scores(place, target_feature, fast=False)
+            self.assign_scores(place, target_feature, fast=False, quiet=False)
         else:
             self.debug(f'LOOKUP. No match:for {lookup_type}  targ={place.target} nm=[{place.get_five_part_title()}]\n')
             place.georow_list = []
@@ -332,7 +332,7 @@ class GeoDB:
 
         # Sort places in match_score order
         if len(place.georow_list) > 0:
-            self.assign_scores(place, 'ADM1', fast=True)
+            self.assign_scores(place, 'ADM1', fast=True, quiet=True)
             sorted_list = sorted(place.georow_list, key=itemgetter(GeoUtil.Entry.SCORE))
             place.admin1_id = sorted_list[0][Entry.ADM1]
             # self.debug(f'Found adm1 id = {place.admin1_id}')
@@ -407,7 +407,7 @@ class GeoDB:
 
         place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
-        self.assign_scores(place, 'ADM1', fast=True)
+        self.assign_scores(place, 'ADM1', fast=True, quiet=True)
         
         # Sort places in match_score order
         if len(place.georow_list) > 0:
@@ -465,7 +465,7 @@ class GeoDB:
         place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.geodata', 
                                                     query_list=query_list)
 
-        self.assign_scores(place, 'ADM2', fast=False)
+        self.assign_scores(place, 'ADM2', fast=False,quiet=True)
 
         if place.result_type == Result.STRONG_MATCH:
             row = place.georow_list[0]
@@ -698,7 +698,7 @@ class GeoDB:
 
         place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
-        self.assign_scores(place, 'ADM0', fast=True)
+        self.assign_scores(place, 'ADM0', fast=True, quiet=True)
 
         if place.result_type == Result.STRONG_MATCH:
             iso = place.georow_list[0][Entry.ISO]
@@ -1196,7 +1196,7 @@ class GeoDB:
                     if count[dbid] > max_matches:
                         max_matches = count[dbid] 
     
-        # Return list with items that had most word matches
+        # Return list with items 
         return [dct[dbid] for dbid in count]
 
     def add_query_by_feature(self, query_list, lookup_target, iso):
@@ -1209,21 +1209,28 @@ class GeoDB:
                                     result=Result.WORD_MATCH))
             self.logger.debug(f'Added Feature query name={targ} group={group}')
 
-    def assign_scores(self, place, target_feature, fast):
+    def assign_scores(self, place, target_feature, fast, quiet):
         """
-            Assign match score to each result in list   
-        # Args:   
-            place:   
-            target_feature:  The feature type we were searching for   
+                    Assign match score to each result in list   
+
+        Args:
+            place: 
+            target_feature: 
+            fast: 
+            quiet: if True, set logging to INFO
+
+        Returns:
+
         """
         result_place: Loc = Loc.Loc()
 
         min_score = 9999
-        original_prefix = place.prefix 
+        original_prefix = place.prefix
+
+        lev = logging.getLogger().getEffectiveLevel()
         
-        # Remove redundant terms in prefix by converting it to dictionary (then back to list)
-        # prefix_list = list(dict.fromkeys(original_prefix.split(' ')))
-        # original_prefix = ' '.join(list(prefix_list))
+        if quiet:
+            logging.getLogger().setLevel(logging.INFO)
 
         # Add search quality score and prefix to each entry
         for idx, rw in enumerate(place.georow_list):
@@ -1261,8 +1268,10 @@ class GeoDB:
             result_place.prefix = Normalize.normalize(place.prefix, True)
             update[GeoUtil.Entry.PREFIX] = result_place.prefix
             place.georow_list[idx] = tuple(update)  # Convert back from list to tuple
-            self.logger.debug(f'{update[GeoUtil.Entry.SCORE]:.1f} {update[GeoUtil.Entry.NAME]} [{update[GeoUtil.Entry.PREFIX]}]')
+            #self.logger.debug(f'{update[GeoUtil.Entry.SCORE]:.1f} {update[GeoUtil.Entry.NAME]} [{update[GeoUtil.Entry.PREFIX]}]')
 
         if min_score < MatchScore.Score.VERY_GOOD + 2:
             place.result_type = GeoUtil.Result.STRONG_MATCH
-            
+
+        # Restore logging level
+        logging.getLogger().setLevel(lev)

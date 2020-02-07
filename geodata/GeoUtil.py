@@ -81,8 +81,7 @@ def get_soundex(txt):
     """
     Returns: Phonetics Double Metaphone Soundex code for text.  
     """
-    res = phonetics.dmetaphone(txt)
-    return res[0]
+    return phonetics.dmetaphone(txt)[0]
 
 
 def set_debug_logging(msg):
@@ -160,7 +159,7 @@ def _lowercase_match_group(matchobj):
 
 def capwords(text):
     """
-    Change text to Title Case. Fixes title() apostrophe handling
+    Change text to Title Case. Fixes the apostrophe handling problem with title() 
     """
     if text is not None:
         # Fix handling for contractions not handled correctly by title()

@@ -27,9 +27,10 @@ import unidecode
 
 from geodata import GeodataBuild, GeoUtil, Loc, GeoDB
 
+# Todo - simplify and make these all list driven
 
 noise_words= [
-    # Noise words - Replacements - only used to calculate match similarity scoring
+    # Noise words - Replacements -  used to calculate match similarity scoring
     (r', ', ','),
     (r"normandy american ", 'normandie american '),
     (r'nouveau brunswick', ' '),
@@ -50,12 +51,11 @@ noise_words= [
     (r' du ', ' '),
     (r' of ', ' '),
     (r' departement', ' '),
-    (r'battle of ', 'battle of ,'),  # - battle of - add comma
     (r'royal borough of windsor and maidenhead', 'berkshire'),
     ]
 
 phrase_cleanup = [
-    # Phrase cleanup - replacements always applied: for database build, lookup, and match scoring
+    # Phrase cleanup - replacements always applied (for database build, lookup, and match scoring)
     ('r.k. |r k ', 'rooms katholieke '),
     ('sveti |saints |sainte |sint |saint |sankt |st\. ', 'st '),  # Normalize Saint to St
     (r' co\.', ' county'),  # Normalize County
@@ -231,7 +231,7 @@ def add_aliases_to_database(geo_files: GeodataBuild):
 
 
 def admin1_normalize(admin1_name: str, iso):
-    """ Normalize historic or colloquial Admin1 names to standard """
+    """ Normalize historic or colloquial Admin1 names to current geoname standard """
     admin1_name = normalize(admin1_name, False)
     if iso == 'de':
         admin1_name = re.sub(r'bayern', 'bavaria', admin1_name)

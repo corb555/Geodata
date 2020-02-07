@@ -374,10 +374,9 @@ class Loc:
         # Normalize country name
         save_country = self.country_name
         self.country_name, modified = Normalize.country_normalize(self.country_name)
+        
+        #self.logger.debug(f"[{self.prefix}], [{self.city1}], [{self.admin2_name}], [{self.admin1_name}], [{str(self.country_name)}]")
 
-        # if len(self.extra) > 0:
-        #    full_title = self.prefix + ' ' + self.extra + ',' + f"{self.city1}, {self.admin2_name}, {self.admin1_name}, {str(self.country_name)}"
-        # else:
         full_title = self.prefix + ',' + f"{self.city1}, {self.admin2_name}, {self.admin1_name}, {str(self.country_name)}"
 
         # Restore values to original
