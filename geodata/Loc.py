@@ -138,10 +138,10 @@ class Loc:
         self.original_entry = place_name
 
         # Convert open-brace and open-paren to comma.  close brace/paren will be stripped by normalize()
-        res = re.sub(r'\[', ',', place_name)
-        res = re.sub(r'\(', ',', res)
+        name = re.sub(r'\[', ',', place_name)
+        name = re.sub(r'\(', ',', name)
 
-        tokens = res.split(",")
+        tokens = name.split(",")
         if len(tokens[-1]) == 0:
             # Last item is blank, so remove it
             tokens = tokens[:-1]
@@ -182,7 +182,8 @@ class Loc:
 
         if token_count > 1:
             #  See if 2nd to last token is Admin1
-            self.admin1_name = Normalize.admin1_normalize(tokens[-2], self.country_iso)
+            val = tokens[-2]
+            self.admin1_name = Normalize.admin1_normalize(val, self.country_iso)
 
             if len(self.admin1_name) > 0:
                 self.target = self.admin1_name

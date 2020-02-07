@@ -56,7 +56,7 @@ noise_words= [
 
 phrase_cleanup = [
     # Phrase cleanup - replacements always applied (for database build, lookup, and match scoring)
-    ('r.k. |r k ', 'rooms katholieke '),
+    ('r\.k\. |r k ', 'rooms katholieke '),
     ('sveti |saints |sainte |sint |saint |sankt |st\. ', 'st '),  # Normalize Saint to St
     (r' co\.', ' county'),  # Normalize County
     (r'united states of america', 'usa'),  # Normalize to USA

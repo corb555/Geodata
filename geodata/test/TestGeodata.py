@@ -91,8 +91,14 @@ class TestGeodata(unittest.TestCase):
             return float(lat), GeoUtil.capwords(self.place.prefix) + self.place.prefix_commas + nm
         else:
             return float(lat), 'NO MATCH'
-        
-
+    # bolingbroke castle
+    
+    def test_place_name322(self):
+        title = "City "
+        lat, name = self.run_test(title, "bolingbroke castle")
+        self.assertEqual("bolingbroke castle",
+                         name, title)
+    """
     def test_place_name22(self):
         title = "City - Evreux, Eure, Normandy, France"
         lat, name = self.run_test(title, "Evreux, L'Eure, Normandy, France")
@@ -718,7 +724,7 @@ class TestGeodata(unittest.TestCase):
         title = "Chartres,Eure Et Loir, Beauce Centre,  France"
         lat, name = self.run_test(title, "Chartres,D'Eure Et Loir,  ,  France")
         self.assertEqual("Chartres, Departement D'Eure Et Loir, Centre Val De Loire, France", name, title)
-    
+    """
 
 if __name__ == '__main__':
     unittest.main()
