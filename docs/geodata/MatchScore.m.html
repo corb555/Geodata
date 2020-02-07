@@ -1044,6 +1044,8 @@ table {
     <li class="set"><h3><a href="#header-functions">Functions</a></h3>
       
   <ul>
+    <li class="mono"><a href="#geodata.MatchScore.full_normalized_title">full_normalized_title</a></li>
+    <li class="mono"><a href="#geodata.MatchScore.is_street">is_street</a></li>
     <li class="mono"><a href="#geodata.MatchScore.remove_if_input_empty">remove_if_input_empty</a></li>
   </ul>
 
@@ -1089,6 +1091,34 @@ table {
   <section id="section-items">
 
     <h2 class="section-title" id="header-functions">Functions</h2>
+      
+  <div class="item">
+    <div class="name def" id="geodata.MatchScore.full_normalized_title">
+    <p>def <span class="ident">full_normalized_title</span>(</p><p>place)</p>
+    </div>
+    
+
+    
+  
+  <div class="source_cont">
+</div>
+
+  </div>
+  
+      
+  <div class="item">
+    <div class="name def" id="geodata.MatchScore.is_street">
+    <p>def <span class="ident">is_street</span>(</p><p>text)</p>
+    </div>
+    
+
+    
+  
+  <div class="source_cont">
+</div>
+
+  </div>
+  
       
   <div class="item">
     <div class="name def" id="geodata.MatchScore.remove_if_input_empty">
@@ -1160,10 +1190,10 @@ of characters that didnt match plus other items - described in match_score()</p>
         <span class="nv">Exact</span> <span class="nv">match</span> <span class="nv">of</span> <span class="nv">city</span> <span class="nv">term</span> <span class="nv">gets</span> <span class="nv">a</span> <span class="nv">bonus</span>
 <span class="mi">5</span><span class="ss">)</span> <span class="nv">Calculate</span> <span class="nb">result</span> <span class="nv">score</span> <span class="o">-</span> <span class="nv">percent</span> <span class="nv">of</span> <span class="nv">characters</span> <span class="nv">in</span> <span class="nv">db</span> <span class="nb">result</span> <span class="nv">that</span> <span class="nv">didn</span><span class="s1">&#39;</span><span class="s">t match input</span>
 
-<span class="nv">B</span><span class="ss">)</span> <span class="nv">Score</span> <span class="nv">components</span> <span class="ss">(</span><span class="nv">All</span> <span class="nv">are</span> <span class="nv">weighted</span> <span class="nv">except</span> <span class="nv">Prefix</span> <span class="nv">and</span> <span class="nv">Parse</span><span class="ss">)</span>:   
+<span class="nv">B</span><span class="ss">)</span> <span class="nv">Score</span> <span class="nv">components</span> <span class="ss">(</span><span class="nv">All</span> <span class="nv">are</span> <span class="nv">weighted</span> <span class="nv">in</span> <span class="nv">final</span> <span class="nv">score</span><span class="ss">)</span>:   
 <span class="nv">in_score</span> <span class="o">-</span> <span class="ss">(</span><span class="mi">0</span><span class="o">-</span><span class="mi">100</span><span class="ss">)</span> <span class="o">-</span> <span class="nv">percent</span> <span class="nv">of</span> <span class="nv">characters</span> <span class="nv">in</span> <span class="nv">input</span> <span class="nv">that</span> <span class="nv">didnt</span> <span class="nv">match</span> <span class="nv">output</span>   
 <span class="nv">out_score</span> <span class="o">-</span> <span class="ss">(</span><span class="mi">0</span><span class="o">-</span><span class="mi">100</span><span class="ss">)</span> <span class="o">-</span> <span class="nv">percent</span> <span class="nv">of</span> <span class="nv">characters</span> <span class="nv">in</span> <span class="nv">output</span> <span class="nv">that</span> <span class="nv">didnt</span> <span class="nv">match</span> <span class="nv">input</span>   
-<span class="nv">feature_score</span> <span class="o">-</span> <span class="ss">(</span><span class="mi">0</span><span class="o">-</span><span class="mi">100</span><span class="ss">)</span>  <span class="nv">More</span> <span class="nv">important</span> <span class="nv">features</span> <span class="nv">get</span> <span class="nv">lower</span> <span class="nb">result</span>.   
+<span class="nv">feature_score</span> <span class="o">-</span> <span class="ss">(</span><span class="mi">0</span><span class="o">-</span><span class="mi">100</span><span class="ss">)</span>  <span class="nv">More</span> <span class="nv">important</span> <span class="nv">features</span> <span class="nv">get</span> <span class="nv">lower</span> <span class="nv">score</span>.   
 <span class="nv">City</span> <span class="nv">with</span> <span class="mi">1</span><span class="nv">M</span> <span class="nv">population</span> <span class="nv">is</span> <span class="nv">zero</span>.  <span class="nv">Valley</span> <span class="nv">is</span> <span class="mi">100</span>.  <span class="nv">Geodata</span>.<span class="nv">feature_priority</span><span class="ss">()</span>.  
 <span class="nv">wildcard_penalty</span> <span class="o">-</span> <span class="nv">score</span> <span class="nv">is</span> <span class="nv">raised</span> <span class="nv">by</span> <span class="nv">X</span> <span class="k">if</span> <span class="nv">it</span> <span class="nv">includes</span> <span class="nv">a</span> <span class="nv">wildcard</span>   
 <span class="nv">prefix_penalty</span> <span class="o">-</span>  <span class="nv">score</span> <span class="nv">is</span> <span class="nv">raised</span> <span class="nv">by</span> <span class="nv">length</span> <span class="nv">of</span> <span class="nv">Prefix</span>
@@ -1200,11 +1230,11 @@ of characters that didnt match plus other items - described in match_score()</p>
 
     
   
-    <div class="desc"><p>Set weighting of score components
+    <div class="desc"><p>Set weighting of scoring components.  See match_score for details of weighting.  All weights are positive
 Args:
-    token_weight: List with Weights for match of County, State/Province, Country. City is always 1.0 <br />
-    prefix_weight:   Weighting for prefix
-    feature_weight:  Weighting for Feature match
+    token_weight:    List with Weights relative to City for County, State/Province, Country. City is 1.0 <br />
+    prefix_weight:   Weighting for prefix score
+    feature_weight:  Weighting for Feature match score
     result_weight:   Weighting for % of DB result that didnt match the target</p>
 <p>Returns:</p></div>
   <div class="source_cont">
@@ -1215,16 +1245,6 @@ Args:
           <h3>Instance variables</h3>
             <div class="item">
             <p id="geodata.MatchScore.MatchScore.feature_weight" class="name">var <span class="ident">feature_weight</span></p>
-            
-
-            
-  
-  <div class="source_cont">
-</div>
-
-            </div>
-            <div class="item">
-            <p id="geodata.MatchScore.MatchScore.in_score" class="name">var <span class="ident">in_score</span></p>
             
 
             
@@ -1254,16 +1274,6 @@ Args:
 
             </div>
             <div class="item">
-            <p id="geodata.MatchScore.MatchScore.out_score" class="name">var <span class="ident">out_score</span></p>
-            
-
-            
-  
-  <div class="source_cont">
-</div>
-
-            </div>
-            <div class="item">
             <p id="geodata.MatchScore.MatchScore.prefix_weight" class="name">var <span class="ident">prefix_weight</span></p>
             
 
@@ -1275,6 +1285,16 @@ Args:
             </div>
             <div class="item">
             <p id="geodata.MatchScore.MatchScore.result_weight" class="name">var <span class="ident">result_weight</span></p>
+            
+
+            
+  
+  <div class="source_cont">
+</div>
+
+            </div>
+            <div class="item">
+            <p id="geodata.MatchScore.MatchScore.score_diags" class="name">var <span class="ident">score_diags</span></p>
             
 
             
