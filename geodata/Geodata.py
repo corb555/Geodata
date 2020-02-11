@@ -113,7 +113,7 @@ Provide a place lookup gazeteer based on files from geonames.org
         # Create full entry text
         prfx = Loc.Loc.prefix_cleanup(prfx, place.get_long_name(self.geo_build.output_replace_dct))
         place.updated_entry = GeoUtil.capwords(prfx) + place.get_long_name(self.geo_build.output_replace_dct)
-        place.standard_parse = True
+        #place.standard_parse = True
 
         flags = ResultFlags(limited=False, filtered=False)
         result_list = []  # We will do different search types and append all results into result_list
@@ -188,7 +188,7 @@ Provide a place lookup gazeteer based on files from geonames.org
         #Returns:  None   
             place.georow_list is updated with matches   
         """
-        place.standard_parse = False
+        #place.standard_parse = False
         typ_name = ''
         if typ == Loc.PlaceType.CITY:
             # Try City as city (do as-is)
@@ -289,7 +289,7 @@ Provide a place lookup gazeteer based on files from geonames.org
 
         """
         # Try City as ADMIN2
-        place.standard_parse = False
+        #place.standard_parse = False
         place.admin2_name = place.city1
         place.city1 = ''
         place.place_type = Loc.PlaceType.ADMIN2
@@ -468,10 +468,12 @@ Provide a place lookup gazeteer based on files from geonames.org
             weak_threshold = MatchScore.Score.VERY_GOOD / 2 + abs(min_score) * .8
 
             # Range to display when there is a strong match
-            if (min_score <= MatchScore.Score.VERY_GOOD and score > min_score + gap_threshold) or score > min_score + weak_threshold:
+            if (min_score <= MatchScore.Score.VERY_GOOD and score > min_score + gap_threshold) or score > min_score + weak_threshold\
+                    or score > MatchScore.Score.POOR:
                 if min_score <= MatchScore.Score.VERY_GOOD and score > min_score + gap_threshold:
-                    self.logger.debug(f'SKIP Score {score:.1f}  {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
-                                      f' {geo_row[GeoUtil.Entry.ADM1]} [{geo_row[GeoUtil.Entry.PREFIX]}]')
+                    self.logger.debug(f'SKIP Score {score:.1f}  [{geo_row[GeoUtil.Entry.PREFIX]}] {geo_row[GeoUtil.Entry.NAME]},'
+                                      f' {geo_row[GeoUtil.Entry.ADM2]},'
+                                      f' {geo_row[GeoUtil.Entry.ADM1]} ')
                 else:
                     self.logger.debug(f'WSKIP Score {score:.1f}  {geo_row[GeoUtil.Entry.NAME]}, {geo_row[GeoUtil.Entry.ADM2]},'
                                       f' {geo_row[GeoUtil.Entry.ADM1]}')
@@ -618,7 +620,7 @@ Provide a place lookup gazeteer based on files from geonames.org
         place.admin2_name = save_place.admin2_name
         place.prefix = save_place.prefix
         # place.extra = save_place.extra
-        place.standard_parse = save_place.standard_parse
+        #place.standard_parse = save_place.standard_parse
 
     def close(self):
         """

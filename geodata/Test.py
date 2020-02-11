@@ -1,15 +1,19 @@
-import re
+def remove_item(pattern, text) -> str:
+    # Find pattern in word in text and remove entire word
+    segment_list = text.split(',')
+    # Walk thru segments
+    for seg_idx, segment in enumerate(segment_list):
+        # Walk thru words
+        word_list = segment.split(' ')
+        for idx, word in enumerate(word_list):
+            if pattern in word:
+                # Remove entire word, not just pattern
+                word_list[idx] = ''
+        segment_list[seg_idx] = ' '.join(word_list)
+    text = ','.join(segment_list)
+    return text
 
 
-def is_street(text)->bool:
-    street_patterns = [r'\d', 'street', 'avenue', 'road']
-    for pattern in street_patterns:
-        if bool(re.search(pattern, text)):
-            return True
-    return False
+print(f"{remove_item('shire', 'pembroke castle, hampshire, england, united kingdom')}")
 
-print(is_street('oak')) 
-print(is_street('12 oak')) 
-print(is_street('oak street')) 
-print(is_street('12 oak road')) 
 

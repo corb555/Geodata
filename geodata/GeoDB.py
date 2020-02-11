@@ -152,8 +152,9 @@ class GeoDB:
             self.wide_search_city(place)
 
         if place.georow_list:
-            self.logger.debug(f'LOOKUP: {len(place.georow_list)} matches for type={lookup_type}  '
+            self.logger.debug(f'LOOKED UP: {len(place.georow_list)} matches for type={lookup_type}  '
                               f'targ={place.target} nm=[{place.get_five_part_title()}]\n')
+            #self.logger.debug(place.georow_list)
             self.assign_scores(place, target_feature, fast=False, quiet=False)
         else:
             self.debug(f'LOOKUP. No match:for {lookup_type}  targ={place.target} nm=[{place.get_five_part_title()}]\n')
@@ -261,7 +262,7 @@ class GeoDB:
         # Try each query in list
         place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.geodata',
                                                                        query_list=query_list)
-        #self.logger.debug(place.georow_list)
+        self.logger.debug(place.georow_list)
 
     def wide_search_admin2(self, place: Loc):
         """
@@ -1203,8 +1204,8 @@ class GeoDB:
         # Scan target to see if we can determine what feature type it is
         word, group = GeoUtil.get_feature_group(lookup_target)
         if word != '':
-            targ = re.sub(word, '', lookup_target)
-            query_list.append(Query(where="name LIKE ? AND country LIKE ? AND f_code LIKE ?",
+            targ = '%' + re.sub(word, '', lookup_target).strip(' ') + '%' 
+            query_list.append(Query(where="name LIKE ? AND country = ? AND f_code = ?",
                                     args=(targ, iso, group),
                                     result=Result.WORD_MATCH))
             self.logger.debug(f'Added Feature query name={targ} group={group}')
@@ -1228,7 +1229,6 @@ class GeoDB:
         original_prefix = place.prefix
 
         lev = logging.getLogger().getEffectiveLevel()
-        
         if quiet:
             logging.getLogger().setLevel(logging.INFO)
 
@@ -1236,7 +1236,6 @@ class GeoDB:
         for idx, rw in enumerate(place.georow_list):
             place.prefix = original_prefix
             self.copy_georow_to_place(row=rw, place=result_place, fast=fast)
-            
             result_place.original_entry = result_place.get_long_name(None)
 
             if len(place.prefix) > 0 and result_place.prefix == '':
@@ -1251,12 +1250,8 @@ class GeoDB:
                 place.prefix = Loc.Loc.prefix_cleanup(place.prefix, result_name)
             else:
                 place.updated_entry = place.get_long_name(None)
-
+                
             score = self.match.match_score(target_place=place, result_place=result_place)
-
-            if result_place.feature == target_feature:
-                score -= 5
-
             min_score = min(min_score, score)
 
             # Convert row tuple to list and extend so we can assign score

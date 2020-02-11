@@ -52,6 +52,7 @@ noise_words= [
     (r' of ', ' '),
     (r' departement', ' '),
     (r'royal borough of windsor and maidenhead', 'berkshire'),
+    (r'regional municipality', 'county'),
     ]
 
 phrase_cleanup = [

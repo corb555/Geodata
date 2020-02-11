@@ -229,6 +229,13 @@ feature_mapping = {
     'gravlund'     : 'CMTY',
     'kirkegard'    : 'CMTY',
     'friedhof'     : 'CMTY',
+    
+    'hospital' : 'HSP',
+    'hopital': 'HSP',
+    'krankenhaus': 'HSP',
+    'ospedale': 'HSP',
+    
+    'county' : 'ADM2',
     }
 
 feature_names = {

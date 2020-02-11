@@ -97,18 +97,17 @@ class Optimize:
 
         args = list(arg)
 
-        print(f'==== TRYING {args}')
+        print(f'==== TRYING <<{args[0:3]}>> pref={args[3]}')
 
         # Weighting for each input term match - prefix, city, adm2, adm1, country
-        self.geodata.geo_build.geodb.match.set_weighting(token_weight=args[0:3], prefix_weight=args[3], feature_weight=0.1,
-                                                         result_weight=args[3])
+        self.geodata.geo_build.geodb.match.set_weighting(token_weight=args[0:3], prefix_weight=args[3], feature_weight=0.05)
 
         for idx, name in enumerate(locations):
             delta = abs(ex.get_place_lookup_score(locations[idx]) - scores[idx])
             results.append(delta)
 
         score = rmse(y=results, y_pred=scores)
-        print(f'OVERALL={score:.1f}\nCity,County,State,Cty,  Prefix, Result\n')
+        print(f'OVERALL={score:.1f}\nCty,State,Ctry,Prefix, \n')
         return score
 
 
@@ -120,29 +119,31 @@ def rmse(y, y_pred):
 
 # Try a few different locations
 locations: [str] = [
-    'edinburgh ,edinburgh,scotland,united kingdom',  #
-    # 'st albans,, england,united kingdom',
-    #'london,, england,united kingdom',
-    '333, edinburgh ,edinburgh,scotland',  # Street as prefix
-    # '12 qqqqqqqqqqq, edinburgh ,edinburgh,scotland',  # Street as prefix
-    # '12 baker st,edinburgh,ile de france,scotland,united kingdom',  # misspelled
-    'eddinburg ,,scotland',  # misspelled
-    '333,row, ,qwz , united kingdom',
-    #'333,row, ,qwz , united kingdom',
-    #'333,row, , qwz, united kingdom',
+    #'edinburgh ,edinburgh,scotland,united kingdom',  #1
+    'edinburgh ,edinburgh,qqqqqqqq,united kingdom',  #2
+    'edinburgh ,qqqqqqqqq,scotland,united kingdom',  #3
+    #'qqqqqqqqq,edinburgh ,edinburgh,scotland,united kingdom',  #4
+    #'aaaa, edinburgh ,edinburgh,scotland,united kingdom',  # 5
+    # '12 qqqqqqqqqqq, edinburgh ,edinburgh,scotland',  # 6
+    # '12 baker st,edinburgh,ile de france,scotland,united kingdom',  # 7
+    # 'eddinburg ,,scotland',  # misspelled #8
+    #'Londorn qwx, zxq, q, United Kingdom', #9
+    #'Londorn qwx, zxq, q, United Kingdom', #10
+    #'Londorn qwx, zxq, q, United Kingdom', #11
     ]
 
 scores = [
-    5.0,
-    # -5.0,
-    #-5.0,
-    5.0,
-    # 25.0,
-    # 25.0,
-    13.0,
-    55.0,
-    #60.0,
-    #60.0
+    #-12.0, #1
+    -9.0, #2
+    -4, #3
+    #15.0, #4
+    #10.0, #5
+    # 25.0, #6
+    # 13.0, #7
+    # 13.0, #8
+    #85.0, #9
+    #85.0, #10
+    #85.0, #11
     ]
 
 # Geoname feature types to add to database.  Other feature types will be ignored.
@@ -154,10 +155,10 @@ if __name__ == "__main__":
     # Initialize
     ex = Optimize()
 
-    #       Conty,   State,   Ctry,      Prefix,    Result  (Input=1 - feat - result)
-    bnds = ((0.1, 1.0), (0.1, 1.0), (0.1, 1.0), (0, 5.0), (0, 1.0),)
-    # county, state, country, prefix, result
-    val = np.array([0.1, .7, .7, 1.0, .3])
+    #       Conty,      State,      Ctry,       Prefix,      (Input=1 - feat - result)
+    bnds = ((0.02, 1.0), (0.02, 1.0), (0.02, 1.0), (0, 10.0),)
+    # county, state, country, prefix
+    val = np.array([0.05, 0.05, 1., 2.0])
     res = minimize(ex.calculate, val, method='TNC', bounds=bnds)
 
     print(res.x)

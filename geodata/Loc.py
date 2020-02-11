@@ -74,9 +74,9 @@ class Loc:
         self.target: str = ''  # Target for lookup
         self.geoid: str = ''  # Geoname GEOID
         self.prefix_commas: str = ''
-        self.id = ''
+        # self.id = ''
         self.enclosed_by = ''
-        self.standard_parse = True
+        # self.standard_parse = True
         self.updated_entry = ''
         self.score = 9999
 
@@ -86,7 +86,7 @@ class Loc:
         self.result_type: int = GeoUtil.Result.NO_MATCH  # Result type of lookup
         self.result_type_text: str = ''  # Text version of result type
         self.georow_list: List[Tuple] = [()]  # List of items that matched this location
-        
+
         self.event_year: int = 0
 
     def clear(self):
@@ -108,9 +108,9 @@ class Loc:
         self.target: str = ''  # Target for lookup
         self.geoid: str = ''  # Geoname GEOID
         self.prefix_commas: str = ''
-        self.id = ''
+        # self.id = ''
         self.enclosed_by = ''
-        self.standard_parse = True
+        # self.standard_parse = True
         self.updated_entry = ''
         self.score = 9999
 
@@ -179,7 +179,6 @@ class Loc:
                 self.result_type = GeoUtil.Result.NO_COUNTRY
                 self.country_iso = ''
                 self.country_name = ''
-
         if token_count > 1:
             #  See if 2nd to last token is Admin1
             val = tokens[-2]
@@ -197,46 +196,56 @@ class Loc:
                     self.admin1_name = ''
                     # Add dummy token for admin1 position
                     tokens.insert(-1, '_')
-                    #token_count = len(tokens)
+                    # token_count = len(tokens)
             else:
                 tokens[-2] = '_'
 
             self.prefix = self.prefix.strip(',')
-            self.prefix = Normalize.normalize(self.prefix, False)
-  
+
         # fill in country name if still missing - finding Admin1 will find country ISO
         if self.country_name == '' and self.country_iso != '':
             self.country_name = geo_files.geodb.get_country_name(self.country_iso)
-            
+
         # Last two tokens are now Admin1, Country (although they may be '_')
         # If >2 tokens:  Put first non-blank token in City and in Prefix
         # If >3 tokens:  Put second non-blank token in Admin2 and also append to Prefix
-        
+
         # Remove all blank tokens
         tokens = [x for x in tokens if x]
         token_count = len(tokens)
 
-        if token_count > 2:
-            # Additional token, take first as city
+        if token_count >= 3:
+            #  Possible Formats: City, Admin1, Country or  Admin2, Admin1, Country
+            #  Take first tkn as city
             self.city1 = Normalize.normalize(tokens[0], False)
             self.target = self.city1
             self.place_type = PlaceType.CITY
 
             # Also place token[0] into Prefix
-            if '*' not in tokens[0]:
-                self.prefix += str(tokens[0].strip(' '))
+            # if '*' not in tokens[0]:
+            #    self.prefix += str(tokens[0].strip(' '))
+        if token_count == 4:
+            #  Possible Format: City, Admin2, Admin1, Country or Prefix, City, Admin1, Country
+            #  Admin2 is 2nd.  Note -  if Admin2 isnt found, it will look it up as city
+            if self.admin2_name == '' :
+                self.admin2_name = Normalize.normalize(tokens[1], self.country_iso)
 
-        if token_count > 3:
-            # Add ADMIN2
+            #  append token[0] into Prefix
+            if '*' not in tokens[1]:
+                self.prefix = str(tokens[0].strip(' ')) + ' ' + str(tokens[1].strip(' '))
+        if token_count > 4:
             #  Format: City, Admin2, Admin1, Country
             #  Admin2 is 2nd.  Note -  if Admin2 isnt found, it will look it up as city
-            if self.admin2_name == '' or token_count > 4:
-                self.admin2_name, modif = Normalize.admin2_normalize(tokens[1], self.country_iso)
-            
-            #  append token[1] into Prefix
+            self.admin2_name = Normalize.normalize(tokens[-3], self.country_iso)
+
+            self.city1 = Normalize.normalize(tokens[-4], False)
+            self.target = self.city1
+
+            # put token[0] and  token[1] into Prefix
             if '*' not in tokens[1]:
-                    self.prefix += ', '
-                    self.prefix += str(tokens[1].strip(' '))
+                self.prefix = str(tokens[0].strip(' ')) + ' ' + str(tokens[1].strip(' '))
+
+        self.prefix = Normalize.normalize(self.prefix, False)
 
         self.logger.debug(f"    ======= PARSED: {place_name} \nCity [{self.city1}] Adm2 [{self.admin2_name}]"
                           f" Adm1 [{self.admin1_name}] adm1_id [{self.admin1_id}] Cntry [{self.country_name}] Pref=[{self.prefix}]"
@@ -301,6 +310,23 @@ class Loc:
             self.need_commas = True
             return f'{txt}, '
 
+    @staticmethod
+    def lowercase_match_group(matchobj):
+        return matchobj.group().lower()
+
+    @staticmethod
+    def capwords(nm):
+        # Change from lowercase to Title Case but fix the title() apostrophe bug
+        if nm is not None:
+            # Use title(), then fix the title() apostrophe defect
+            nm = nm.title()
+
+            # Fix handling for contractions not handled correctly by title()
+            poss_regex = r"(?<=[a-z])[\']([A-Z])"
+            nm = re.sub(poss_regex, Loc.lowercase_match_group, nm)
+
+        return nm
+
     def get_long_name(self, replace_dct) -> str:
         """
         Take the fields in a Place and build full name.  e.g.  city,adm2,adm1,country name   
@@ -347,23 +373,6 @@ class Loc:
 
         return nm
 
-    @staticmethod
-    def lowercase_match_group(matchobj):
-        return matchobj.group().lower()
-
-    @staticmethod
-    def capwords(nm):
-        # Change from lowercase to Title Case but fix the title() apostrophe bug
-        if nm is not None:
-            # Use title(), then fix the title() apostrophe defect
-            nm = nm.title()
-
-            # Fix handling for contractions not handled correctly by title()
-            poss_regex = r"(?<=[a-z])[\']([A-Z])"
-            nm = re.sub(poss_regex, Loc.lowercase_match_group, nm)
-
-        return nm
-
     def get_five_part_title(self):
         # Returns a five part title string and tokenized version:
         #     prefix,city,county,state,country  (prefix plus long name)
@@ -375,8 +384,6 @@ class Loc:
         # Normalize country name
         save_country = self.country_name
         self.country_name, modified = Normalize.country_normalize(self.country_name)
-        
-        #self.logger.debug(f"[{self.prefix}], [{self.city1}], [{self.admin2_name}], [{self.admin1_name}], [{str(self.country_name)}]")
 
         full_title = self.prefix + ',' + f"{self.city1}, {self.admin2_name}, {self.admin1_name}, {str(self.country_name)}"
 
@@ -444,15 +451,15 @@ class Loc:
         elif self.place_type == PlaceType.CITY:
             # self.prefix = ''
             pass
-        
+
     @staticmethod
     def sort_words(words: str) -> str:
-        word_list:list = words.split(' ')
+        word_list: list = words.split(' ')
         word_list.sort()
         return ' '.join(word_list)
-    
+
     @staticmethod
-    def get_soundex_by_word(text:str)->str:
+    def get_soundex_by_word(text: str) -> str:
         result_sdx = ''
         text_words = text.split(' ')
         for word in text_words:
@@ -479,30 +486,34 @@ class Loc:
         result = result.lower()
         result_parts = result.split(',')
 
-        # Walk thru each comma separated segment in result
+        # Walk thru each segment in result
         for result_segment_idx, result_segment in enumerate(result_parts):
-            result_segment = Loc.sort_words(result_segment)  # Sort words so order doesn't matter
             result_sdx = ' ' + Loc.get_soundex_by_word(result_segment) + ' '
             result_segment = ' ' + result_segment + ' '
-
-            # Walk thru each comma separated segment in prefix
+            # Walk thru each segment in prefix
             for prefix_segment_idx, prefix_segment in enumerate(prefix_parts):
                 prefix_words = prefix_segment.split(' ')
-                
-                # Walk thru each word in prefix segment and remove any word that is in result segment
+                # Walk thru each word in prefix segment
                 for pref_word_idx, prefix_word in enumerate(prefix_words):
                     prefix_sdx = ' ' + GeoUtil.get_soundex(prefix_word) + ' '
-                    prefix_word_pad = ' ' +  prefix_word + ' '
-                    if (prefix_word_pad in result_segment and prefix_word != '') or (prefix_sdx in 
+                    # See if any words in prefix are in result_segment
+                    if (prefix_word in result_segment and prefix_word != '') or (prefix_sdx in
                                                                                  result_sdx and prefix_sdx != ''):
-                        # Remove item from result so we don't use again
-                        result_segment = re.sub(prefix_word,'', result_segment,1)
-                        new_prfx = re.sub(prefix_word,'', new_prfx,1)
+                        result_segment = remove_item(prefix_word, result_segment)
+                        new_prfx = remove_item(prefix_word, new_prfx)
                         pass
+                    # See if any words in result_segment are in prefix
+                    result_words = result_segment.split(' ')
+                    if len(prefix_word) > 0:
+                        # Walk through each word in result
+                        for result_word_idx, result_word in enumerate(result_words):
+                            if result_word in prefix_word and float(len(result_word)) / float(len(prefix_word)) > 0.6:
+                                # Remove result_word from result and prefix
+                                result_segment = remove_item(result_word, result_segment)
+                                new_prfx = remove_item(result_word, new_prfx)
 
-        res = re.sub('[,]','', new_prfx)
+        res = re.sub('[,]', '', new_prfx)
         res = res.strip(' ')
-
         return res.strip(',')
 
     @staticmethod
@@ -517,7 +528,6 @@ class Loc:
 
         """
         return Loc.matchscore_prefix(pref, result)
-        
 
     @staticmethod
     def get_district1_type(iso) -> str:
@@ -543,6 +553,24 @@ class Loc:
         if nm is None:
             nm = ''
         return nm
+
+
+def remove_item(pattern, text) -> str:
+    if len(pattern) < 1:
+        return text
+    # Find pattern in word in text and remove entire word
+    segment_list = text.split(',')
+    # Walk thru segments
+    for seg_idx, segment in enumerate(segment_list):
+        # Walk thru words
+        word_list = segment.split(' ')
+        for idx, word in enumerate(word_list):
+            if pattern in word:
+                # Remove entire word, not just pattern
+                word_list[idx] = ''
+        segment_list[seg_idx] = ' '.join(word_list)
+    text = ','.join(segment_list)
+    return text
 
 
 type_name = {

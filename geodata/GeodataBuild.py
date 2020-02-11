@@ -97,7 +97,7 @@ class GeodataBuild:
 
         for item in self.output_replace_dct:
             self.output_replace_list.append(item)
-            self.logger.debug(f'Output replace [{item}] to [{self.output_replace_dct[item]}')
+            #self.logger.debug(f'Output replace [{item}] to [{self.output_replace_dct[item]}]')
 
         self.entry_place = Loc.Loc()
 
