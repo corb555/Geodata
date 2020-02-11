@@ -68,7 +68,7 @@ class Country:
             True if error
         """
         if self.progress is not None:
-            self.progress.update_progress(100, "Read ISO countries...")
+            self.progress(100, "Read ISO countries...")
 
         # list of all countries and their ISO codes
         # This also includes some common aliases
