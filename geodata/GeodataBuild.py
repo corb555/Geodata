@@ -374,7 +374,7 @@ class GeodataBuild:
     def progress(self, msg, val):
         """ Update progress bar if there is one """
         if self.progress_bar is not None:
-            self.progress_bar.update_progress(val, msg)
+            self.progress_bar(val, msg)
 
         # If we're past 80% log item as info, otherwise log as debug
         if val > 80:
