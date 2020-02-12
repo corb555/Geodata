@@ -257,7 +257,7 @@ class GeoDB:
                                 result=Result.SOUNDEX_MATCH))
         
         # Try to find feature type and lookup by that
-        self.add_query_by_feature(query_list, lookup_target, place.country_iso)
+        self.add_feature_query(query_list, lookup_target, place.country_iso)
 
         # Try each query in list
         place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.geodata',
@@ -1200,7 +1200,7 @@ class GeoDB:
         # Return list with items 
         return [dct[dbid] for dbid in count]
 
-    def add_query_by_feature(self, query_list, lookup_target, iso):
+    def add_feature_query(self, query_list, lookup_target, iso):
         # Scan target to see if we can determine what feature type it is
         word, group = GeoUtil.get_feature_group(lookup_target)
         if word != '':

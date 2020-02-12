@@ -90,7 +90,8 @@ if __name__ == "__main__":
         'cardiff, wales',  # good location
         'cardiff kommune, wales',  # good location
         'carddif, wales',  # misspelled 
-        'lindering, wales',  # poor match quality
+        'lindering, wales',  # poor match quality        'eddinburg castle,,scotland',  # misspelled
+
         'phoenix, england',  # doesnt exist
         'Saint-Denis-le-Ferment,,normandie,france',
         'cairo,egypt',
@@ -102,12 +103,14 @@ if __name__ == "__main__":
         "'Buitenveldert' Amsterdam, Rooms Katholieke Begraafplaats,  Apeldoorn,  Gelderland, Netherland",
         'cathedral winchester,,england',
         'Chartres,Eure Et Loir,  ,  France',
-        'Lathom,Lancashire,england'
+        'Lathom,Lancashire,england',
+        'St Filbert,Manchester,,england'
         ]
 
     locations2 = [
-        'early county , ga',
+        'Saint-Denis-le-Ferment,,normandie,france',
+        'St Filbert,Manchester,,england'
         ]
 
-    for name in locations:
+    for name in locations2:
         ex.lookup_place(name)

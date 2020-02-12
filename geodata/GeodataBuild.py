@@ -304,11 +304,6 @@ class GeodataBuild:
                             self.geodb.insert_alternate_name(geoname_row.name,
                                                              geoname_row.id, 'ut8')
 
-                    #if self.progress_bar is not None:
-                    #    if self.progress_bar.shutdown_requested:
-                    #        # Abort DB build.  Clear out partial DB
-                    #        self.geodb.clear_geoname_data()
-
             self.progress("Write Database", 90)
             self.geodb.db.commit()
             self.progress("Database created", 100)

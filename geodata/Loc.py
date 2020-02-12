@@ -200,8 +200,6 @@ class Loc:
             else:
                 tokens[-2] = '_'
 
-            self.prefix = self.prefix.strip(',')
-
         # fill in country name if still missing - finding Admin1 will find country ISO
         if self.country_name == '' and self.country_iso != '':
             self.country_name = geo_files.geodb.get_country_name(self.country_iso)
@@ -222,8 +220,8 @@ class Loc:
             self.place_type = PlaceType.CITY
 
             # Also place token[0] into Prefix
-            # if '*' not in tokens[0]:
-            #    self.prefix += str(tokens[0].strip(' '))
+            if '*' not in tokens[0]:
+                self.prefix = str(tokens[0].strip(' '))
         if token_count == 4:
             #  Possible Format: City, Admin2, Admin1, Country or Prefix, City, Admin1, Country
             #  Admin2 is 2nd.  Note -  if Admin2 isnt found, it will look it up as city
@@ -496,17 +494,21 @@ class Loc:
                 # Walk thru each word in prefix segment
                 for pref_word_idx, prefix_word in enumerate(prefix_words):
                     prefix_sdx = ' ' + GeoUtil.get_soundex(prefix_word) + ' '
+                    if len(prefix_word) < 3:
+                        prefix_word += ' '
                     # See if any words in prefix are in result_segment
                     if (prefix_word in result_segment and prefix_word != '') or (prefix_sdx in
                                                                                  result_sdx and prefix_sdx != ''):
-                        result_segment = remove_item(prefix_word, result_segment)
-                        new_prfx = remove_item(prefix_word, new_prfx)
+                        result_segment = remove_item(prefix_word.strip(' '), result_segment)
+                        new_prfx = remove_item(prefix_word.strip(' '), new_prfx)
                         pass
                     # See if any words in result_segment are in prefix
                     result_words = result_segment.split(' ')
                     if len(prefix_word) > 0:
                         # Walk through each word in result
                         for result_word_idx, result_word in enumerate(result_words):
+                            if len(result_word) < 3:
+                                result_word = result_word + ' '
                             if result_word in prefix_word and float(len(result_word)) / float(len(prefix_word)) > 0.6:
                                 # Remove result_word from result and prefix
                                 result_segment = remove_item(result_word, result_segment)
