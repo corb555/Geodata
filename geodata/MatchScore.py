@@ -28,10 +28,10 @@ from geodata import Loc, Normalize, Geodata, GeoUtil
 
 
 class Score:
-    VERY_GOOD = 30
-    VERY_POOR = 100
-    GOOD = VERY_GOOD + (VERY_POOR - VERY_GOOD) * 0.33
-    POOR = VERY_GOOD + (VERY_POOR - VERY_GOOD) * 0.66
+    VERY_GOOD = -3
+    GOOD = 35
+    POOR = 77
+    VERY_POOR = 105
     
 
 class MatchScore:
@@ -49,8 +49,8 @@ class MatchScore:
         self.input_weight = 0.0
 
         # Weighting for each input term match -  adm2, adm1, country
-        token_weights = [.1, .2, .2]
-        self.set_weighting(token_weight=token_weights, prefix_weight=2.0, feature_weight=0.05)
+        token_weights = [.1, .3, .5]
+        self.set_weighting(token_weight=token_weights, prefix_weight=3.0, feature_weight=0.05)
 
         # Weighting for each part of score
         self.wildcard_penalty = -10.0
@@ -128,20 +128,20 @@ class MatchScore:
         """
         self.score_diags = ''  # Diagnostic text for scoring
         save_prefix = target_place.prefix
-        #self.logger.debug(f'res type={result_place.place_type}')
+        #self.logger.debug(f'pref={target_place.prefix}')
 
         # Create full, normalized titles (prefix,city,county,state,country)
         result_title, result_tokens, target_title, target_tokens = _prepare_input(target_place, result_place)
         #self.logger.debug(f'Targ [{target_tokens}] Res [{result_tokens}]')
+        
+        # Calculate Prefix score.  Prefix is not used in search and longer is generally worse 
+        prefix_score = _calculate_prefix_penalty(target_place.prefix)
 
         # Calculate score for  percent of input target text that matched result
         in_score = self._calculate_weighted_score(target_tokens, result_tokens)
 
         # Calculate score for wildcard search - wildcard searches are missing letters and need special handling
         wildcard_score = self._calculate_wildcard_score(target_place.original_entry)
-
-        # Calculate Prefix score.  Prefix is not used in search and longer is generally worse 
-        prefix_score = _calculate_prefix_penalty(target_place.prefix)
 
         # Calculate Feature score - this ensures "important" places get higher rank (large city, etc)
         feature_score = Geodata.Geodata._feature_priority(result_place.feature)
@@ -150,12 +150,11 @@ class MatchScore:
         score: float = in_score * self.input_weight + feature_score * self.feature_weight + \
                        prefix_score * self.prefix_weight + wildcard_score
 
-        #print(f'SCORE {score:.1f} res=[{result_title}] pref=[{target_place.prefix}]'
-        #                  f'inp=[{",".join(target_tokens)}]   '
+        #print(f'SCORE {score:.1f} res=[{result_title}] pref=[{target_place.prefix}]'   
         #                  f'inSc={in_score * self.input_weight:.1f}% feat={feature_score * self.feature_weight:.1f} {result_place.feature}  '
         #                  f'wild={wildcard_score} pref={prefix_score * self.prefix_weight:.1f}')
 
-        # self.logger.debug(self.score_diags)
+        #self.logger.debug(self.score_diags)
         target_place.prefix = save_prefix
 
         return score
@@ -166,18 +165,20 @@ class MatchScore:
 
         # Get score with city and admin2 reversed
         sc2 = 1000.0
-        #if target_tokens[1] in result_tokens[2]:
-        if 100 - fuzz.ratio(target_tokens[1], result_tokens[2]) < 30:
+
+        # see if we get a decent score with city and admin2 reversed
+        if 100 - fuzz.token_sort_ratio(target_tokens[1], result_tokens[2]) < 30:
             city = target_tokens[1]
             target_tokens[1] = target_tokens[2]
             target_tokens[2] = city
     
-            sc2 = self._weighted_score(target_tokens, result_tokens) * 1.2
+            sc2 = self._weighted_score(target_tokens, result_tokens) + 5.0
         return min(sc, sc2)
 
     def _weighted_score(self, target_tokens: [], result_tokens: []) -> float:
         num_inp_tokens = 0.0
         score = 0.0
+        bonus = 0
 
         token_weight = copy.copy(self.token_weight)
         
@@ -193,22 +194,31 @@ class MatchScore:
         for idx, segment in enumerate(target_tokens):
             if idx < len(result_tokens):
                 # Calculate fuzzy Levenstein distance between words
-                ratio = 100 - fuzz.ratio(target_tokens[idx], result_tokens[idx])
+                fz = 100 - fuzz.ratio(target_tokens[idx], result_tokens[idx])
                 # Calculate fuzzy Levenstein distance between Soundex of words
                 sd = 100 - fuzz.ratio(GeoUtil.get_soundex(target_tokens[idx]), GeoUtil.get_soundex(result_tokens[idx]))
                 
-                value = ratio * 0.7 + sd * 0.3
-                # partial_ratio = 100-fuzz.partial_ratio(target_tokens[idx], result_tokens[idx])
+                value = fz  + sd * 0.2
+                
+                if idx == 1 and value < 15:
+                    # Bonus if first term is a good match
+                    bonus = -5
+                
+                if '*' in segment:
+                    # Add penalty if wildcard is in segment
+                    value += 100
                 score += value * token_weight[idx]
-                num_inp_tokens += 1.0 * token_weight[idx]
-                self.logger.debug(f'{idx}) {value} {value * self.token_weight[idx]}[{target_tokens[idx]}] [{result_tokens[idx]}]')
+                num_inp_tokens += token_weight[idx]
+                self.score_diags += f'  {idx}) {value} [{result_tokens[idx]}]'
+            else:
+                self.logger.warning(f'Short Result len={len(result_tokens)} targ={target_tokens[idx]}')
 
         # Average over number of tokens (with fractional weight).  Gives 0-100% regardless of weighting and number of tokens
         if num_inp_tokens > 0:
             score = score / num_inp_tokens
         else:
             score = 0
-        return score - (num_inp_tokens * 6)
+        return score - (num_inp_tokens * 6) + bonus
 
     @staticmethod
     def _adjust_adm_score(score, feat):
@@ -226,7 +236,6 @@ def _calculate_prefix_penalty(prefix):
             penalty *= 0.5
     else:
         penalty =  0
-    #print(f'PREF=[{prefix}] {penalty}')
     return penalty
 
 
@@ -236,12 +245,18 @@ def _prepare_input(target_place: Loc, result_place: Loc):
     result_title = full_normalized_title(result_place)
     target_title = full_normalized_title(target_place)
     target_title, result_title = Normalize.remove_aliase(target_title, result_title)
-
-    result_tokens = [item.strip(' ') for item in result_title.split(',')]
-    target_tokens = [item.strip(' ') for item in target_title.split(',')]
-
+    result_tokens = result_title.split(',')
+    target_tokens = target_title.split(',')
     return result_title, result_tokens, target_title, target_tokens
 
+def full_normalized_title(place: Loc) -> str:
+    # Create a full normalized five part title (includes prefix)
+    # Clean up prefix - remove any words that are in city, admin1 or admin2 from Prefix
+    #place.prefix = Loc.Loc.matchscore_prefix(place.prefix, place.get_long_name(None))
+    title = place.get_five_part_title()
+    title = Normalize.normalize_for_scoring(title, place.country_iso)
+
+    return title
 
 def is_street(text) -> bool:
     # See if text looks like a street name
@@ -258,11 +273,3 @@ def remove_if_input_empty(target_tokens, res_tokens):
         if len(term) == 0 and ix < len(res_tokens) - 1 and ix > 1:
             res_tokens[ix] = ''
 
-
-def full_normalized_title(place: Loc) -> str:
-    # Create a full normalized five part title (includes prefix)
-    # Clean up prefix - remove any words that are in city, admin1 or admin2 from Prefix
-    place.prefix = Loc.Loc.matchscore_prefix(place.prefix, place.get_long_name(None))
-    title = place.get_five_part_title()
-    title = Normalize.normalize_for_scoring(title, place.country_iso)
-    return title

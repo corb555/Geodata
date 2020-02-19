@@ -28,6 +28,7 @@ import phonetics
 
 
 class Entry:
+    # Database geodata table and admin table entries
     NAME = 0
     ISO = 1
     ADM1 = 2
@@ -70,11 +71,11 @@ def get_directory_name() -> str:
     return "geoname_data"
 
 
-def get_cache_directory(dirname):
+def get_cache_directory(basepath):
     """ 
     Returns:  directory for geodata cache files including DB
     """
-    return os.path.join(dirname, "cache")
+    return os.path.join(basepath, "cache")
 
 
 def get_soundex(txt):
@@ -171,11 +172,13 @@ def capwords(text):
 
 def get_feature_group(location: str):
     """
+        Scan location name to see if it refers to a generic feature like cemetery or church,etc.
+        This allows a database search by geonames.org feature type
         If any word in location is in feature list, return the word found and the feature group 
     Args:
         location: 
 
-    Returns: (word, group) - feature word found, feature group it is in
+    Returns: (word, group) - feature word found, geonames.org feature group it is in
 
     """
     word_list = location.split(' ')

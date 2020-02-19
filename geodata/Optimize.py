@@ -76,7 +76,7 @@ class Optimize:
         target_place = Loc.Loc()
         # Find best match
         place = self.find_match(location_name)
-        target_place.parse_place(place_name=location_name, geo_files=self.geodata.geo_build)
+        target_place.parse_place(place_name=location_name, geo_db=self.geodata.geo_build)
 
         if len(place.georow_list) > 0:
             # Create full name for result

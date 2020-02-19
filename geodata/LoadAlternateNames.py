@@ -87,16 +87,16 @@ class AlternateNames(FileReader.FileReader):
                 pass
 
             # See if item has an entry with same GEOID in Main DB
-            dbid: str = str(self.geo_files.geodb.geoid_main_dict.get(alt_tokens[ALT_GEOID]))
-            if dbid is not None:
-                self.loc.target = dbid
+            geoid: str = str(self.geo_files.geodb.geoid_main_dict.get(alt_tokens[ALT_GEOID]))
+            if geoid is not None:
+                self.loc.geoid = geoid
                 # Retrieve entry
-                self.geo_files.geodb.lookup_main_dbid(place=self.loc)
+                self.geo_files.geodb.lookup_geoid_in_main(place=self.loc)
             else:
                 # See if item has an entry with same GEOID in Admin DB
-                dbid = self.geo_files.geodb.geoid_admin_dict.get(alt_tokens[ALT_GEOID])
-                if dbid is not None:
-                    self.loc.target = dbid
+                geoid = self.geo_files.geodb.geoid_admin_dict.get(alt_tokens[ALT_GEOID])
+                if geoid is not None:
+                    self.loc.geoid = geoid
                     # Retrieve entry
                     self.geo_files.geodb.lookup_admin_dbid(place=self.loc)
 

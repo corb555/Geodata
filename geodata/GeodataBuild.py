@@ -24,7 +24,7 @@ from collections import namedtuple
 from tkinter import messagebox
 from typing import Dict
 
-from geodata import GeoUtil, Loc, Country, GeoDB, Normalize, CachedDictionary, AlternateNames
+from geodata import GeoUtil, Loc, Country, GeoDB, Normalize, CachedDictionary, LoadAlternateNames
 
 DB_MINIMUM_RECORDS = 1000
 
@@ -102,9 +102,9 @@ class GeodataBuild:
         self.entry_place = Loc.Loc()
 
         # Support for Geonames AlternateNames file.  Adds alternate names for entries
-        self.alternate_names = AlternateNames.AlternateNames(directory=self.directory, geo_files=self,
-                                                             progress_bar=self.progress_bar, filename='alternateNamesV2.txt',
-                                                             lang_list=self.lang_list)
+        self.alternate_names = LoadAlternateNames.AlternateNames(directory=self.directory, geo_files=self,
+                                                                 progress_bar=self.progress_bar, filename='alternateNamesV2.txt',
+                                                                 lang_list=self.lang_list)
 
     def open_geodb(self, repair_database: bool, query_limit:int) -> bool:
         """

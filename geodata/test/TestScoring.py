@@ -22,6 +22,7 @@ import unittest
 from pathlib import Path
 
 from geodata import GeoUtil, Geodata, Loc, MatchScore
+from geodata.MatchScore import Score as SC
 
 features = ["ADM1", "ADM2", "ADM3", "ADM4", "ADMF", "CH", "CSTL", "CMTY", "EST ", "HSP", "FT",
             "HSTS", "ISL", "MSQE", "MSTY", "MT", "MUS", "PAL", "PPL", "PPLA", "PPLA2", "PPLA3", "PPLA4",
@@ -69,69 +70,54 @@ class TestScoring(unittest.TestCase):
         ]
 
     # MATCH SCORING TEST CASES
-
     score_test_cases = [
         # 0 Target, 1 Result, 2 Feature, 3 Overall Score, 4 Input score,
-        ("Spilsby, Lincolnshire", "Lincolnshire, Erie County, Ohio, United States", 'P10K', 67, 64),  # 0
+        ("Berl*n,  deutschland", "Berlin, Germany", 'PP1M', SC.GOOD, 0),  # 0
+        ("Canada", "Canada", 'ADM0', SC.VERY_GOOD, 0),  # 1
+        ("France", ",France", 'ADM0', SC.VERY_GOOD, 0),  # 2
+        ("toronto,ontario,canada", "toronto,ontario,canada", 'PP1M', SC.VERY_GOOD, 0),  # 3
+        ("Paris, France", "Paris,, France", 'PP1M', SC.VERY_GOOD, 0),  # 4
+        ("Paris, France.", "Paris,, France", 'PP1M', SC.VERY_GOOD, 0),  # 5
+        ("London, England,", "London, England, United Kingdom", 'PP1M', SC.VERY_GOOD, 0),  # 6
+        ("London, England, United Kingdom", "London, England, United Kingdom", 'PP1M', SC.VERY_GOOD, 0),  # 7
+        ("aisne, picardy, france", "aisne, picardy, france", 'PP1M', SC.VERY_GOOD, 0),  # 8
+        ("Berlin,  deutschland", "Berlin, Germany", 'PP1M', SC.VERY_GOOD, 0),  # 9
+        ("toronto, canada", "toronto, canada", 'PPL', SC.VERY_GOOD, 0),  # 10
+        ("chelsea,,england,", "a,chelsea, greater london, england, united kingdom", 'PP1M', SC.VERY_GOOD, 0),  # 11
+        ("Domfront,, Normandy,", "Domfront, Department De L'Orne, Normandie, France", 'PP1M', SC.VERY_GOOD, 0),  # 12
+        ("London, England, United Kingdom", "London, England, United Kingdom", 'HSP', SC.VERY_GOOD, 0),  # 13
+        ("toronto,nova scotia, canada", "toronto,ontario,canada", 'PPL', SC.VERY_GOOD, 0),  # 14
+        ("chelsea,,england,", "a,winchelsea, east sussex, england, united kingdom", 'PP1M', SC.VERY_GOOD, 0),  # 15
+        ("sonderburg,denmark", "sonderborg kommune,region syddanmark, denmark", 'PP1M', SC.VERY_GOOD, 0),  # 16
+        
+        ("Nogent Le Roi,,,france", "Nogent Le Roi, Departement D'Eure Et Loir, Centre Val De Loire, France", 'XXX', SC.GOOD - 15, 0),  # 17
+        ("Old Bond Street, London,  , England,United Kingdom", " , London, Greater London, England, United Kingdom", 'PP1M', SC.GOOD - 15, 0),  # 18
+        
+        ("Abc, Halifax, , Nova Scotia, Canada", "Abc, Halifax, , Nova Scotia, Canada", 'XXX', SC.GOOD, 0),  # 19
+        ("Holborn, Middlesex, England,", "Holborn, Greater London, England, United Kingdom", 'PP1M', SC.GOOD, 0),  # 20
+        ("St Quentin, Aisne, Picardy, France", "St Quentin, Departement De L'Aisne, Hauts De France, France", 'PP1M', SC.GOOD, 0),  # 21
+        ("barton, lancashire, england, united kingdom", "barton, lancashire, england, united kingdom", 'PPLL', SC.GOOD, 0),  # 22
+        ("testerton, norfolk, england,", "testerton, norfolk, england,united kingdom", "PPLL", SC.GOOD, 0),  # 23
+        ("Domfront,, Normandy,", "Domfront-En-Champagne, Sarthe, Pays De La Loire, France", 'PPL', SC.GOOD, 0),  # 24
+        ("barton, lancashire, england, united kingdom", "barton, cambridgeshire, england, united kingdom", 'PPLL', SC.GOOD, 0),  # 25
+        ("Nogent Le Roi,france", "Le Roi, Nogent Sur Eure, Eure Et Loir, Centre Val De Loire, France", 'XXX', SC.GOOD, 0),  # 26
+        ("Spilsby, Lincolnshire,,", "Spilsby, Lincolnshire, England, United Kingdom", 'P10K', SC.GOOD, 0),  # 27
+        ("Bond Street, London, Middlesex, England,United Kingdom", " , Museum Of London, Greater London, England, United Kingdom", 
+         'PPL', SC.GOOD, 0), # 28
+        ("Tiverton,,,", "Tiverton, Devon, England, United Kingdom", 'PPL', SC.GOOD, 0),  # 29
+        
+        ("Blore Heath , Staffordshire,england,", " Blore Heath, Staffordshire,england, united kingdom", 'XXX', SC.POOR-20, 0),  # 30
+        ("Abc, Halifax, , Nova Scotia, Canada", "Army Museum Halifax Citadel, , Nova Scotia, Canada", 'XXX', SC.POOR - 20, 0),  # 31
 
-        ("toronto,ontario,canada", "toronto,ontario,canada", 'PP1M', -8, 0),  # 1
-        ("toronto, canada", "toronto, canada", 'PPL', -6, 0),  # 2
-
-        ("chelsea,,england", "a,winchelsea, east sussex, england, united kingdom", 'PP1M', 13, 12),  # 3
-        ("chelsea,,england", "a,chelsea, greater london, england, united kingdom", 'PP1M', 0, 0),  # 4
-
-        ("sonderburg,denmark", "sonderborg kommune,region syddanmark, denmark", 'PP1M', -2, 0),  # 5
-
-        ("Paris, France", "Paris,, France", 'PP1M', -8, 0),  # 6
-        ("Paris, France.", "Paris,, France", 'PP1M', -8, 0),  # 7
-
-        ("London, England", "London, England, United Kingdom", 'PP1M', -8, 0),  # 8
-        ("London, England, United Kingdom", "London, England, United Kingdom", 'PP1M', -8, 0),  # 9
-        ("London, England, United Kingdom", "London, England, United Kingdom", 'HSP', -3, 0),  # 10
-
-        ("Domfront, Normandy", "Domfront-En-Champagne, Sarthe, Pays De La Loire, France", 'PPL', 36, 37),  # 11
-        ("Domfront, Normandy", "Domfront, Department De L'Orne, Normandie, France", 'PP1M', 0, 0),  # 12
-
-        ("St Quentin, Aisne, Picardy, France", "St Quentin, Departement De L'Aisne, Hauts De France, France",
-         'PP1M', -5, 9),  # 13
-
-        ("Old Bond Street, London,  , England,United Kingdom", " , London, Greater London, England, United Kingdom", 'PP1M', 18, 0),  # 14
-        ("Old Bond Street, London, Middlesex, England,United Kingdom", " , Museum Of London, Greater London, England, United Kingdom",
-         'PPL', 35, 24),  # 15
-
-        ("zxq, xyzzy", " , London, Greater London, England, United Kingdom", ' ', 91, 90),  # 16
-
-        ("St. Margaret, Westminster, London, England,", "London,England,United Kingdom", 'PPL', 78, 73),  # 17
-        ("St. Margaret, Westminster, London, England,", "Westminster Cathedral, Greater London, England", 'PPL', 40, 26),  # 18
-
-        ("Canada", "Canada", 'ADM0', -10, 0),  # 19
-        ("France", ",France", 'ADM0', -10, 0),  # 20
-
-        ("barton, lancashire, england, united kingdom", "barton, lancashire, england, united kingdom", 'PPLL', -6, 0),  # 21
-        ("barton, lancashire, england, united kingdom", "barton, cambridgeshire, england, united kingdom", 'PPLL', -3, 4),
-        # 22
-
-        ("testerton, norfolk, england", "norfolk,england, united kingdom", "ADM2", 48, 66),  # 23
-        ("testerton, norfolk, england", "testerton, norfolk, england,united kingdom", "PPLL", -6, 0),  # 24
-
-        ("Holborn, Middlesex, England", "Holborn, Greater London, England, United Kingdom", 'PP1M', -8, 0),  # 25
-        ("aisne, picardy, france", "aisne, picardy, france", 'PP1M', -8, 0),  # 26
-        ("braines, loire atlantique, france", "brains, loire atlantique, pays de la loire, france", 'PPL', 8, 7),  # 27
-
-        ("Berlin, , deutschland", "Berlin, Germany", 'PP1M', -8, 0),  # 28
-        ("Berl*n, , deutschland", "Berlin, Germany", 'PP1M', -11, 11),  # 29
-        ("toronto,nova scotia, canada", "toronto,ontario,canada", 'PPL', 3, 8),  # 30
-        ("Blore Heath , Staffordshire,england", " Blore Heath, Staffordshire,england, united kingdom", "XXX", -3, 0),  # 31
-        ("Blore Heath , Staffordshire,england", " Blore , Staffordshire,england, united kingdom", "XXX", 16, 24),  # 32
-        ("Blore Heath , Staffordshire,england", " Staffordshire,england, united kingdom", "XXX", 48, 60),  # 33
-        ("Abc, Halifax, , Nova Scotia, Canada", "Army Museum Halifax Citadel, , Nova Scotia, Canada", "XXX", 48, 38),  # 34
-        ("Abc, Halifax, , Nova Scotia, Canada", "Abc, Halifax, , Nova Scotia, Canada", "XXX", 11, 0),  # 35
-        ("Nogent Le Roi,france", "Nogent Le Roi, Departement D'Eure Et Loir, Centre Val De Loire, France", "XXX", 15, 0),  # 36
-        ("Nogent Le Roi,france", "Le Roi, Nogent Sur Eure, Eure Et Loir, Centre Val De Loire, France", "XXX", 36, 23),  # 37
-        # Tiverton, Devon, England, United Kingdom
-        ("Tiverton,,,", "Tiverton, Devon, England, United Kingdom", 'PPL', 25, 10),  # 38
-        ("Spilsby, Lincolnshire", "Lincolnshire, Erie County, Ohio, United States", 'P10K', 67, 64),  # 39
-        ("Spilsby, Lincolnshire", "Spilsby, Lincolnshire, England, United Kingdom", 'P10K', 17, 64),  # 40
+        ("St. Margaret, Westminster, London, England,", "Westminster Cathedral, Greater London, England", 'PPL', SC.POOR, 0),  # 32
+        ("braines, loire atlantique, ,france", "brains, loire atlantique, pays de la loire, france", 'PPL', SC.POOR, 0),  # 33
+        ("Blore Heath , Staffordshire,england,", " Blore , Staffordshire,england, united kingdom", 'XXX', SC.POOR, 0),  # 34
+        ("Spilsby, Lincolnshire,,", "Lincolnshire, Erie County, Ohio, United States", 'P10K', SC.POOR, 0),  # 35
+        ("Spilsby, Lincolnshire,,", "Lincolnshire, Erie County, Ohio, United States", 'P10K', SC.POOR, 0),  # 36
+        ("testerton, norfolk, england,", "norfolk,england, united kingdom", "ADM2", SC.POOR, 0),  # 37
+        
+        ("St. Margaret, Westminster, London, England,", "London,England,United Kingdom", 'PPL', SC.VERY_POOR, 0),  # 38
+        ("zxq, xyzzy,,", " , London, Greater London, England, United Kingdom", ' ', SC.VERY_POOR, 0),  # 39
 
         ]
 
@@ -145,7 +131,7 @@ class TestScoring(unittest.TestCase):
                 res = self.run_test_score(i)
                 targ = TestScoring.score_test_cases[i][CS_SCORE]
                 delta = abs(res - targ)
-                self.assertLess(delta, 3, msg=f' SCORE={res:.1f} TARGET={targ:.1f}')
+                self.assertLess(delta, 14, msg=f' SCORE={res:.1f} TARGET={targ:.1f}')
     """
     def test_input_score(self):
         # Run match scoring tests
@@ -220,12 +206,12 @@ class TestScoring(unittest.TestCase):
         TestScoring.logger.debug(f'======================= Prepare TEST {idx}: {inp}')
 
         in_place.original_entry = inp
-        in_place.parse_place(place_name=inp, geo_files=TestScoring.geodata.geo_build)
+        in_place.parse_place(place_name=inp, geo_db=TestScoring.geodata.geo_build.geodb)
         if in_place.country_name == '' and in_place.country_iso != '':
             in_place.country_name = TestScoring.geodata.geo_files.geodb.get_country_name(in_place.country_iso)
 
         res_place.original_entry = res
-        res_place.parse_place(place_name=res, geo_files=TestScoring.geodata.geo_build)
+        res_place.parse_place(place_name=res, geo_db=TestScoring.geodata.geo_build.geodb)
         res_place.feature = feat
         if res_place.country_name == '' and res_place.country_iso != '':
             res_place.country_name = TestScoring.geodata.geo_files.geodb.get_country_name(res_place.country_iso)

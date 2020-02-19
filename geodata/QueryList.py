@@ -70,16 +70,17 @@ class QueryList:
         """
         Search for  city - try the most exact match, then less exact matches
         """
-        sdx = get_soundex(place.target)
-        pattern = QueryList.create_wildcard(place.target)
+        lookup_target = place.city1
+        sdx = get_soundex(lookup_target)
+        pattern = QueryList.create_wildcard(lookup_target)
         if len(place.country_iso) == 0:
             # NO COUNTRY - try lookup by name.
-            if place.target in pattern:
+            if lookup_target in pattern:
                 query_list.append(Query(where="name = ?",
-                                        args=(place.target,),
+                                        args=(lookup_target,),
                                         result=Result.PARTIAL_MATCH))
             # lookup by wildcard name
-            if '*' in place.target:
+            if '*' in lookup_target:
                 query_list.clear()
                 query_list.append(Query(where="name LIKE ?",
                                         args=(pattern,),
@@ -97,14 +98,14 @@ class QueryList:
 
         if len(place.admin1_name) > 0:
             # lookup by name, ADMIN1, country
-            if place.target in pattern:
+            if lookup_target in pattern:
                 query_list.append(Query(
                     where="name = ? AND country = ? AND admin1_id = ?",
-                    args=(place.target, place.country_iso, place.admin1_id),
+                    args=(lookup_target, place.country_iso, place.admin1_id),
                     result=Result.STRONG_MATCH))
 
             # add lookup by wildcard name, ADMIN1, country
-            if '*' in place.target:
+            if '*' in lookup_target:
                 query_list.clear()
 
                 query_list.append(Query(
@@ -118,7 +119,7 @@ class QueryList:
                     result=Result.WORD_MATCH))
         else:
             # add lookup by wildcard  name, country
-            if '*' in place.target:
+            if '*' in lookup_target:
                 query_list.clear()
 
                 query_list.append(Query(where="name LIKE ? AND country = ?",
@@ -137,23 +138,24 @@ class QueryList:
     @staticmethod
     def query_list_admin2(query_list, place: Loc):
         # Try Admin queries and find best match
-        # sdx = get_soundex(place.target)
-        pattern = QueryList.create_wildcard(place.target)
+        # sdx = get_soundex(lookup_target)
+        lookup_target = place.admin2_name
+        pattern = QueryList.create_wildcard(lookup_target)
 
         if len(place.country_iso) == 0:
             query_list.append(Query(where="name = ?  ",
-                                    args=place.target,
+                                    args=lookup_target,
                                     result=Result.PARTIAL_MATCH))
         else:
             query_list.append(Query(where="name = ? AND country = ? ",
-                                    args=(place.target, place.country_iso),
+                                    args=(lookup_target, place.country_iso),
                                     result=Result.PARTIAL_MATCH))
 
         query_list.append(Query(where="name LIKE ? AND country = ? ",
-                                args=(place.target, place.country_iso),
+                                args=(lookup_target, place.country_iso),
                                 result=Result.PARTIAL_MATCH))
 
-        if '*' in place.target:
+        if '*' in lookup_target:
             query_list.clear()
             query_list.append(Query(where="name LIKE ? AND country = ? ",
                                     args=(pattern, place.country_iso),
@@ -167,12 +169,13 @@ class QueryList:
     @staticmethod
     def query_list_admin1(query_list, place: Loc):
         """Search for Admin1 entry"""
-        sdx = get_soundex(place.target)
-        pattern = QueryList.create_wildcard(place.target)
+        lookup_target = place.admin1_name
+        sdx = get_soundex(lookup_target)
+        pattern = QueryList.create_wildcard(lookup_target)
         #query_list.append(Query(where="name = ? AND country = ? AND f_code = ? ",
-        #                        args=(place.target, place.country_iso, 'ADM1'),
+        #                        args=(lookup_target, place.country_iso, 'ADM1'),
         #                        result=Result.STRONG_MATCH))
-        if '*' in place.target:
+        if '*' in lookup_target:
             query_list.clear()
 
             query_list.append(Query(where="name LIKE ? AND country = ?  AND f_code = ?",
@@ -190,8 +193,9 @@ class QueryList:
     @staticmethod
     def query_list_country(query_list, place: Loc):
         """Search for Admin1 entry"""
-        sdx = get_soundex(place.target)
-        # pattern = QueryList.create_wildcard(place.target)
+        lookup_target = place.country_name
+        sdx = get_soundex(lookup_target)
+        # pattern = QueryList.create_wildcard(lookup_target)
 
         query_list.append(where="country = ? AND f_code = ? ",
                           args=(place.country_iso, 'ADM0'),
@@ -204,12 +208,13 @@ class QueryList:
     @staticmethod
     def query_list_admin1_id(query_list, place: Loc):
         """Search for Admin1 entry"""
-        # sdx = get_soundex(place.target)
-        pattern = QueryList.create_wildcard(place.target)
+        # sdx = get_soundex(lookup_target)
+        lookup_target = place.admin1_id
+        pattern = QueryList.create_wildcard(lookup_target)
 
         if place.country_iso == '':
             query_list.append(Query(where="name = ?  AND f_code = ? ",
-                                    args=(place.target, 'ADM1'),
+                                    args=(lookup_target, 'ADM1'),
                                     result=Result.STRONG_MATCH))
 
             query_list.append(Query(where="name LIKE ? AND f_code = ?",
@@ -217,38 +222,39 @@ class QueryList:
                                     result=Result.WILDCARD_MATCH))
         else:
             query_list.append(Query(where="name = ? AND country = ? AND f_code = ? ",
-                                    args=(place.target, place.country_iso, 'ADM1'),
+                                    args=(lookup_target, place.country_iso, 'ADM1'),
                                     result=Result.STRONG_MATCH))
             query_list.append(Query(where="name LIKE ? AND country = ?  AND f_code = ?",
                                     args=(pattern, place.country_iso, 'ADM1'),
                                     result=Result.WILDCARD_MATCH))
 
         query_list.append(Query(where="name = ?  AND f_code = ?",
-                                args=(place.target, 'ADM1'),
+                                args=(lookup_target, 'ADM1'),
                                 result=Result.SOUNDEX_MATCH))
 
     @staticmethod
     def query_list_admin2_id(query_list, place: Loc):
         """Search for Admin2 entry"""
-        # sdx = get_soundex(place.target)
-        pattern = QueryList.create_wildcard(place.target)
+        # sdx = get_soundex(lookup_target)
+        lookup_target = place.admin2_id
+        pattern = QueryList.create_wildcard(lookup_target)
 
         if len(place.admin1_id) > 0:
             query_list.append(Query(where="name = ? AND country = ? AND admin1_id=? AND f_code=?",
-                                    args=(place.target, place.country_iso, place.admin1_id, 'ADM2'),
+                                    args=(lookup_target, place.country_iso, place.admin1_id, 'ADM2'),
                                     result=Result.STRONG_MATCH))
             query_list.append(Query(where="name LIKE ? AND country = ? and admin1_id = ? AND f_code=?",
-                                    args=(place.target, place.country_iso, place.admin1_id, 'ADM2'),
+                                    args=(lookup_target, place.country_iso, place.admin1_id, 'ADM2'),
                                     result=Result.WILDCARD_MATCH))
             query_list.append(Query(where="name LIKE ? AND country = ? and admin1_id = ? AND f_code=?",
                                     args=(pattern, place.country_iso, place.admin1_id, 'ADM2'),
                                     result=Result.WILDCARD_MATCH))
         else:
             query_list.append(Query(where="name = ? AND country = ? AND f_code=?",
-                                    args=(place.target, place.country_iso, 'ADM2'),
+                                    args=(lookup_target, place.country_iso, 'ADM2'),
                                     result=Result.STRONG_MATCH))
             query_list.append(Query(where="name LIKE ? AND country = ? AND f_code=?",
-                                    args=(place.target, place.country_iso, 'ADM2'),
+                                    args=(lookup_target, place.country_iso, 'ADM2'),
                                     result=Result.WILDCARD_MATCH))
             query_list.append(Query(where="name LIKE ? AND country = ? AND f_code=?",
                                     args=(pattern, place.country_iso, 'ADM2'),
@@ -257,15 +263,17 @@ class QueryList:
     @staticmethod
     def query_list_admin1_alt_name(query_list, place: Loc):
         """Search for Admin1 entry"""
+        lookup_target = place.admin1_id
         query_list.append(where="admin1_id = ? AND country = ?  AND f_code = ? ",
-                          args=(place.target, place.country_iso, 'ADM1'),
+                          args=(lookup_target, place.country_iso, 'ADM1'),
                           result=Result.STRONG_MATCH)
 
     @staticmethod
     def query_list_geoid(query_list, place: Loc) -> None:
         """Search for GEOID"""
+        lookup_target = place.geoid
         query_list.append(where="geoid = ? ",
-                          args=(place.target,),
+                          args=(lookup_target,),
                           result=Result.STRONG_MATCH)
 
     @staticmethod

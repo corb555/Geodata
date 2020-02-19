@@ -58,7 +58,6 @@ class Loc:
         """
         self.logger = logging.getLogger(__name__)
         self.original_entry: str = ""
-        self.formatted_name: str = ''
         self.lat: float = float('NaN')  # Latitude
         self.lon: float = float('NaN')  # Longitude
         self.country_iso: str = ""  # Country ISO code
@@ -71,14 +70,10 @@ class Loc:
         self.prefix: str = ""  # Prefix (entries prepended before geoname location)
         self.feature: str = ''  # Geoname feature code
         self.place_type: int = PlaceType.COUNTRY  # Is this a Country , Admin1 ,admin2 or city?
-        self.target: str = ''  # Target for lookup
         self.geoid: str = ''  # Geoname GEOID
-        self.prefix_commas: str = ''
-        # self.id = ''
-        self.enclosed_by = ''
-        # self.standard_parse = True
+        self.enclosed_by = ''   # The entity that encloses this.  E.g United States encloses Texas
         self.updated_entry = ''
-        self.score = 9999
+        self.score = 100.0
 
         # Lookup result info
         self.status: str = ""
@@ -86,13 +81,11 @@ class Loc:
         self.result_type: int = GeoUtil.Result.NO_MATCH  # Result type of lookup
         self.result_type_text: str = ''  # Text version of result type
         self.georow_list: List[Tuple] = [()]  # List of items that matched this location
-
         self.event_year: int = 0
 
     def clear(self):
         # Place geo info
         self.original_entry: str = ""
-        self.formatted_name: str = ''
         self.lat: float = float('NaN')  # Latitude
         self.lon: float = float('NaN')  # Longitude
         self.country_iso: str = ""  # Country ISO code
@@ -105,14 +98,10 @@ class Loc:
         self.prefix: str = ""  # Prefix (entries before city)
         self.feature: str = ''  # Geoname feature code
         self.place_type: int = PlaceType.COUNTRY  # Is this a Country , Admin1 ,admin2 or city?
-        self.target: str = ''  # Target for lookup
         self.geoid: str = ''  # Geoname GEOID
-        self.prefix_commas: str = ''
-        # self.id = ''
         self.enclosed_by = ''
-        # self.standard_parse = True
         self.updated_entry = ''
-        self.score = 9999
+        self.score = 100.0
 
         # Lookup result info
         self.status: str = ""
@@ -123,13 +112,13 @@ class Loc:
 
         self.georow_list.clear()
 
-    def parse_place(self, place_name: str, geo_files):
+    def parse_place(self, place_name: str, geo_db):
         """
             Given a comma separated place name,   
             parse into its city, admin1, country and type of entity (city, country etc)   
         #Args:   
             place_name: The place name to parse   
-            geo_files: Geo_files   
+            geo_files: GeodataBuild instance   
         #Returns:   
             Fields in Loc (city, adm1, adm2, iso) are updated based on parsing. self.status has Result status code   
         """
@@ -161,15 +150,14 @@ class Loc:
             self.logger.debug('filter')
             self.get_filter_parameters(place_name)
             return
-        elif token_count > 0:
+        
+        if token_count > 0:
             #  COUNTRY - right-most token should be country
             self.country_name = Normalize.normalize(tokens[-1], False)
-            self.target = self.country_name
 
             # Validate country
-            self.country_iso = geo_files.geodb.get_country_iso(self)  # Get Country country_iso
+            self.country_iso = geo_db.get_country_iso(self)  # Get Country country_iso
             if self.country_iso != '':
-                # self.logger.debug(f'Found country. iso = [{self.country_iso}]')
                 self.place_type = PlaceType.COUNTRY
             else:
                 # Last token is not COUNTRY.
@@ -177,7 +165,6 @@ class Loc:
                 tokens.append('_')
                 token_count = len(tokens)
                 self.result_type = GeoUtil.Result.NO_COUNTRY
-                self.country_iso = ''
                 self.country_name = ''
         if token_count > 1:
             #  See if 2nd to last token is Admin1
@@ -185,12 +172,17 @@ class Loc:
             self.admin1_name = Normalize.admin1_normalize(val, self.country_iso)
 
             if len(self.admin1_name) > 0:
-                self.target = self.admin1_name
                 # Lookup Admin1
-                geo_files.geodb.wide_search_admin1_id(self)
+                geo_db.wide_search_admin1_id(self)
                 if self.admin1_id != '':
                     # Found Admin1
                     self.place_type = PlaceType.ADMIN1
+                    # fill in country name if still missing - finding Admin1 will find country ISO
+                    if self.country_name == '':
+                        self.country_name = geo_db.get_country_name(self.country_iso)
+                    self.admin1_name = geo_db.get_admin1_name_direct(self.admin1_id, self.country_iso)
+                    self.logger.debug(f'adm1 nm={self.admin1_name}')
+                    self.result_type = GeoUtil.Result.PARTIAL_MATCH
                 else:
                     # Last token is not Admin1 - append dummy token so we have <tokens>, admin1, country
                     self.admin1_name = ''
@@ -199,10 +191,6 @@ class Loc:
                     # token_count = len(tokens)
             else:
                 tokens[-2] = '_'
-
-        # fill in country name if still missing - finding Admin1 will find country ISO
-        if self.country_name == '' and self.country_iso != '':
-            self.country_name = geo_files.geodb.get_country_name(self.country_iso)
 
         # Last two tokens are now Admin1, Country (although they may be '_')
         # If >2 tokens:  Put first non-blank token in City and in Prefix
@@ -216,28 +204,18 @@ class Loc:
             #  Possible Formats: City, Admin1, Country or  Admin2, Admin1, Country
             #  Take first tkn as city
             self.city1 = Normalize.normalize(tokens[0], False)
-            self.target = self.city1
             self.place_type = PlaceType.CITY
 
             # Also place token[0] into Prefix
             if '*' not in tokens[0]:
                 self.prefix = str(tokens[0].strip(' '))
-        if token_count == 4:
-            #  Possible Format: City, Admin2, Admin1, Country or Prefix, City, Admin1, Country
-            #  Admin2 is 2nd.  Note -  if Admin2 isnt found, it will look it up as city
-            if self.admin2_name == '' :
-                self.admin2_name = Normalize.normalize(tokens[1], self.country_iso)
-
-            #  append token[0] into Prefix
-            if '*' not in tokens[1]:
-                self.prefix = str(tokens[0].strip(' ')) + ' ' + str(tokens[1].strip(' '))
-        if token_count > 4:
+                
+        if token_count >= 4:
             #  Format: City, Admin2, Admin1, Country
             #  Admin2 is 2nd.  Note -  if Admin2 isnt found, it will look it up as city
             self.admin2_name = Normalize.normalize(tokens[-3], self.country_iso)
-
             self.city1 = Normalize.normalize(tokens[-4], False)
-            self.target = self.city1
+            self.place_type = PlaceType.CITY
 
             # put token[0] and  token[1] into Prefix
             if '*' not in tokens[1]:
@@ -274,7 +252,6 @@ class Loc:
         try:
             options = parser.parse_args(args)
             self.city1 = Normalize.normalize(tokens[0], False)
-            self.target = self.city1
             self.place_type = PlaceType.ADVANCED_SEARCH
 
             if options.iso:
@@ -300,12 +277,8 @@ class Loc:
 
     def add_commas(self, txt) -> str:
         if txt == '':
-            if self.need_commas:
-                return ', '
-            else:
                 return ''
         else:
-            self.need_commas = True
             return f'{txt}, '
 
     @staticmethod
@@ -334,13 +307,6 @@ class Loc:
         #Returns:  
             long name  
         """
-        self.need_commas = False
-
-        if self.admin1_name is None:
-            self.admin1_name = ''
-        if self.admin2_name is None:
-            self.admin2_name = ''
-
         city = self.add_commas(self.city1)
         admin2 = self.add_commas(self.admin2_name)
         admin1 = self.add_commas(self.admin1_name)
@@ -375,20 +341,9 @@ class Loc:
         # Returns a five part title string and tokenized version:
         #     prefix,city,county,state,country  (prefix plus long name)
 
-        # Force type to City to generate four part title (then we add prefix for five parts)
-        save_type = self.place_type
-        self.place_type = PlaceType.CITY
-
         # Normalize country name
-        save_country = self.country_name
-        self.country_name, modified = Normalize.country_normalize(self.country_name)
-
-        full_title = self.prefix + ',' + f"{self.city1}, {self.admin2_name}, {self.admin1_name}, {str(self.country_name)}"
-
-        # Restore values to original
-        self.place_type = save_type
-        self.country_name = save_country
-
+        country, modified = Normalize.country_normalize(self.country_name)
+        full_title = self.prefix + ' ,' + f"{self.city1}, {self.admin2_name}, {self.admin1_name}, {str(country)}"
         return full_title
 
     def set_type_from_feature(self):
@@ -470,7 +425,7 @@ class Loc:
     @staticmethod
     def matchscore_prefix(pref: str, result: str) -> str:
         """
-        Cleanup prefix.  Remove any items from prefix that are in match result.  Remove *   
+        Remove any items from prefix that are in match result.  Remove *   
         #Args:   
             pref:   
             result:   
@@ -496,7 +451,7 @@ class Loc:
                     prefix_sdx = ' ' + GeoUtil.get_soundex(prefix_word) + ' '
                     if len(prefix_word) < 3:
                         prefix_word += ' '
-                    # See if any words in prefix are in result_segment
+                    # Remove words in prefix that are in result_segment
                     if (prefix_word in result_segment and prefix_word != '') or (prefix_sdx in
                                                                                  result_sdx and prefix_sdx != ''):
                         result_segment = remove_item(prefix_word.strip(' '), result_segment)

@@ -46,7 +46,7 @@ class Example:
                                        show_message=True, exit_on_error=True,
                                        languages_list_dct={'en'},
                                        feature_code_list_dct=features,
-                                       supported_countries_dct={'fr', 'gb', 'ca'})
+                                       supported_countries_dct={'fr', 'gb', 'ca', 'us'})
 
         # Open Geoname database - city names, lat/long, etc.  Create database if not found
         error = self.geodata.open(repair_database=True, query_limit=105)
@@ -104,13 +104,13 @@ if __name__ == "__main__":
         'cathedral winchester,,england',
         'Chartres,Eure Et Loir,  ,  France',
         'Lathom,Lancashire,england',
-        'St Filbert,Manchester,,england'
+        'St Filbert,Manchester,,england',
+        "boston,,ma, united states",
         ]
 
     locations2 = [
-        'Saint-Denis-le-Ferment,,normandie,france',
-        'St Filbert,Manchester,,england'
+        "boston,,ma, united states",
         ]
 
-    for name in locations2:
+    for name in locations:
         ex.lookup_place(name)

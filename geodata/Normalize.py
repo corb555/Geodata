@@ -74,7 +74,6 @@ phrase_cleanup = [
     ('castle of ([^,]+)', r'\g<1> castle'),  # Normalize 'Township of X' to 'X Township'
     (r',castle', ' castle'),  # -  remove extra comma
     (r',palace', ' palace'),  # -  remove extra comma
-    (r',cathedral', ' cathedral'),  # -  remove extra comma
     ]
 
 
@@ -91,7 +90,7 @@ def normalize_for_scoring(text: str, iso: str) -> str:
     #Returns:
 
     """
-    text = normalize(text, False)
+    text = normalize(text=text, remove_commas=False)
     text = _remove_noise_words(text)
     return text
 
