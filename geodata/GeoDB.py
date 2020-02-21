@@ -582,7 +582,6 @@ class GeoDB:
         """
         self.debug('WIDE SEARCH COUNTRY')
         self.get_country_name(place.country_iso, place.georow_list)
-        place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
     def get_country_name(self, iso: str, row_list) -> str:
         """
