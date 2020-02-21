@@ -24,7 +24,7 @@ import os
 
 class FileReader:
 
-    def __init__(self, directory: str, filename: str, progress_bar):
+    def __init__(self, directory: str, filename: str, update_progress):
         """
         Read a file and call a handler for each line.  Update progress bar if present
         #Args:
@@ -34,7 +34,7 @@ class FileReader:
         """
         self.logger = logging.getLogger(__name__)
         self.directory: str = directory
-        self.progress_bar = progress_bar
+        self.update_progress = update_progress
         self.fname: str = filename
         self.cache_changed = False
         self.count = 0
@@ -53,11 +53,6 @@ class FileReader:
             fsize = os.path.getsize(path)
             with open(path, 'r', newline="", encoding='utf-8', errors='replace') as file:
                 for row in file:
-                    if self.progress_bar is not None:
-                        if self.progress_bar.shutdown_requested:
-                            # User requested cancel
-                            self.cancel()
-                            return True
                     line_num += 1
                     file_pos += len(row)
                     self.handle_line(line_num, row)
@@ -86,7 +81,7 @@ class FileReader:
         """ Update progress bar if there is one """
         if val < 2:
             val = 2
-        if self.progress_bar is not None:
-            self.progress_bar.update_progress(val, msg)
+        if self.update_progress is not None:
+            self.update_progress(val, msg)
 
         self.logger.debug(msg)
