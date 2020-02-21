@@ -78,11 +78,15 @@ def get_cache_directory(basepath):
     return os.path.join(basepath, "cache")
 
 
-def get_soundex(txt):
+def get_soundex(text):
     """
-    Returns: Phonetics Double Metaphone Soundex code for text.  
+    Returns: Phonetics Double Metaphone Soundex code for sorted words in text  
     """
-    return phonetics.dmetaphone(txt)[0]
+    sdx = []
+    word_list = sorted(text.split(' '))
+    for word in word_list:
+        sdx.append(phonetics.dmetaphone(word)[0])
+    return ' '.join(sdx)
 
 
 def set_debug_logging(msg):

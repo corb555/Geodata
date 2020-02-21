@@ -173,13 +173,10 @@ class Loc:
 
             if len(self.admin1_name) > 0:
                 # Lookup Admin1
-                geo_db.wide_search_admin1_id(self)
+                geo_db.search_admin1_id(self)
                 if self.admin1_id != '':
                     # Found Admin1
                     self.place_type = PlaceType.ADMIN1
-                    # fill in country name if still missing - finding Admin1 will find country ISO
-                    if self.country_name == '':
-                        self.country_name = geo_db.get_country_name(self.country_iso)
                     self.admin1_name = geo_db.get_admin1_name_direct(self.admin1_id, self.country_iso)
                     self.logger.debug(f'adm1 nm={self.admin1_name}')
                     self.result_type = GeoUtil.Result.PARTIAL_MATCH
@@ -222,6 +219,9 @@ class Loc:
                 self.prefix = str(tokens[0].strip(' ')) + ' ' + str(tokens[1].strip(' '))
 
         self.prefix = Normalize.normalize(self.prefix, False)
+        # fill in country name if still missing - finding Admin1 will find country ISO
+        if self.country_name == '' and self.country_iso != '':
+            self.country_name = geo_db.get_country_name(self.country_iso)
 
         self.logger.debug(f"    ======= PARSED: {place_name} \nCity [{self.city1}] Adm2 [{self.admin2_name}]"
                           f" Adm1 [{self.admin1_name}] adm1_id [{self.admin1_id}] Cntry [{self.country_name}] Pref=[{self.prefix}]"

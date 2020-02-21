@@ -109,8 +109,6 @@ class GeoDB:
         """
             **Lookup a place in geoname.org db**     
             Lookup is based on place.place_type as follows:  
-                Loc.PlaceType.ADMIN1: does self.wide_search_admin1(place)  
-                Loc.PlaceType.ADMIN2: does self.wide_search_admin2(place)  
                 Loc.PlaceType.COUNTRY: does self.wide_search_country(place)  
                 Loc.PlaceType.ADVANCED_SEARCH: does self.feature_search(place)  
                 Otherwise: do self.wide_search_city(place)  
@@ -125,31 +123,22 @@ class GeoDB:
         """
         self.start = time.time()
         place.result_type = Result.STRONG_MATCH
-
-        if place.country_iso != '' and place.country_name == '':
-            place.country_name = self.get_country_name(place.country_iso)
-
         target_feature = place.place_type
 
         # Lookup Place based on Place Type
         if place.place_type == Loc.PlaceType.ADMIN1:
             # Loc.parse has already looked up admin1
             return
-        elif place.place_type == Loc.PlaceType.ADMIN2:
-            lookup_type = 'ADMIN2'
-            #if place.admin1_id == '':
-            #    self.wide_search_admin1_id(place=place)
-            self.wide_search_admin2(place)
         elif place.place_type == Loc.PlaceType.COUNTRY:
             lookup_type = 'COUNTRY'
-            self.wide_search_country(place)
+            self.search_country(place)
         elif place.place_type == Loc.PlaceType.ADVANCED_SEARCH:
             self.feature_search(place)
             lookup_type = 'ADVANCED'
         else:
             # Lookup as City
             lookup_type = 'CITY'
-            self.wide_search_city(place)
+            self.search_city(place)
 
         if place.georow_list:
             self.logger.debug(f'LOOKED UP: {len(place.georow_list)} matches for type={lookup_type}  '
@@ -160,7 +149,7 @@ class GeoDB:
             self.debug(f'LOOKUP. No match:for {lookup_type}   nm=[{place.get_five_part_title()}]\n')
             place.georow_list = []
 
-    def wide_search_city(self, place: Loc):
+    def search_city(self, place: Loc):
         """
         Search for city using place.city1
         # Args:   
@@ -168,7 +157,6 @@ class GeoDB:
         # Returns:   
             None.  place.georow_list is updated with list of matches   
         """
-
         lookup_target = place.city1
         self.debug(f'WIDE SEARCH CITY: [{lookup_target}]')
 
@@ -202,9 +190,10 @@ class GeoDB:
                                         result=Result.WORD_MATCH))
 
             # lookup by soundex
-            query_list.append(Query(where="sdx = ?",
-                                    args=(sdx,),
-                                    result=Result.SOUNDEX_MATCH))
+            if len(sdx) > 3:
+                query_list.append(Query(where="sdx = ?",
+                                        args=(sdx,),
+                                        result=Result.SOUNDEX_MATCH))
             
             place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str,
                                                                            from_tbl='main.geodata',
@@ -233,10 +222,12 @@ class GeoDB:
                     where="name LIKE ? AND country = ? AND admin1_id = ?",
                     args=(pattern, place.country_iso, place.admin1_id),
                     result=Result.WORD_MATCH))
+                
             # lookup by Soundex , country
-            query_list.append(Query(where="sdx = ? AND country = ?",
-                                    args=(sdx, place.country_iso),
-                                   result=Result.SOUNDEX_MATCH))
+            if len(sdx) > 3:
+                query_list.append(Query(where="sdx = ? AND country = ?",
+                                        args=(sdx, place.country_iso),
+                                       result=Result.SOUNDEX_MATCH))
         else:
             # No admin1 - lookup by name, country
             query_list.clear()
@@ -252,9 +243,10 @@ class GeoDB:
                                         result=Result.WORD_MATCH))
 
         # lookup by Soundex , country
-        query_list.append(Query(where="sdx = ? AND country = ?",
-                                args=(sdx, place.country_iso),
-                                result=Result.SOUNDEX_MATCH))
+        if len(sdx) > 3:
+            query_list.append(Query(where="sdx = ? AND country = ?",
+                                    args=(sdx, place.country_iso),
+                                    result=Result.SOUNDEX_MATCH))
         
         # Try to find feature type and lookup by that
         self.add_feature_query(query_list, lookup_target, place.country_iso)
@@ -264,30 +256,7 @@ class GeoDB:
                                                                        query_list=query_list)
         self.logger.debug(place.georow_list)
 
-    def wide_search_admin2(self, place: Loc):
-        """
-        Search for Admin2 using place.admin2_name
-
-        # Args:   
-            place:   
-
-        # Returns:
-            None.  place.georow_list is updated with list of matches   
-        """
-        self.debug('WIDE SEARCH ADMIN2')
-
-        lookup_target = place.admin2_name
-        if len(lookup_target) == 0:
-            return
-
-        query_list = []
-        QueryList.QueryList.build_query_list(typ=QueryList.Typ.ADMIN2, query_list=query_list, place=place)
-
-        self.debug(f'Admin2 lookup=[{lookup_target}] country=[{place.country_iso}]')
-        place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.geodata', 
-                                                    query_list=query_list)
-
-    def wide_search_admin1(self, place: Loc):
+    def search_admin1(self, place: Loc):
         """
         Search for Admin1 using place.admin1_name
 
@@ -313,37 +282,7 @@ class GeoDB:
             place.admin1_id = sorted_list[0][Entry.ADM1]
             # self.debug(f'Found adm1 id = {place.admin1_id}')
 
-
-    def wide_search_country(self, place: Loc):
-        """
-        Search for Country using country_iso
-
-        # Args:   
-            place:   
-
-        # Returns:
-            None.  place.georow_list is updated with list of matches   
-        """
-        self.debug('WIDE SEARCH COUNTRY')
-
-        lookup_target = place.country_iso
-        if len(lookup_target) == 0:
-            return
-        sdx = get_soundex(lookup_target)
-
-        # Try each query until we find a match - each query gets less exact
-        query_list = [
-            Query(where="country = ? AND f_code = ? ",
-                  args=(place.country_iso, 'ADM0'),
-                  result=Result.STRONG_MATCH),
-            Query(where="sdx = ?  AND f_code=?",
-                  args=(sdx, 'ADM0'),
-                  result=Result.SOUNDEX_MATCH)
-            ]
-
-        place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
-
-    def wide_search_admin1_id(self, place: Loc):
+    def search_admin1_id(self, place: Loc):
         """
         Search for Admin1 ID using place.admin1_name
 
@@ -365,7 +304,7 @@ class GeoDB:
 
         query_list = []
 
-        # Try each query then calculate best match - each query gets less exact
+        # Try each query then calculate best match 
         if place.country_iso != '':
             if '*' in lookup_target or 'brunswick' in lookup_target:
                 query_list.append(Query(where="name like ? AND country = ?  AND f_code = ?",
@@ -407,7 +346,7 @@ class GeoDB:
                 place.country_iso = sorted_list[0][Entry.ISO]
         place.prefix = save_prefix
 
-    def wide_search_admin2_id(self, place: Loc):
+    def search_admin2_id(self, place: Loc):
         """
              Search for Admin2 ID using place.admin2_name
 
@@ -630,7 +569,22 @@ class GeoDB:
             update[GeoUtil.Entry.SCORE] = int(score * 100)
             place.georow_list[idx] = tuple(update)
 
-    def get_country_name(self, iso: str) -> str:
+
+    def search_country(self, place: Loc):
+        """
+        Search for Country using country_iso
+
+        # Args:   
+            place:   
+
+        # Returns:
+            None.  place.georow_list is updated with list of matches   
+        """
+        self.debug('WIDE SEARCH COUNTRY')
+        self.get_country_name(place.country_iso, place.georow_list)
+        place.result_type = self.process_query_list(result_list=place.georow_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
+
+    def get_country_name(self, iso: str, row_list) -> str:
         """
              return country name for specified ISO code 
 
@@ -642,16 +596,21 @@ class GeoDB:
         """
         self.debug('GET COUNTRY NAME')
 
-        if len(iso) == 0:
+        lookup_target = iso
+        if len(lookup_target) == 0:
             return ''
+        sdx = get_soundex(lookup_target)
 
         # Try each query until we find a match - each query gets less exact
         query_list = [
             Query(where="country = ? AND f_code = ? ",
-                  args=(iso, 'ADM0'),
-                  result=Result.STRONG_MATCH)]
+                  args=(lookup_target, 'ADM0'),
+                  result=Result.STRONG_MATCH),
+            Query(where="sdx = ?  AND f_code=?",
+                  args=(sdx, 'ADM0'),
+                  result=Result.SOUNDEX_MATCH)
+            ]
 
-        row_list = []
         self.process_query_list(result_list=row_list, select_string=self.select_str, from_tbl='main.admin', query_list=query_list)
 
         if len(row_list) > 0:
@@ -774,7 +733,8 @@ class GeoDB:
         place.city1 = ''
 
         place.country_iso = str(row[Entry.ISO])
-        place.country_name = str(self.get_country_name(row[Entry.ISO]))
+        row_list = []
+        place.country_name = str(self.get_country_name(row[Entry.ISO], row_list))
         place.lat = row[Entry.LAT]
         place.lon = row[Entry.LON]
         place.feature = str(row[Entry.FEAT])

@@ -596,7 +596,7 @@ class TestGeodata(unittest.TestCase):
     def test_place_name12(self):
         title = "City - Lower Grosvenor Street, London, London, England"
         lat, name = self.run_test(title, "Lower Grosvenor Street, London, London, England")
-        self.assertEqual("Lower Grosvenor Street, London, England, United Kingdom", name, title)
+        self.assertEqual("Lower Grosvenor Street, London, Greater London, England, United Kingdom", name, title)
 
     def test_place_name13(self):
         title = "City - Old Bond Street, London, Middlesex, England"
@@ -611,7 +611,7 @@ class TestGeodata(unittest.TestCase):
     def test_place_name15(self):
         title = "City - Amsterdam, Zuiderkerk"
         lat, name = self.run_test(title, "Amsterdam, Zuiderkerk")
-        self.assertEqual("Zuiderkerk, Gemeente Amsterdam, Provincie Noord Holland, Netherlands", name, title)
+        self.assertEqual("Zuiderkerk, Amsterdam, Gemeente Amsterdam, Provincie Noord Holland, Netherlands", name, title)
 
     def test_place_name16(self):
         title = "City - Amsterdam, Spiegelplein 9"

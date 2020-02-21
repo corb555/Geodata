@@ -50,7 +50,7 @@ Provide a place lookup gazeteer based on files from geonames.org
     """
 
     def __init__(self, directory_name: str, display_progress,
-                 show_message:bool, exit_on_error:bool, languages_list_dct, feature_code_list_dct,
+                 show_message: bool, exit_on_error: bool, languages_list_dct, feature_code_list_dct,
                  supported_countries_dct):
         """
             Init
@@ -65,7 +65,7 @@ Provide a place lookup gazeteer based on files from geonames.org
             supported_countries_dct: Dictionary of ISO-2 Country codes to import into DB   
         """
         self.logger = logging.getLogger(__name__)
-        self.display_progress = display_progress  
+        self.display_progress = display_progress
         self.save_place: Loc = Loc.Loc()
         self.miss_diag_file = None
         self.distance_cutoff = 0.6  # Value to determine if two lat/longs are similar based on Rectilinear Distance
@@ -78,7 +78,7 @@ Provide a place lookup gazeteer based on files from geonames.org
     def find_matches(self, location: str, place: Loc, plain_search) -> GeoUtil.Result:
         """
             Find a location in the geoname database.  On successful match, place.georow_list will contain   
-            list of georows that matched the name.  Each georow can be copied to a Loc structure by   
+            a list of georows that matched the name.  Each georow can be copied to a Loc structure by   
             calling process_result   
 
         #Args:   
@@ -122,20 +122,19 @@ Provide a place lookup gazeteer based on files from geonames.org
         # 1) Try lookup based on standard parsing: lookup city, county, state/province, or country as parsed
         self.logger.debug(f'  1) Standard, based on parsing.  pref [{place.prefix}] type={place.place_type}')
         self.geo_build.geodb.lookup_place(place=place)
-        #self.log_results(place.georow_list)
         if place.georow_list:
             result_list.extend(place.georow_list)
 
         # Restore items
         self._restore_fields(place, self.save_place)
 
-        # 2) Try second token (Admin2) as a city 
-        for typ in [Loc.PlaceType.ADMIN2]:
-            if place.admin2_name != '':
+        # 2) Try second token (Admin2) as a city if we don't have more than N matches already
+        for typ in [Loc.PlaceType.ADMIN2] :
+            if place.admin2_name != '' and len(result_list) < 9:
                 place.georow_list.clear()
                 self._find_type_as_city(place, typ)
-                #self.log_results(place.georow_list)
-    
+                # self.log_results(place.georow_list)
+
                 if place.georow_list:
                     result_list.extend(place.georow_list)
                 self._restore_fields(place, self.save_place)
@@ -179,15 +178,12 @@ Provide a place lookup gazeteer based on files from geonames.org
 
         # Clear to just best entry
         if len(place.georow_list) > 0:
-            #row = copy.copy(place.georow_list[0])
-            #place.georow_list.clear()
-            #place.georow_list.append(row)
             if place.score <= MatchScore.Score.VERY_GOOD:
                 place.result_type = GeoUtil.Result.STRONG_MATCH
             else:
                 place.result_type = GeoUtil.Result.PARTIAL_MATCH
 
-        #self.process_results(place=place, flags=ResultFlags(limited=False, filtered=False))
+        # self.process_results(place=place, flags=ResultFlags(limited=False, filtered=False))
         if len(place.georow_list) > 0:
             return True
         else:
@@ -213,7 +209,7 @@ Provide a place lookup gazeteer based on files from geonames.org
             place.result_type = GeoUtil.Result.STRONG_MATCH
         else:
             place.result_type = GeoUtil.Result.NO_MATCH
-            
+
     def _find_type_as_city(self, place: Loc, typ):
         """
             Do a lookup using the field specifed by typ as a city name.  E.g. if typ is PlaceType.ADMIN1 then   
@@ -225,7 +221,7 @@ Provide a place lookup gazeteer based on files from geonames.org
         #Returns:  None   
             place.georow_list is updated with matches   
         """
-        #place.standard_parse = False
+        # place.standard_parse = False
         typ_name = ''
         if typ == Loc.PlaceType.CITY:
             # Try City as city (do as-is)
@@ -273,7 +269,7 @@ Provide a place lookup gazeteer based on files from geonames.org
 
         """
         # Try City as ADMIN2
-        #place.standard_parse = False
+        # place.standard_parse = False
         place.admin2_name = place.city1
         place.city1 = ''
         place.place_type = Loc.PlaceType.ADMIN2
@@ -323,9 +319,9 @@ Provide a place lookup gazeteer based on files from geonames.org
             place.result_type = GeoUtil.Result.PARTIAL_MATCH
 
         place.set_place_type_text()
-        
+
     @staticmethod
-    def distance(lat_a:float, lon_a:float, lat_b:float, lon_b:float):
+    def distance(lat_a: float, lon_a: float, lat_b: float, lon_b: float):
         """
         Returns rectilinear distance in degrees between two lat/longs   
         Args:   
@@ -342,14 +338,14 @@ Provide a place lookup gazeteer based on files from geonames.org
         # sort list by LON/LAT and score so we can remove dups
         rows_sorted_by_latlon = sorted(place.georow_list, key=itemgetter(GeoUtil.Entry.LON, GeoUtil.Entry.LAT, GeoUtil.Entry.SCORE))
         place.georow_list.clear()
-    
+
         # Create a dummy 'previous' row so the comparison to previous entry works on the first item
         prev_geo_row = self.geo_build.geodb.make_georow(name='q', iso='q', adm1='q', adm2='q', lat=900, lon=900, feat='q', geoid='q', sdx='q')
         georow_idx = 0
-    
+
         # Keep track of list by GEOID to ensure no duplicates in GEOID
         geoid_dict = {}  # Key is GEOID.  Value is List index
-    
+
         # Find and remove if two entries are duplicates - defined as two items with:
         #  1) same GEOID or 2) same name and lat/lon is within Box Distance of 0.6 degrees
         for geo_row in rows_sorted_by_latlon:
@@ -359,14 +355,14 @@ Provide a place lookup gazeteer based on files from geonames.org
             if self._valid_year_for_location(place.event_year, geo_row[GeoUtil.Entry.ISO], geo_row[GeoUtil.Entry.ADM1], 60) is False:
                 # Skip location if location name  didnt exist at the time of event WITH 60 years padding
                 continue
-    
+
             if self._valid_year_for_location(place.event_year, geo_row[GeoUtil.Entry.ISO], geo_row[GeoUtil.Entry.ADM1], 0) is False:
                 # Flag if location name  didnt exist at the time of event
                 date_filtered = True
-    
+
             old_row = list(geo_row)
             geo_row = tuple(old_row)
-    
+
             if geo_row[GeoUtil.Entry.NAME] != prev_geo_row[GeoUtil.Entry.NAME]:
                 # Add this item to georow list since it has a different name.  Also add its idx to geoid dict
                 place.georow_list.append(geo_row)
@@ -392,7 +388,7 @@ Provide a place lookup gazeteer based on files from geonames.org
                 place.georow_list[georow_idx - 1] = geo_row
                 geoid_dict[geo_row[GeoUtil.Entry.ID]] = georow_idx - 1
                 # self.logger.debug(f'Use. {geo_row[GeoUtil.Entry.SCORE]}  < {prev_geo_row[GeoUtil.Entry.SCORE]} {geo_row[GeoUtil.Entry.NAME]}')
-    
+
             prev_geo_row = geo_row
 
     def filter_results(self, place: Loc):
@@ -414,19 +410,19 @@ Provide a place lookup gazeteer based on files from geonames.org
         """
 
         date_filtered = False  # Flag to indicate whether we dropped locations due to event date
-        #event_year = place.event_year
+        # event_year = place.event_year
 
         if len(place.georow_list) > 100:
             limited_flag = True
         else:
             limited_flag = False
-            
+
         if len(place.georow_list) == 0:
             return ResultFlags(limited=limited_flag, filtered=date_filtered)
 
         # Remove duplicate locations in list (have same name and lat/lon)
         self.remove_duplicates(place)
-        
+
         gap_threshold = 0
         score = 0
 
@@ -439,8 +435,8 @@ Provide a place lookup gazeteer based on files from geonames.org
         # Go through sorted list and only add items to georow_list that are close to the best score
         for rw, geo_row in enumerate(new_list):
             score = geo_row[GeoUtil.Entry.SCORE]
-            #admin1_name = self.geo_build.geodb.get_admin1_name_direct(geo_row[GeoUtil.Entry.ADM1], geo_row[GeoUtil.Entry.ISO])
-            #admin2_name = self.geo_build.geodb.get_admin2_name_direct(geo_row[GeoUtil.Entry.ADM1],
+            # admin1_name = self.geo_build.geodb.get_admin1_name_direct(geo_row[GeoUtil.Entry.ADM1], geo_row[GeoUtil.Entry.ISO])
+            # admin2_name = self.geo_build.geodb.get_admin2_name_direct(geo_row[GeoUtil.Entry.ADM1],
             #                                                          geo_row[GeoUtil.Entry.ADM2], geo_row[GeoUtil.Entry.ISO])
 
             base = MatchScore.Score.VERY_GOOD + (MatchScore.Score.GOOD / 3)
@@ -531,7 +527,7 @@ Provide a place lookup gazeteer based on files from geonames.org
         """
         if not event_year:
             return True
-        
+
         # Try looking up start year by state/province
         place_year = admin1_name_start_year.get(f'{country_iso}.{admin1.lower()}')
         if place_year is None:
@@ -560,7 +556,7 @@ Provide a place lookup gazeteer based on files from geonames.org
         """
         res = feature_priority.get(feature)
         if res:
-            return 100.0 - res 
+            return 100.0 - res
         else:
             return 100.0 - feature_priority.get('DEFAULT')
 
@@ -592,7 +588,7 @@ Provide a place lookup gazeteer based on files from geonames.org
         place.admin2_name = save_place.admin2_name
         place.prefix = save_place.prefix
         # place.extra = save_place.extra
-        #place.standard_parse = save_place.standard_parse
+        # place.standard_parse = save_place.standard_parse
 
     def close(self):
         """
@@ -603,26 +599,25 @@ Provide a place lookup gazeteer based on files from geonames.org
         """
         if self.geo_build:
             self.geo_build.close()
-            
+
     def log_results(self, geo_row_list):
-        for  geo_row in geo_row_list:
+        for geo_row in geo_row_list:
             self.logger.debug(f'    {geo_row[GeoUtil.Entry.NAME]}')
 
 
-# Default geonames.org feature types to load
-default = ["ADM1", "ADM2", "ADM3", "ADM4", "ADMF", "CH", "CSTL", "CMTY", "EST ", "HSP",
-           "HSTS", "ISL", "MSQE", "MSTY", "MT", "MUS", "PAL", "PPL", "PPLA", "PPLA2", "PPLA3", "PPLA4",
-           "PPLC", "PPLG", "PPLH", "PPLL", "PPLQ", "PPLX", "PRK", "PRN", "PRSH", "RUIN", "RLG", "STG", "SQR", "SYG", "VAL"]
-
-# If there are 2 identical entries, we only add the one with higher feature priority.  Highest value is for large city or capital
+# Entries are only loaded from geonames.org files if their feature is in this list
+# Highest value is for large city or capital
+# Also, If there are 2 identical entries, we only add the one with higher feature priority.  
 # These scores are also used for match ranking score
-# Note: PP1M, P1HK, P10K do not exist in Geonames and are created by geodata.geodatafiles
+# Note: PP1M, P1HK, P10K do not exist in Geonames and are created by geodata.geodataBuild
 feature_priority = {
-    'PP1M': 100, 'ADM1': 96, 'PPLA': 96, 'PPLC': 96, 'PP1K': 82, 'PPLA2': 93, 'P10K': 89, 'P1HK': 93,
-    'PPL' : 55, 'PPLA3': 71, 'ADMF': 71, 'PPLA4': 69, 'ADMX': 66, 'PAL': 44, 'ISL': 50, 'SQR' : 50,
-    'ADM2': 45, 'PPLG': 75, 'RGN': 71, 'AREA': 71, 'MILB': 44, 'NVB': 71, 'PPLF': 69, 'ADM0': 93, 'PPLL': 55, 'PPLQ': 60, 'PPLR': 60,
-    'CH'  : 44, 'MSQE': 44, 'SYG': 44, 'CMTY': 44, 'CSTL': 44, 'EST': 44, 'PPLS': 55, 'PPLW': 55, 'PPLX': 82, 'BTL': 22,
-    'HSTS': 42, 'PRK': 42, 'HSP': 0, 'VAL': 0, 'MT': 0, 'ADM3': 32, 'ADM4': 0, 'DEFAULT': 0, 'MNMT': 44
+    'PP1M': 100, 'ADM1': 96, 'PPLA': 96, 'PPLC': 96, 'PPLH': 96, 'ADM0': 93, 'PPLA2': 93, 'P1HK': 93,
+    'P10K': 89, 'PPLX': 82, 'PP1K': 82, 'PRN': 71, 'PRSH': 71, 'RLG': 71, 'RUIN': 71, 'STG': 71,
+    'PPLG': 75, 'RGN': 71, 'AREA': 71, 'NVB': 71, 'PPLA3': 71, 'ADMF': 71, 'PPLA4': 69, 'PPLF': 69, 'ADMX': 66,
+    'PPLQ': 60, 'PPLR': 60, 'PPLS': 55, 'PPLL': 55, 'PPLW': 55, 'PPL': 55, 'SQR': 50, 'ISL': 50,
+    'ADM2': 45, 'CH': 44, 'MSQE': 44, 'MSTY': 44, 'SYG': 44, 'MUS': 44, 'CMTY': 44, 'CSTL': 44, 'EST': 44,
+    'MILB': 44, 'MNMT': 44, 'PAL': 44, 'HSTS': 42, 'PRK': 42, 'ADM3': 32,
+    'BTL' : 22, 'HSP': 0, 'VAL': 0, 'MT': 0, 'ADM4': 0, 'DEFAULT': 0,
     }
 
 ResultFlags = collections.namedtuple('ResultFlags', 'limited filtered')
