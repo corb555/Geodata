@@ -219,9 +219,10 @@ class Loc:
                 self.prefix = str(tokens[0].strip(' ')) + ' ' + str(tokens[1].strip(' '))
 
         self.prefix = Normalize.normalize(self.prefix, False)
+        row_list = []
         # fill in country name if still missing - finding Admin1 will find country ISO
         if self.country_name == '' and self.country_iso != '':
-            self.country_name = geo_db.get_country_name(self.country_iso)
+            self.country_name = geo_db.get_country_name(self.country_iso, row_list)
 
         self.logger.debug(f"    ======= PARSED: {place_name} \nCity [{self.city1}] Adm2 [{self.admin2_name}]"
                           f" Adm1 [{self.admin1_name}] adm1_id [{self.admin1_id}] Cntry [{self.country_name}] Pref=[{self.prefix}]"
