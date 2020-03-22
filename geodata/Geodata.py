@@ -203,13 +203,14 @@ Provide a place lookup gazeteer based on files from geonames.org
         #Returns: None. Location fields in Loc are updated
 
         """
+        flags = ResultFlags(limited=False, filtered=False)
         place.geoid = geoid
         place.georow_list.clear()
         self.geo_build.geodb.s.lookup_geoid(georow_list=place.georow_list, geoid=place.geoid, place=place)
         if len(place.georow_list) > 0:
             # Copy geo row to Place
             #self.geo_build.geodb.copy_georow_to_place(row=place.georow_list[0], place=place, fast=True)
-            flags = self.filter_results(place)
+            #flags = self.filter_results(place)
             self.process_results(place=place, flags=flags)
             # place.original_entry = place.get_long_name(None)
             place.result_type = GeoUtil.Result.STRONG_MATCH

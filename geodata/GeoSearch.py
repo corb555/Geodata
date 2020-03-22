@@ -444,8 +444,10 @@ class GeoSearch:
         self.geodb.process_query_list(result_list=georow_list, select_fields=self.select_str,
                                       from_tbl=table, query_list=query_list)
         if georow_list:
-            self.logger.debug(georow_list[0])
-            self.copy_georow_to_place(georow_list[0], place, fast=True)
+            #self.logger.debug(georow_list[0])
+            self.assign_scores(georow_list=place.georow_list, place=place, target_feature=place.feature,
+                               fast=False, quiet=False)
+            #self.copy_georow_to_place(georow_list[0], place, fast=True)
         else:
             self.logger.debug('no match')
 
