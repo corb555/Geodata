@@ -48,6 +48,7 @@ class Country:
         self.country_dict: Dict[str, str] = {}  # Dictionary of Country Name to country iso code
         self.iso_dict: Dict[str, str] = {}  # Reverse dictionary - Country ISO code to country name
         self.lang_list = lang_list
+        self.logger.debug('Country Init')
 
     @staticmethod
     def get_lang(country_iso: str) -> str:

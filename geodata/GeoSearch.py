@@ -603,11 +603,11 @@ class GeoSearch:
         """
         place_lang = Country.Country.get_lang(temp_place.country_iso)
         res, lang = self.get_alternate_name(temp_place.geoid)
-        if res != '' and (lang == place_lang or lang == 'ut8'):
+        if res != '': # and (lang == place_lang or lang == 'ut8'):
             temp_place.city = res
 
         res, lang = self.get_admin1_alternate_name(temp_place.city, temp_place)
-        if res != '' and (lang == place_lang or lang == 'ut8'):
+        if res != '': # and (lang == place_lang or lang == 'ut8'):
             temp_place.admin1_name = res
 
     def debugZZZ(self, text):
