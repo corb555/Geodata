@@ -20,6 +20,7 @@
 import logging
 import sqlite3
 import sys
+import traceback
 from tkinter import messagebox
 
 
@@ -67,7 +68,7 @@ class DB:
         self.err = ''
         try:
             conn = sqlite3.connect(db_filename)
-            self.logger.info(f'DB {db_filename} connected')
+            self.logger.info(f'Using database {db_filename}')
             return conn
         except Exception as e:
             if self.show_message:
@@ -151,6 +152,8 @@ class DB:
                 messagebox.showwarning('Error', e)
             self.err = e
             self.logger.error(e)
+            traceback.print_stack()
+
             if self.exit_on_error:
                 sys.exit()
             return True
@@ -175,6 +178,8 @@ class DB:
                 messagebox.showwarning('Error', e)
             self.err = e
             self.logger.error(e)
+            traceback.print_stack()
+
             if self.exit_on_error:
                 sys.exit()
             return True
@@ -199,6 +204,8 @@ class DB:
                 messagebox.showwarning('Error', f'Database delete table error\n {e}')
             self.err = e
             self.logger.error(e)
+            traceback.print_stack()
+
             if self.exit_on_error:
                 sys.exit()
             return True
@@ -233,16 +240,22 @@ class DB:
         """
         self.err = ''
         try:
+        #if True:
             if args:
                 self.cur.execute(sql, args)
             else:
                 self.cur.execute(sql)
         except Exception as e:
+        #else:
+            self.logger.error(e)
+            self.logger.error(f'sql [{sql}]')
+            self.logger.error(f'args {args}')
+            traceback.print_stack()
+
             if self.show_message:
                 messagebox.showwarning('Error', f'Database Error\n {e}')
-            self.err = e
-            self.logger.error(e)
-            return 0
+                self.err = e
+                return 0
 
         return self.cur.lastrowid
 
@@ -266,8 +279,10 @@ class DB:
 
         """
         self.err = ''
+
         cur = self.conn.cursor()
         sql = f"SELECT {select_str} FROM {from_tbl} WHERE {where} {self.order_string} {self.limit_string}"
+        #self.logger.debug(f'select {sql} val={args}')
         try:
             cur.execute(sql, args)
             result_list = cur.fetchall()
@@ -278,6 +293,9 @@ class DB:
                 f'{args}\n\n {e}')
             self.err = e
             self.logger.error(e)
+            self.logger.error(sql)
+            traceback.print_stack()
+
             if self.exit_on_error:
                 sys.exit()
             else:
@@ -315,6 +333,8 @@ class DB:
                 return False
         except Exception as e:
             self.logger.warning(f'DB ERROR {e}')
+            traceback.print_stack()
+
             self.err = e
             return False
 

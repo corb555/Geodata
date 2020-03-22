@@ -79,9 +79,12 @@ class FileReader:
 
     def progress(self, msg, val):
         """ Update progress bar if there is one """
-        if val < 2:
-            val = 2
         if self.update_progress is not None:
             self.update_progress(val, msg)
 
-        self.logger.debug(msg)
+        # If we're past 80% log item as info, otherwise log as debug
+        if val > 90 or val < 10 or (val > 40 and val < 50):
+            self.logger.info(f'{val:.1f}%  {msg}')
+        else:
+            self.logger.debug(f'{val:.1f}%  {msg}')
+

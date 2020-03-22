@@ -19,19 +19,22 @@
 """Calculate a heuristic score for how well a result place name matches a target place name."""
 import copy
 import logging
-import re
 
 # import python-Levenshtein 
 from fuzzywuzzy import fuzz
 
-from geodata import Loc, Normalize, Geodata, GeoUtil
+from geodata import Loc, Normalize, Geodata, GeoUtil, GeoSearch
 
 
 class Score:
-    VERY_GOOD = -3
+    VERY_GOOD = 12
     GOOD = 35
     POOR = 77
     VERY_POOR = 105
+
+
+COUNTRY_IDX = 4
+ADMIN1_IDX = 3
     
 
 class MatchScore:
@@ -49,15 +52,15 @@ class MatchScore:
         self.input_weight = 0.0
 
         # Weighting for each input term match -  adm2, adm1, country
-        token_weights = [.1, .3, .5]
-        self.set_weighting(token_weight=token_weights, prefix_weight=3.0, feature_weight=0.05)
+        token_weights = [.2, .3, .5]
+        self.set_weighting(token_weight=token_weights, prefix_weight=4.0, feature_weight=0.05)
 
         # Weighting for each part of score
-        self.wildcard_penalty = -10.0
+        self.wildcard_penalty = -20.0
 
     def _calculate_wildcard_score(self, original_entry) -> float:
         if '*' in original_entry:
-            # if it was a wildcard search it's hard to rank - just add adjustment
+            # if it was a wildcard search it's hard to score - just add adjustment
             return self.wildcard_penalty
         else:
             return 0.0
@@ -81,7 +84,7 @@ class MatchScore:
         # Append weighting for each input term match -   adm2, adm1, country
         self.token_weight += list(token_weight)
         self.token_weight = [abs(item) for item in self.token_weight]
-        self.logger.debug(f'{token_weight}')
+        self.logger.debug(f'{self.token_weight}')
 
         self.prefix_weight = abs(prefix_weight)
         self.feature_weight = abs(feature_weight)
@@ -132,7 +135,7 @@ class MatchScore:
 
         # Create full, normalized titles (prefix,city,county,state,country)
         result_title, result_tokens, target_title, target_tokens = _prepare_input(target_place, result_place)
-        #self.logger.debug(f'Targ [{target_tokens}] Res [{result_tokens}]')
+        #self.logger.debug(f'Res [{result_tokens}] Targ [{target_tokens}] ')
         
         # Calculate Prefix score.  Prefix is not used in search and longer is generally worse 
         prefix_score = _calculate_prefix_penalty(target_place.prefix)
@@ -150,7 +153,7 @@ class MatchScore:
         score: float = in_score * self.input_weight + feature_score * self.feature_weight + \
                        prefix_score * self.prefix_weight + wildcard_score
 
-        #print(f'SCORE {score:.1f} res=[{result_title}] pref=[{target_place.prefix}]'   
+        #self.logger.debug(f'SCORE {score:.1f} res=[{result_title}] pref=[{target_place.prefix}]'   
         #                  f'inSc={in_score * self.input_weight:.1f}% feat={feature_score * self.feature_weight:.1f} {result_place.feature}  '
         #                  f'wild={wildcard_score} pref={prefix_score * self.prefix_weight:.1f}')
 
@@ -178,7 +181,7 @@ class MatchScore:
     def _weighted_score(self, target_tokens: [], result_tokens: []) -> float:
         num_inp_tokens = 0.0
         score = 0.0
-        bonus = 0
+        bonus = 0.0
 
         token_weight = copy.copy(self.token_weight)
         
@@ -192,33 +195,58 @@ class MatchScore:
         # Calculate difference each target segment to result segment (city, county, state/province, country)
         # Each segment can have a different weighting.  e.g. county can have lower weighting
         for idx, segment in enumerate(target_tokens):
-            if idx < len(result_tokens):
-                # Calculate fuzzy Levenstein distance between words
-                fz = 100 - fuzz.ratio(target_tokens[idx], result_tokens[idx])
-                # Calculate fuzzy Levenstein distance between Soundex of words
-                sd = 100 - fuzz.ratio(GeoUtil.get_soundex(target_tokens[idx]), GeoUtil.get_soundex(result_tokens[idx]))
+            if idx < len(result_tokens) and idx > 0:
+                if len(target_tokens[idx]) > 0:
+                    # Calculate fuzzy Levenstein distance between words, smaller is better
+                    fz = 100.0 - fuzz.ratio(target_tokens[idx], result_tokens[idx])
+                    # Calculate fuzzy Levenstein distance between Soundex of words
+                    sd = 100.0 - fuzz.ratio(GeoSearch.get_soundex(target_tokens[idx]), GeoSearch.get_soundex(result_tokens[idx]))
+                    value = fz * 0.6 + sd * 0.4
+                    # Extra bonus for good match
+                    if value < 10:
+                        value -= 10
+                    if target_tokens[idx][0:5] == result_tokens[idx][0:5]:
+                        # Bonus if first letters match
+                        value -= 5
+                elif len(result_tokens[idx]) > 0:
+                    # Target had no entry for this term
+                    # Give a penalty if target didn't have country 
+                    if idx == COUNTRY_IDX:
+                        value = 10.0
+                    elif idx == ADMIN1_IDX:
+                        # Give a penalty if target didn't have state/province
+                        value = 40.0
+                    else:
+                        value = 20.0
+                else:
+                    if idx == COUNTRY_IDX:
+                        value = 10.0
+                    elif idx == ADMIN1_IDX:
+                        # Give a penalty if target didn't have state/province
+                        value = 40.0
+                    else:
+                        value = 0
+                    
+                #if  idx >0:
+                #    self.logger.debug(f'  {idx})  [{target_tokens[idx]}] [{result_tokens[idx]}]  val={value}')
                 
-                value = fz  + sd * 0.2
-                
-                if idx == 1 and value < 15:
-                    # Bonus if first term is a good match
-                    bonus = -5
-                
-                if '*' in segment:
+                #if '*' in segment:
                     # Add penalty if wildcard is in segment
-                    value += 100
+                    #value += 100.0
                 score += value * token_weight[idx]
                 num_inp_tokens += token_weight[idx]
                 self.score_diags += f'  {idx}) {value} [{result_tokens[idx]}]'
             else:
-                self.logger.warning(f'Short Result len={len(result_tokens)} targ={target_tokens[idx]}')
+                #self.logger.warning(f'Short Result len={len(result_tokens)} targ={target_tokens[idx]}')
+                pass
 
-        # Average over number of tokens (with fractional weight).  Gives 0-100% regardless of weighting and number of tokens
+        # Average over number of tokens (with fractional weight).  Gives 0-100 regardless of weighting and number of tokens
         if num_inp_tokens > 0:
-            score = score / num_inp_tokens
+            score = (score / num_inp_tokens) 
         else:
             score = 0
-        return score - (num_inp_tokens * 6) + bonus
+            
+        return score + bonus
 
     @staticmethod
     def _adjust_adm_score(score, feat):
@@ -232,8 +260,8 @@ def _calculate_prefix_penalty(prefix):
     if prefix_len > 0:
         # reduce penalty if prefix is a street (contains digits or 'street' or 'road')
         penalty = 5 + prefix_len
-        if is_street(prefix):
-            penalty *= 0.5
+        if GeoUtil.is_street(prefix):
+            penalty *= 0.2
     else:
         penalty =  0
     return penalty
@@ -257,14 +285,6 @@ def full_normalized_title(place: Loc) -> str:
     title = Normalize.normalize_for_scoring(title, place.country_iso)
 
     return title
-
-def is_street(text) -> bool:
-    # See if text looks like a street name
-    street_patterns = [r'\d', 'street', 'avenue', 'road', 'rue ']
-    for pattern in street_patterns:
-        if bool(re.search(pattern, text)):
-            return True
-    return False
 
 
 def remove_if_input_empty(target_tokens, res_tokens):

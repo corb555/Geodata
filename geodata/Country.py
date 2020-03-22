@@ -21,7 +21,7 @@
 import logging
 from typing import Dict
 
-from geodata import GeoDB
+from geodata import GeoSearch
 
 
 class CnRow:
@@ -58,7 +58,7 @@ class Country:
         else:
             return 'en'
 
-    def add_country_names_to_db(self, geodb) -> bool:
+    def add_country_names_to_db(self, geobuild) -> bool:
         """
                Add country names and ISO codes to database
         # Args:
@@ -72,7 +72,7 @@ class Country:
 
         # list of all countries and their ISO codes
         # This also includes some common aliases
-        geodb.db.begin()
+        geobuild.geodb.db.begin()
 
         self.logger.debug(self.lang_list)
 
@@ -90,43 +90,43 @@ class Country:
 
             # Create Geo_row
             # ('paris', 'fr', '07', '012', '12.345', '45.123', 'PPL')
-            geo_row = [None] * GeoDB.Entry.MAX
+            geo_row = [None] * GeoSearch.Entry.MAX
             self.geo_files.update_geo_row_name(geo_row=geo_row, name=ky)
-            geo_row[GeoDB.Entry.ISO] = row[CnRow.ISO].lower()
-            geo_row[GeoDB.Entry.ADM1] = ''
-            geo_row[GeoDB.Entry.ADM2] = ''
-            geo_row[GeoDB.Entry.LAT] = row[CnRow.LAT]
-            geo_row[GeoDB.Entry.LON] = row[CnRow.LON]
-            geo_row[GeoDB.Entry.FEAT] = 'ADM0'
-            geo_row[GeoDB.Entry.ID] = row[CnRow.ISO].lower()
+            geo_row[GeoSearch.Entry.ISO] = row[CnRow.ISO].lower()
+            geo_row[GeoSearch.Entry.ADM1] = ''
+            geo_row[GeoSearch.Entry.ADM2] = ''
+            geo_row[GeoSearch.Entry.LAT] = row[CnRow.LAT]
+            geo_row[GeoSearch.Entry.LON] = row[CnRow.LON]
+            geo_row[GeoSearch.Entry.FEAT] = 'ADM0'
+            geo_row[GeoSearch.Entry.ID] = row[CnRow.ISO].lower()
 
-            geodb.insert(geo_row=geo_row, feat_code='ADM0')
+            geobuild.insert(geo_tuple=geo_row, feat_code='ADM0')
 
-        geodb.db.commit()
+        geobuild.geodb.db.commit()
         return False
 
-    def add_historic_names_to_db(self, geodb):
+    def add_historic_names_to_db(self, geobuild):
         """
         Add historic names to DB
 
         Args:
-            geodb: GeoDB instance
+            
         """
         for ky in historic_names:
             # Create Geo_row
             # ('paris', 'fr', '07', '012', '12.345', '45.123', 'PPL')
             row = historic_names[ky]
-            geo_row = [None] * GeoDB.Entry.MAX
+            geo_row = [None] * GeoSearch.Entry.MAX
             self.geo_files.update_geo_row_name(geo_row=geo_row, name=ky)
-            geo_row[GeoDB.Entry.ISO] = row[0].lower()
-            geo_row[GeoDB.Entry.ADM1] = ''
-            geo_row[GeoDB.Entry.ADM2] = ''
-            geo_row[GeoDB.Entry.LAT] = row[3]
-            geo_row[GeoDB.Entry.LON] = row[4]
-            geo_row[GeoDB.Entry.FEAT] = row[1]
-            geo_row[GeoDB.Entry.ID] = 'HIST'
+            geo_row[GeoSearch.Entry.ISO] = row[0].lower()
+            geo_row[GeoSearch.Entry.ADM1] = ''
+            geo_row[GeoSearch.Entry.ADM2] = ''
+            geo_row[GeoSearch.Entry.LAT] = row[3]
+            geo_row[GeoSearch.Entry.LON] = row[4]
+            geo_row[GeoSearch.Entry.FEAT] = row[1]
+            geo_row[GeoSearch.Entry.ID] = 'HIST'
 
-            geodb.insert(geo_row=geo_row, feat_code=row[1])
+            geobuild.insert(geo_tuple=geo_row, feat_code=row[1])
 
 
 historic_names = {

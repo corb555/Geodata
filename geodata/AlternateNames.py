@@ -21,7 +21,7 @@
 """
 Add alternate names for places using the Geonames.org Alternate names file
 """
-from geodata import GeodataBuild, Loc, GeoUtil, GeoDB, FileReader
+from geodata import GeodataBuild, Loc, GeoUtil, GeoSearch, FileReader
 
 ALT_GEOID = 1
 ALT_LANG = 2
@@ -30,12 +30,12 @@ ALT_NAME = 3
 
 class AlternateNames(FileReader.FileReader):
     """
-    Read in Geonames.org Alternate names V2 file and add appropriate entries to the altnames table.
-    Each row in file contains a geoname ID, an alternative name for that entity, and the language.
-    If the lang is in lang_list and the ID is ALREADY in our geonames dictionary, we add this as an alternative name
+    Read in Geonames.org Alternate names V2 file and add  entries to the altnames table.
+    Each row in the file contains a geoname ID, an alternative name for that entity, and the language.
+    If the entrie's lang is in the lang_list and the ID is ALREADY in our geonames dictionary, we add this as an alternative name
     """
 
-    def __init__(self, directory: str, filename: str, progress_bar, geo_files: GeodataBuild, lang_list):
+    def __init__(self, directory: str, filename: str, progress_bar, geo_build: GeodataBuild, lang_list):
         """
             Read in geonames alternate names file and add to geodata database in alt_names table
         # Args:
@@ -47,9 +47,10 @@ class AlternateNames(FileReader.FileReader):
         """
         super().__init__(directory, filename, progress_bar)
         self.sub_dir = GeoUtil.get_cache_directory(directory)
-        self.geo_files: GeodataBuild.GeodataBuild = geo_files
+        self.geo_build: GeodataBuild.GeodataBuild = geo_build
         self.lang_list = lang_list
-        self.loc = Loc.Loc()
+        self.place = Loc.Loc()
+        self.search = None
 
     def add_alternate_names_to_db(self) -> bool:
         """
@@ -57,10 +58,10 @@ class AlternateNames(FileReader.FileReader):
         # Returns:
             True if error
         """
-        self.geo_files.geodb.db.begin()
+        self.geo_build.geodb.db.begin()
         # Read in file.  This will call handle_line for each line in file
         res = super().read()
-        self.geo_files.geodb.db.commit()
+        self.geo_build.geodb.db.commit()
         return res
 
     def handle_line(self, line_num, row):
@@ -71,57 +72,56 @@ class AlternateNames(FileReader.FileReader):
         :param row: line in file to be handled
         :return: None
         """
-        alt_tokens = row.split('\t')
-        if len(alt_tokens) != 10:
-            self.logger.debug(f'Incorrect number of tokens: {alt_tokens} line {line_num}')
+        if self.search == None:
+            # Create search instance
+            self.search  = GeoSearch.GeoSearch(self.geo_build.geodb)
+
+        alt_tokens = row.split('\t', maxsplit=4)
+        if len(alt_tokens) != 5:
+            self.logger.debug(f'Incorrect number of tokens {len(alt_tokens)}: {alt_tokens} line {line_num}')
             return
 
-        self.loc.georow_list = []
+        self.place.georow_list = []
         if alt_tokens[ALT_LANG] == '':
             alt_tokens[ALT_LANG] = 'en'
 
-        # Alternate names are in multiple languages.  Only add if item is in requested lang list
+        # Only add if lang is in requested lang list
         if alt_tokens[ALT_LANG] in self.lang_list:
-            # Only Add this alias if  DB already has an entry (since geoname DB is filtered based on feature)
-            if 'estminser' in alt_tokens[ALT_NAME]:
-                pass
+            # Only Add this alias if  DB  has an entry for it (since geoname DB is filtered )
 
-            # See if item has an entry with same GEOID in Main DB
-            geoid: str = str(self.geo_files.geodb.geoid_main_dict.get(alt_tokens[ALT_GEOID]))
-            if geoid is not None:
-                self.loc.geoid = geoid
+            # Check Main DB - see if item has an entry with same GEOID 
+            dbid = self.geo_build.geoid_main_dict.get(alt_tokens[ALT_GEOID])
+            if dbid is not None:
                 # Retrieve entry
-                self.geo_files.geodb.lookup_geoid_in_main(place=self.loc)
+                self.search.lookup_dbid(self.place.georow_list, dbid, place=self.place, admin=False)
             else:
-                # See if item has an entry with same GEOID in Admin DB
-                geoid = self.geo_files.geodb.geoid_admin_dict.get(alt_tokens[ALT_GEOID])
-                if geoid is not None:
-                    self.loc.geoid = geoid
+                # Check Admin DB - see if item has an entry with same GEOID 
+                dbid = self.geo_build.geoid_admin_dict.get(alt_tokens[ALT_GEOID])
+                if dbid is not None:
                     # Retrieve entry
-                    self.geo_files.geodb.lookup_admin_dbid(place=self.loc)
+                    self.search.lookup_dbid(self.place.georow_list, dbid, place=self.place, admin=True)
 
-            if len(self.loc.georow_list) > 0:
+            if len(self.place.georow_list) > 0:
                 # Create an entry in the alternate name DB  with this name and soundex
 
-                # Convert row to list. modify name and soundex and add to alternate name DB
+                # Convert row to list. modify name and soundex 
                 # Update the name in the new row with the alternate name
-                update = list(self.loc.georow_list[0])
+                update = list(self.place.georow_list[0][0:GeoSearch.Entry.SDX + 1])
 
                 # Make sure this entry has a different name from existing entry
-                if update[ALT_NAME] != alt_tokens[ALT_NAME]:
-                    self.geo_files.update_geo_row_name(geo_row=update, name=alt_tokens[ALT_NAME])
+                if update[GeoSearch.Entry.NAME] != alt_tokens[ALT_NAME].lower():
+                    self.geo_build.update_geo_row_name(geo_row=update, name=alt_tokens[ALT_NAME])
                     new_row = tuple(update)  # Convert back to tuple
 
-                    if 'ADM1' not in update[GeoDB.Entry.FEAT] and 'ADM2' not in update[GeoDB.Entry.FEAT]:
+                    if 'ADM1' not in update[GeoSearch.Entry.FEAT] and 'ADM2' not in update[GeoSearch.Entry.FEAT]:
                         #  Add to main DB if not English or not ADM1/ADM2
-                        self.geo_files.geodb.insert(geo_row=new_row, feat_code=update[GeoDB.Entry.FEAT])
+                        self.geo_build.insert(geo_tuple=new_row, feat_code=update[GeoSearch.Entry.FEAT])
                         self.count += 1
 
                     # Add name to altnames table
-                    if alt_tokens[ALT_LANG] != 'en':
-                        self.geo_files.geodb.insert_alternate_name(alt_tokens[ALT_NAME],
-                                                                   alt_tokens[ALT_GEOID], alt_tokens[ALT_LANG])
-                        self.count += 1
+                    self.geo_build.insert_alternate_name(alt_tokens[ALT_NAME],
+                                                               alt_tokens[ALT_GEOID], alt_tokens[ALT_LANG])
+                    self.count += 1
 
     def cancel(self):
         """
@@ -129,4 +129,4 @@ class AlternateNames(FileReader.FileReader):
         Quit DB build.
         :return: None
         """
-        self.geo_files.geodb.db.commit()
+        self.geo_build.geodb.db.commit()

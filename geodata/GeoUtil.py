@@ -24,8 +24,6 @@ import re
 import sys
 from difflib import SequenceMatcher
 
-import phonetics
-
 
 class Entry:
     # Database geodata table and admin table entries
@@ -78,15 +76,13 @@ def get_cache_directory(basepath):
     return os.path.join(basepath, "cache")
 
 
-def get_soundex(text):
-    """
-    Returns: Phonetics Double Metaphone Soundex code for sorted words in text  
-    """
-    sdx = []
-    word_list = sorted(text.split(' '))
-    for word in word_list:
-        sdx.append(phonetics.dmetaphone(word)[0])
-    return ' '.join(sdx)
+def is_street(text) -> bool:
+    # See if text looks like a street name
+    street_patterns = [r'\d', ' street', ' avenue', ' road', 'rue ']
+    for pattern in street_patterns:
+        if bool(re.search(pattern, text)):
+            return True
+    return False
 
 
 def set_debug_logging(msg):
@@ -185,13 +181,12 @@ def get_feature_group(location: str):
     Returns: (word, group) - feature word found, geonames.org feature group it is in
 
     """
-    word_list = location.split(' ')
-    for word in word_list:
+    for word in location.split(' '):
         group = feature_mapping.get(word)
         if group:
             return word, group
+        
     return '', ''
-
 
 default = ["ADM1", "ADM2", "ADM3", "ADM4", "ADMF", "AREA", "CH", "CSTL", "CMTY", "EST ", "HSP", "FT",
            "HSTS", "ISL", "MSQE", "MSTY", "MT", "MUS", "PAL", "PPL", "PPLA", "PPLA2", "PPLA3", "PPLA4",
@@ -199,6 +194,8 @@ default = ["ADM1", "ADM2", "ADM3", "ADM4", "ADMF", "AREA", "CH", "CSTL", "CMTY",
            "SQR", "SYG", "VAL", "MNMT"]
 
 feature_mapping = {
+    # If location has item below, then derive its feature type
+    'st'           : 'CH',
     'kapelle'      : 'CH',
     'chapel'       : 'CH',
     'kirche'       : 'CH',
@@ -218,31 +215,44 @@ feature_mapping = {
     'basilica'     : 'CH',
     'cattedrale'   : 'CH',
 
-    'castle'       : 'CSTL',
-    'schloss'      : 'CSTL',
-    'chateau'      : 'CSTL',
-    'castell'      : 'CSTL',
-    'castillo'     : 'CSTL',
-    'castello'     : 'CSTL',
-    'kasteel'      : 'CSTL',
-    'zamek'        : 'CSTL',
-    'slott'        : 'CSTL',
+    'castle'       : 'CSTL%',
+    'schloss'      : 'CSTL%',
+    'chateau'      : 'CSTL%',
+    'castell'      : 'CSTL%',
+    'castillo'     : 'CSTL%',
+    'castello'     : 'CSTL%',
+    'kasteel'      : 'CSTL%',
+    'zamek'        : 'CSTL%',
+    'slott'        : 'CSTL%',
 
     'cemetery'     : 'CMTY',
     'cimetiere'    : 'CMTY',
     'cementerio'   : 'CMTY',
     'cimitero'     : 'CMTY',
+    'rooms katholieke begraafplaats': 'CMTY',
     'begraafplaats': 'CMTY',
     'gravlund'     : 'CMTY',
     'kirkegard'    : 'CMTY',
     'friedhof'     : 'CMTY',
-    
-    'hospital' : 'HSP',
-    'hopital': 'HSP',
-    'krankenhaus': 'HSP',
-    'ospedale': 'HSP',
-    
-    'county' : 'ADM2',
+
+    'hospital'     : 'HSP',
+    'hopital'      : 'HSP',
+    'krankenhaus'  : 'HSP',
+    'ospedale'     : 'HSP',
+
+    'county'       : 'ADM2',
+    'island'       : 'ISL',
+
+    'mountain'     : "MT",
+    'museum'       : "MUS",
+    'mosque'       : "MSQE",
+    'monastery'    : "MSTY",
+    'park'         : "PRK",
+    'prison'       : "PRN",
+    'square'       : "SQR",
+    'synagogue'    : "SYG",
+    'abbey'         : "MSTY%",
+    'priory'        : "MSTY%",
     }
 
 feature_names = {

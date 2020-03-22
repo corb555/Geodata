@@ -1,19 +1,18 @@
-def remove_item(pattern, text) -> str:
-    # Find pattern in word in text and remove entire word
-    segment_list = text.split(',')
-    # Walk thru segments
-    for seg_idx, segment in enumerate(segment_list):
-        # Walk thru words
-        word_list = segment.split(' ')
-        for idx, word in enumerate(word_list):
-            if pattern in word:
-                # Remove entire word, not just pattern
-                word_list[idx] = ''
-        segment_list[seg_idx] = ' '.join(word_list)
-    text = ','.join(segment_list)
-    return text
 
+result_list = []
 
-print(f"{remove_item('shire', 'pembroke castle, hampshire, england, united kingdom')}")
+georow_list = ['rome', 'ny', 'seattle']
+result_list.extend(georow_list)
+
+georow_list.clear()
+#georow_list = ['boston', 'LA', 'denver']
+georow_list = []
+result_list.extend(georow_list)
+
+georow_list.clear()
+georow_list.extend(result_list)
+
+print(georow_list)
+
 
 

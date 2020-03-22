@@ -73,22 +73,22 @@ class TestScoring(unittest.TestCase):
     score_test_cases = [
         # 0 Target, 1 Result, 2 Feature, 3 Overall Score, 4 Input score,
         ("Berl*n,  deutschland", "Berlin, Germany", 'PP1M', SC.GOOD, 0),  # 0
-        ("Canada", "Canada", 'ADM0', SC.VERY_GOOD, 0),  # 1
-        ("France", ",France", 'ADM0', SC.VERY_GOOD, 0),  # 2
+        ("Canada", "Canada", 'ADM0', SC.VERY_GOOD-35, 0),  # 1
+        ("France", ",France", 'ADM0', SC.VERY_GOOD-35, 0),  # 2
         ("toronto,ontario,canada", "toronto,ontario,canada", 'PP1M', SC.VERY_GOOD, 0),  # 3
-        ("Paris, France", "Paris,, France", 'PP1M', SC.VERY_GOOD, 0),  # 4
-        ("Paris, France.", "Paris,, France", 'PP1M', SC.VERY_GOOD, 0),  # 5
-        ("London, England,", "London, England, United Kingdom", 'PP1M', SC.VERY_GOOD, 0),  # 6
-        ("London, England, United Kingdom", "London, England, United Kingdom", 'PP1M', SC.VERY_GOOD, 0),  # 7
+        ("Paris,,, France", "Paris,,, France", 'PP1M', SC.VERY_GOOD-6, 0),  # 4
+        ("Paris,,Ile de France, France.", "Paris,,Ile de France, France", 'PP1M', SC.VERY_GOOD-6, 0),  # 5
+        ("England,United Kingdom", "England, United Kingdom", 'PP1M', SC.VERY_GOOD-36, 0),  # 6
+        ("London, England, United Kingdom", "London, England, United Kingdom", 'PP1M', SC.VERY_GOOD-3, 0),  # 7
         ("aisne, picardy, france", "aisne, picardy, france", 'PP1M', SC.VERY_GOOD, 0),  # 8
         ("Berlin,  deutschland", "Berlin, Germany", 'PP1M', SC.VERY_GOOD, 0),  # 9
         ("toronto, canada", "toronto, canada", 'PPL', SC.VERY_GOOD, 0),  # 10
-        ("chelsea,,england,", "a,chelsea, greater london, england, united kingdom", 'PP1M', SC.VERY_GOOD, 0),  # 11
-        ("Domfront,, Normandy,", "Domfront, Department De L'Orne, Normandie, France", 'PP1M', SC.VERY_GOOD, 0),  # 12
+        ("chelsea,,england,", "a,chelsea, greater london, england, united kingdom", 'PP1M', SC.VERY_GOOD+11, 0),  # 11
+        ("Domfront,, Normandy,", "Domfront, Department De L'Orne, Normandie, France", 'PP1M', SC.VERY_GOOD+26, 0),  # 12
         ("London, England, United Kingdom", "London, England, United Kingdom", 'HSP', SC.VERY_GOOD, 0),  # 13
-        ("toronto,nova scotia, canada", "toronto,ontario,canada", 'PPL', SC.VERY_GOOD, 0),  # 14
-        ("chelsea,,england,", "a,winchelsea, east sussex, england, united kingdom", 'PP1M', SC.VERY_GOOD, 0),  # 15
-        ("sonderburg,denmark", "sonderborg kommune,region syddanmark, denmark", 'PP1M', SC.VERY_GOOD, 0),  # 16
+        ("toronto,nova scotia, canada", "toronto,ontario,canada", 'PPL', SC.VERY_GOOD+19, 0),  # 14
+        ("chelsea,,england,", "a,winchelsea, east sussex, england, united kingdom", 'PP1M', SC.VERY_GOOD+34, 0),  # 15
+        ("sonderburg,denmark", "sonderborg kommune,region syddanmark, denmark", 'PP1M', SC.VERY_GOOD+28, 0),  # 16
         
         ("Nogent Le Roi,,,france", "Nogent Le Roi, Departement D'Eure Et Loir, Centre Val De Loire, France", 'XXX', SC.GOOD - 15, 0),  # 17
         ("Old Bond Street, London,  , England,United Kingdom", " , London, Greater London, England, United Kingdom", 'PP1M', SC.GOOD - 15, 0),  # 18
@@ -131,7 +131,7 @@ class TestScoring(unittest.TestCase):
                 res = self.run_test_score(i)
                 targ = TestScoring.score_test_cases[i][CS_SCORE]
                 delta = abs(res - targ)
-                self.assertLess(delta, 14, msg=f' SCORE={res:.1f} TARGET={targ:.1f}')
+                self.assertLess(delta, 2, msg=f' SCORE={res:.1f} TARGET={targ:.1f}')
     """
     def test_input_score(self):
         # Run match scoring tests
@@ -215,6 +215,8 @@ class TestScoring(unittest.TestCase):
         res_place.feature = feat
         if res_place.country_name == '' and res_place.country_iso != '':
             res_place.country_name = TestScoring.geodata.geo_files.geodb.get_country_name(res_place.country_iso)
+        TestScoring.logger.debug(f'======================= Prepared ')
+
 
     @staticmethod
     def remove_matches(out, inp):
@@ -240,9 +242,9 @@ class TestScoring(unittest.TestCase):
         TestScoring.logger.debug(f'TEST INPUT SCORE:')
 
         TestScoring.prepare_test(idx, target_place, result_place)
-        TestScoring.logger.debug(f'prepare_test: INP={target_place.city1},{target_place.admin2_name},'
+        TestScoring.logger.debug(f'prepare_test: INP={target_place.city},{target_place.admin2_name},'
                                  f'{target_place.admin1_name},{target_place.country_name}'
-                                 f' RES={result_place.city1},{result_place.admin2_name},'
+                                 f' RES={result_place.city},{result_place.admin2_name},'
                                  f'{result_place.admin1_name},{result_place.country_name}')
 
         # Create full, normalized titles (prefix,city,county,state,country)
