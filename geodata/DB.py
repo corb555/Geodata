@@ -378,7 +378,9 @@ class DB:
         for txt in ['PRAGMA temp_store = memory',
                     'PRAGMA journal_mode = off',
                     'PRAGMA locking_mode = exclusive',
-                    'PRAGMA synchronous = 0']:
+                    'PRAGMA synchronous = 0',
+                    'PRAGMA case_sensitive_like = 1;'
+                    ]:
             self.set_pragma(txt)
 
     def set_optimize_pragma(self):

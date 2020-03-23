@@ -89,6 +89,7 @@ class GeoDB:
 
         if set_speed_pragmas:
             self.db.set_speed_pragmas()
+            
         self.db_limit = db_limit
         self.db.order_string = ''
         self.db.limit_string = f'LIMIT {self.db_limit}'
