@@ -207,6 +207,9 @@ Provide a place lookup gazeteer based on files from geonames.org
         place.geoid = geoid
         place.georow_list.clear()
         self.geo_build.geodb.s.lookup_geoid(georow_list=place.georow_list, geoid=place.geoid, place=place)
+        if len(place.georow_list) == 0:
+            self.geo_build.geodb.s.lookup_geoid(georow_list=place.georow_list, geoid=place.geoid, place=place, admin=True)
+
         if len(place.georow_list) > 0:
             # Copy geo row to Place
             #self.geo_build.geodb.copy_georow_to_place(row=place.georow_list[0], place=place, fast=True)
