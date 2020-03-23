@@ -425,6 +425,10 @@ class GeoSearch:
                         query_list.append(Query(where="sdx like ? AND country = ?",
                                                 args=(pattern, place.country_iso,),
                                                 result=Result.SOUNDEX_MATCH))
+                pattern = word_list[0] + '%'
+                query_list.append(Query(where="sdx like ? AND country = ?",
+                                        args=(pattern, place.country_iso,),
+                                        result=Result.SOUNDEX_MATCH))
 
             place.result_type = self.geodb.process_query_list(result_list=row_list, select_fields=self.select_str,
                                                               from_tbl=table, query_list=query_list)
