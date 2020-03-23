@@ -92,9 +92,17 @@ class GeoSearch:
             place.result_type = self._search(georow_list=place.georow_list, name=place.city, admin1_id=place.admin1_id,
                                              admin2_id=place.admin2_id, iso=place.country_iso, feature=place.feature, sdx=get_soundex(place.city))
             # self.logger.debug(f'lookup result {place.georow_list}')
+                
             if len(place.georow_list) < 10:
+                # Get more results unless we have a high score
+                if len(place.georow_list) > 0:
+                    best_score = self.assign_scores(georow_list=place.georow_list, place=place, target_feature=place.feature,
+                                       fast=False, quiet=False)
+                else:
+                    best_score = MatchScore.Score.VERY_POOR
+
                 # Not enough matches found.  Try soundex search
-                if (len(place.georow_list) > 0 and place.feature not in ['ADM0', 'ADM1']) or len(place.georow_list) == 0:
+                if best_score > MatchScore.Score.VERY_GOOD and place.feature not in ['ADM0', 'ADM1']:
                     # self.logger.debug('soundex/combination look up')
                     row_list = []
                     self.search_for_combinations(row_list, place.city, place, 'main.geodata')
@@ -629,7 +637,7 @@ class GeoSearch:
                                     result=Result.WORD_MATCH))
             self.logger.debug(f'Add Feature query [{targ}] {group}')
 
-    def assign_scores(self, georow_list, place, target_feature, fast, quiet):
+    def assign_scores(self, georow_list, place, target_feature, fast, quiet)->float:
         """
                     Assign match score to each result in list   
         Args:
@@ -692,6 +700,7 @@ class GeoSearch:
 
         # Restore logging level
         logging.getLogger().setLevel(lev)
+        return min_score
 
 
 def special_terms_last(item):
