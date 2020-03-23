@@ -200,7 +200,7 @@ Provide a place lookup gazeteer based on files from geonames.org
             geoid:  Geonames.org geoid
             place:  Location fields in place are updated
 
-        #Returns: None. Location fields in Loc are updated
+        #Returns: None. Location fields in place are updated
 
         """
         flags = ResultFlags(limited=False, filtered=False)
@@ -213,9 +213,11 @@ Provide a place lookup gazeteer based on files from geonames.org
             #flags = self.filter_results(place)
             self.process_results(place=place, flags=flags)
             # place.original_entry = place.get_long_name(None)
+            self.logger.debug(f'found geoid {place.georow_list[0]}')
             place.result_type = GeoUtil.Result.STRONG_MATCH
         else:
             place.result_type = GeoUtil.Result.NO_MATCH
+            self.logger.debug(f'NOT FOUND geoid {geoid}')
 
     def _find_type_as_city(self, place: Loc, typ):
         """
