@@ -24,7 +24,7 @@ VERSION = None
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    'unidecode', 'phonetics', 'fuzzywuzzy'
+    'unidecode', 'phonetics', 'rapidfuzz'
 ]
 
 # What packages are optional?
