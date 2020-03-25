@@ -447,7 +447,7 @@ Provide a place lookup gazeteer based on files from geonames.org
             self.logger.error(f'new_list = 0')
             return ResultFlags(limited=limited_flag, filtered=date_filtered)
 
-        if len(new_list[0]) < GeoUtil.Entry.SCORE + 1  
+        if len(new_list[0]) < GeoUtil.Entry.SCORE + 1:
             self.logger.debug(f'len = {len(new_list[0])}')
             self.logger.debug(f'[{new_list[0]}]')
             return ResultFlags(limited=limited_flag, filtered=date_filtered)
