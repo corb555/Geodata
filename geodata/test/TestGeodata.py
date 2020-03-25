@@ -135,7 +135,7 @@ class TestGeodata(unittest.TestCase):
     def test_place_name133(self):
         title = "test"
         lat, name = self.run_lookup(title, "st george's, hanover square, england")
-        self.assertEqual("St George's Hanover Square Church, Greater London, England, United Kingdom", name, title)
+        self.assertEqual("St George's, Greater London, England, United Kingdom", name, title)
 
     def test_place_name11(self):
         title = "City - Lower Grosvenor Street, London, England "
@@ -169,10 +169,10 @@ class TestGeodata(unittest.TestCase):
         entry = "Berlin,,,Germany"
 
         print("*****TEST: {}".format(title))
-        TestGeodata.geodata.find_geoid('8133394', self.place)
+        TestGeodata.geodata.find_geoid('6077243', self.place)
         lat = float(self.place.lat)
 
-        self.assertEqual(43.69655, lat, title)
+        self.assertEqual(45.50884, lat, title)
 
     # ===== TEST RESULT CODES
 
@@ -194,7 +194,7 @@ class TestGeodata(unittest.TestCase):
     def test_res_code04(self):
         title = "city - Good. wrong Province"
         lat, name = self.run_lookup(title, "Halifax, ,Alberta, Canada")
-        self.assertEqual(GeoUtil.Result.MULTIPLE_MATCHES, self.place.result_type, title)
+        self.assertEqual(GeoUtil.Result.PARTIAL_MATCH, self.place.result_type, title)
 
     def test_res_code05(self):
         title = "multiple county - not unique"
@@ -405,12 +405,12 @@ class TestGeodata(unittest.TestCase):
     def test_wildcard04(self):
         title = "City - good - wildcard city, no county"
         lat, name = self.run_lookup(title, "Alb*el,, Quebec, CanAda")
-        self.assertEqual(albanel_name, name, title)
+        self.assertEqual("Albanel, Saguenay Lac St Jean, Quebec, Canada", name, title)
 
     def test_wildcard05(self):
         title = "City - good - wildcard city, no county, wild province"
         lat, name = self.run_lookup(title, "Alb*el,, Queb*, CanAda")
-        self.assertEqual(albanel_name, name, title)
+        self.assertEqual("Albanel, Saguenay Lac St Jean, Quebec, Canada", name, title)
 
     # ===== TEST ADMIN ID Verify lookup returns correct place (ID)
 
@@ -670,7 +670,7 @@ class TestGeodata(unittest.TestCase):
     def test_place_name131(self):
         title = "County  verify not found "
         lat, name = self.run_lookup(title, "tretwr, llnfhngl cwm du, breconshire, wales,")
-        self.assertEqual("Tretwr Llnfhngl Cwm Du, Breconshire, Sir Powys, Wales, United Kingdom", name, title)
+        self.assertEqual("Tretwr Llnfhngl, Llanfihangel Cwm Du, Sir Powys, Wales, United Kingdom", name, title)
 
     def test_place_name132(self):
         title = "hanover square"

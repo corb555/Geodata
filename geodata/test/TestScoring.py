@@ -72,52 +72,52 @@ class TestScoring(unittest.TestCase):
     # MATCH SCORING TEST CASES
     score_test_cases = [
         # 0 Target, 1 Result, 2 Feature, 3 Overall Score, 4 Input score,
-        ("Berl*n,  deutschland", "Berlin, Germany", 'PP1M', SC.GOOD, 0),  # 0
-        ("Canada", "Canada", 'ADM0', SC.VERY_GOOD-35, 0),  # 1
-        ("France", ",France", 'ADM0', SC.VERY_GOOD-35, 0),  # 2
+        ("Berl*n,,,  deutschland", "Berlin,,, Germany", 'PP1M', SC.VERY_GOOD+15, 0),  # 0
+        ("Canada", "Canada", 'ADM0', SC.VERY_GOOD , 0),  # 1
+        ("France", ",France", 'ADM0', SC.VERY_GOOD , 0),  # 2
         ("toronto,ontario,canada", "toronto,ontario,canada", 'PP1M', SC.VERY_GOOD, 0),  # 3
-        ("Paris,,, France", "Paris,,, France", 'PP1M', SC.VERY_GOOD-6, 0),  # 4
-        ("Paris,,Ile de France, France.", "Paris,,Ile de France, France", 'PP1M', SC.VERY_GOOD-6, 0),  # 5
-        ("England,United Kingdom", "England, United Kingdom", 'PP1M', SC.VERY_GOOD-36, 0),  # 6
-        ("London, England, United Kingdom", "London, England, United Kingdom", 'PP1M', SC.VERY_GOOD-3, 0),  # 7
+        ("Paris,,, France", "Paris,,, France", 'PP1M', SC.VERY_GOOD, 0),  # 4
+        ("Paris,,Ile de France, France.", "Paris,,Ile de France, France", 'PP1M', SC.VERY_GOOD, 0),  # 5
+        ("England,United Kingdom", "England, United Kingdom", 'PP1M', SC.VERY_GOOD , 0),  # 6
+        ("London,, England, United Kingdom", "London,, England, United Kingdom", 'PP1M', SC.VERY_GOOD , 0),  # 7
         ("aisne, picardy, france", "aisne, picardy, france", 'PP1M', SC.VERY_GOOD, 0),  # 8
         ("Berlin,  deutschland", "Berlin, Germany", 'PP1M', SC.VERY_GOOD, 0),  # 9
         ("toronto, canada", "toronto, canada", 'PPL', SC.VERY_GOOD, 0),  # 10
-        ("chelsea,,england,", "a,chelsea, greater london, england, united kingdom", 'PP1M', SC.VERY_GOOD+11, 0),  # 11
-        ("Domfront,, Normandy,", "Domfront, Department De L'Orne, Normandie, France", 'PP1M', SC.VERY_GOOD+26, 0),  # 12
+        ("chelsea,,england,", "a,chelsea, greater london, england, united kingdom", 'PP1M', SC.VERY_GOOD , 0),  # 11
+        ("Domfront,, Normandy,", "Domfront, Department De L'Orne, Normandie, France", 'PP1M', SC.VERY_GOOD , 0),  # 12
         ("London, England, United Kingdom", "London, England, United Kingdom", 'HSP', SC.VERY_GOOD, 0),  # 13
-        ("toronto,nova scotia, canada", "toronto,ontario,canada", 'PPL', SC.VERY_GOOD+19, 0),  # 14
-        ("chelsea,,england,", "a,winchelsea, east sussex, england, united kingdom", 'PP1M', SC.VERY_GOOD+34, 0),  # 15
-        ("sonderburg,denmark", "sonderborg kommune,region syddanmark, denmark", 'PP1M', SC.VERY_GOOD+28, 0),  # 16
-        
-        ("Nogent Le Roi,,,france", "Nogent Le Roi, Departement D'Eure Et Loir, Centre Val De Loire, France", 'XXX', SC.GOOD - 15, 0),  # 17
-        ("Old Bond Street, London,  , England,United Kingdom", " , London, Greater London, England, United Kingdom", 'PP1M', SC.GOOD - 15, 0),  # 18
-        
-        ("Abc, Halifax, , Nova Scotia, Canada", "Abc, Halifax, , Nova Scotia, Canada", 'XXX', SC.GOOD, 0),  # 19
-        ("Holborn, Middlesex, England,", "Holborn, Greater London, England, United Kingdom", 'PP1M', SC.GOOD, 0),  # 20
-        ("St Quentin, Aisne, Picardy, France", "St Quentin, Departement De L'Aisne, Hauts De France, France", 'PP1M', SC.GOOD, 0),  # 21
-        ("barton, lancashire, england, united kingdom", "barton, lancashire, england, united kingdom", 'PPLL', SC.GOOD, 0),  # 22
-        ("testerton, norfolk, england,", "testerton, norfolk, england,united kingdom", "PPLL", SC.GOOD, 0),  # 23
-        ("Domfront,, Normandy,", "Domfront-En-Champagne, Sarthe, Pays De La Loire, France", 'PPL', SC.GOOD, 0),  # 24
-        ("barton, lancashire, england, united kingdom", "barton, cambridgeshire, england, united kingdom", 'PPLL', SC.GOOD, 0),  # 25
-        ("Nogent Le Roi,france", "Le Roi, Nogent Sur Eure, Eure Et Loir, Centre Val De Loire, France", 'XXX', SC.GOOD, 0),  # 26
-        ("Spilsby, Lincolnshire,,", "Spilsby, Lincolnshire, England, United Kingdom", 'P10K', SC.GOOD, 0),  # 27
-        ("Bond Street, London, Middlesex, England,United Kingdom", " , Museum Of London, Greater London, England, United Kingdom", 
-         'PPL', SC.GOOD, 0), # 28
-        ("Tiverton,,,", "Tiverton, Devon, England, United Kingdom", 'PPL', SC.GOOD, 0),  # 29
-        
-        ("Blore Heath , Staffordshire,england,", " Blore Heath, Staffordshire,england, united kingdom", 'XXX', SC.POOR-20, 0),  # 30
-        ("Abc, Halifax, , Nova Scotia, Canada", "Army Museum Halifax Citadel, , Nova Scotia, Canada", 'XXX', SC.POOR - 20, 0),  # 31
+        ("toronto,nova scotia, canada", "toronto,ontario,canada", 'PPL', SC.VERY_GOOD + 10, 0),  # 14
+        ("chelsea,,england,", "a,winchelsea, east sussex, england, united kingdom", 'PP1M', SC.VERY_GOOD + 16, 0),  # 15
+        ("sonderburg,denmark", "sonderborg kommune,region syddanmark, denmark", 'PP1M', SC.VERY_GOOD, 0),  # 16
 
-        ("St. Margaret, Westminster, London, England,", "Westminster Cathedral, Greater London, England", 'PPL', SC.POOR, 0),  # 32
-        ("braines, loire atlantique, ,france", "brains, loire atlantique, pays de la loire, france", 'PPL', SC.POOR, 0),  # 33
-        ("Blore Heath , Staffordshire,england,", " Blore , Staffordshire,england, united kingdom", 'XXX', SC.POOR, 0),  # 34
-        ("Spilsby, Lincolnshire,,", "Lincolnshire, Erie County, Ohio, United States", 'P10K', SC.POOR, 0),  # 35
-        ("Spilsby, Lincolnshire,,", "Lincolnshire, Erie County, Ohio, United States", 'P10K', SC.POOR, 0),  # 36
-        ("testerton, norfolk, england,", "norfolk,england, united kingdom", "ADM2", SC.POOR, 0),  # 37
-        
-        ("St. Margaret, Westminster, London, England,", "London,England,United Kingdom", 'PPL', SC.VERY_POOR, 0),  # 38
-        ("zxq, xyzzy,,", " , London, Greater London, England, United Kingdom", ' ', SC.VERY_POOR, 0),  # 39
+        ("Nogent Le Roi,,,france", "Nogent Le Roi, Departement D'Eure Et Loir, Centre Val De Loire, France", 'XXX', SC.VERY_GOOD + 4, 0),  # 17
+        ("Old Bond Street, London,  , England,United Kingdom", " , London, Greater London, England, United Kingdom", 'PP1M', SC.VERY_GOOD  + 13, 0),  # 18
+
+        ("Abc, Halifax, , Nova Scotia, Canada", "Abc, Halifax, , Nova Scotia, Canada", 'XXX', SC.GOOD+10, 0),  # 19
+        ("Holborn, Middlesex, England,", "Holborn, Greater London, England, United Kingdom", 'PP1M', SC.VERY_GOOD, 0),  # 20
+        ("St Quentin, Aisne, Picardy, France", "St Quentin, Departement De L'Aisne, Hauts De France, France", 'PP1M', SC.VERY_GOOD, 0),  # 21
+        ("barton, lancashire, england, united kingdom", "barton, lancashire, england, united kingdom", 'PPLL', SC.VERY_GOOD, 0),  # 22
+        ("testerton, norfolk, england,", "testerton, norfolk, england,united kingdom", "PPLL", SC.VERY_GOOD, 0),  # 23
+        ("Domfront,, Normandy,", "Domfront-En-Champagne, Sarthe, Pays De La Loire, France", 'PPL', SC.GOOD, 0),  # 24
+        ("barton, lancashire, england, united kingdom", "barton, cambridgeshire, england, united kingdom", 'PPLL', SC.VERY_GOOD, 0),  # 25
+        ("Nogent Le Roi,france", "Le Roi, Nogent Sur Eure, Eure Et Loir, Centre Val De Loire, France", 'XXX', SC.GOOD-8, 0),  # 26
+        ("Spilsby, Lincolnshire,,", "Spilsby, Lincolnshire, England, United Kingdom", 'P10K', SC.VERY_GOOD, 0),  # 27
+        ("Bond Street, London, Middlesex, England,United Kingdom", " , Museum Of London, Greater London, England, United Kingdom",
+         'PPL', SC.GOOD+4, 0),  # 28
+        ("Tiverton,,,", "Tiverton, Devon, England, United Kingdom", 'PPL', SC.VERY_GOOD+6, 0),  # 29
+
+        ("Blore Heath , Staffordshire,england,", " Blore Heath, Staffordshire,england, united kingdom", 'XXX', SC.VERY_GOOD, 0),  # 30
+        ("Abc, Halifax, , Nova Scotia, Canada", "Army Museum Halifax Citadel, , Nova Scotia, Canada", 'XXX', SC.POOR+12, 0),  # 31
+
+        ("St. Margaret, Westminster, London, England,", "Westminster Cathedral, Greater London, England", 'PPL', SC.VERY_POOR+13, 0),  # 32
+        ("braines, loire atlantique, ,france", "brains, loire atlantique, pays de la loire, france", 'PPL', SC.VERY_GOOD, 0),  # 33
+        ("Blore Heath , Staffordshire,england,", " Blore , Staffordshire,england, united kingdom", 'XXX', SC.GOOD - 10, 0),  # 34
+        ("Spilsby, Lincolnshire,,", "Lincolnshire, Erie County, Ohio, United States", 'P10K', SC.POOR-10, 0),  # 35
+        ("Spilsby, Lincolnshire,,", "Lincolnshire, Erie County, Ohio, United States", 'P10K', SC.POOR-10, 0),  # 36
+        ("testerton, norfolk, england,", "norfolk,england, united kingdom", "ADM2", SC.POOR-10, 0),  # 37
+
+        ("St. Margaret, Westminster, London, England,", "London,England,United Kingdom", 'PPL', SC.VERY_POOR+46, 0),  # 38
+        ("zxq, xyzzy,,", " , London, Greater London, England, United Kingdom", ' ', SC.VERY_POOR-13, 0),  # 39
 
         ]
 
@@ -125,13 +125,17 @@ class TestScoring(unittest.TestCase):
     def test_score(self):
         # Run match scoring tests
         i = 4
-        #if True:
+        # if True:
         for i in range(0, len(TestScoring.score_test_cases)):
             with self.subTest(i=i):
                 res = self.run_test_score(i)
                 targ = TestScoring.score_test_cases[i][CS_SCORE]
                 delta = abs(res - targ)
-                self.assertLess(delta, 2, msg=f' SCORE={res:.1f} TARGET={targ:.1f}')
+                print(f'{i})\t{res:.1f}\t{TestScoring.score_test_cases[i][CS_TARGET]}\t'
+                      f'{TestScoring.score_test_cases[i][CS_RESULT]}')
+                self.assertLess(delta, 4, msg=f' \nTest #{i}  SCORE={res:.1f} TARGET={targ:.1f} '
+                f'[{TestScoring.score_test_cases[i][CS_TARGET]}] [{TestScoring.score_test_cases[i][CS_RESULT]}]')
+
     """
     def test_input_score(self):
         # Run match scoring tests
@@ -146,38 +150,14 @@ class TestScoring(unittest.TestCase):
     def test_one(self):
         # Just run a single match score test for debugging (not test suite)
         self.run_test_score(31)
-
-    def test_out_removal(self):
-        # Test removal of characters in output result
-        print(f'OUTPUT Len={len(TestScoring.out_removal_test_cases)}')
-        for i in range(0, len(TestScoring.out_removal_test_cases)):
-            with self.subTest(i=i):
-                print("*****TEST: OUTPUT removal ")
-                row = TestScoring.out_removal_test_cases[i]
-                out, inp = self.remove_matches(out=row[RW_OUT], inp=row[RW_IN])
-                print(f'{i}) out=[{row[RW_OUT]}] in=[{row[RW_IN]}] in result=[{inp}]=[{row[RW_EXPECT]}]')
-
-                self.assertEqual(row[RW_EXPECT], out, 'output')
-
-    def test_input_removal(self):
-        # Test removal of characters in user input 
-        print(f'INPUT Len={len(TestScoring.in_removal_test_cases)}')
-
-        for i in range(0, len(TestScoring.in_removal_test_cases)):
-            with self.subTest(i=i):
-                print("*****TEST: INPUT removal ")
-                row = TestScoring.in_removal_test_cases[i]
-                out, inp = self.remove_matches(out=row[RW_OUT], inp=row[RW_IN])
-                print(f'{i}) out=[{row[RW_OUT]}] in=[{row[RW_IN]}] in result=[{inp}]=[{row[RW_EXPECT]}]')
-
-                self.assertEqual(row[RW_EXPECT], inp, 'input')
                 
     """
+
     @classmethod
     def setUpClass(cls):
         TestScoring.logger = logging.getLogger(__name__)
         fmt = "%(levelname)s %(name)s.%(funcName)s %(lineno)d: %(message)s"
-        logging.basicConfig(level=logging.DEBUG, format=fmt)
+        logging.basicConfig(level=logging.INFO, format=fmt)
         TestScoring.logger.debug('Scoring')
         TestScoring.scoring = MatchScore.MatchScore()
 
@@ -195,6 +175,9 @@ class TestScoring(unittest.TestCase):
     def setUp(self) -> None:
         TestScoring.in_place: Loc.Loc = Loc.Loc()
         TestScoring.out_place: Loc.Loc = Loc.Loc()
+        
+    def tearDown(self) -> None:
+        print(f'Fuzzy time = {TestScoring.scoring.timing:.8f}')
 
     @staticmethod
     def prepare_test(idx, in_place, res_place):
@@ -209,14 +192,19 @@ class TestScoring(unittest.TestCase):
         in_place.parse_place(place_name=inp, geo_db=TestScoring.geodata.geo_build.geodb)
         if in_place.country_name == '' and in_place.country_iso != '':
             in_place.country_name = TestScoring.geodata.geo_files.geodb.get_country_name(in_place.country_iso)
+        result_name = in_place.get_long_name(None)
+        in_place.prefix = Loc.Loc.prefix_cleanup(in_place.prefix, result_name)
 
         res_place.original_entry = res
         res_place.parse_place(place_name=res, geo_db=TestScoring.geodata.geo_build.geodb)
         res_place.feature = feat
         if res_place.country_name == '' and res_place.country_iso != '':
             res_place.country_name = TestScoring.geodata.geo_files.geodb.get_country_name(res_place.country_iso)
-        TestScoring.logger.debug(f'======================= Prepared ')
+            
+        result_name = res_place.get_long_name(None)
+        res_place.prefix = Loc.Loc.prefix_cleanup(res_place.prefix, result_name)
 
+        TestScoring.logger.debug(f'======================= Prepared ')
 
     @staticmethod
     def remove_matches(out, inp):
@@ -230,8 +218,10 @@ class TestScoring(unittest.TestCase):
 
         TestScoring.prepare_test(idx, in_place, res_place)
         score = TestScoring.scoring.match_score(in_place, res_place)
+        in_title = MatchScore.full_normalized_title(in_place)
+        res_title = MatchScore.full_normalized_title(res_place)
 
-        TestScoring.logger.debug(f'     {idx}) {score:.1f} In=[{in_place.original_entry.title().lower()}] Out=[{res_place.get_five_part_title()}]')
+        TestScoring.logger.debug(f'     {idx}) {score:.1f} In=[{in_title}] Out=[{res_title}]')
         return score
 
     @staticmethod
@@ -255,7 +245,7 @@ class TestScoring(unittest.TestCase):
 
         print(f'#{idx} SCORE={sc:.1f} In={sc:.1f}[{target_place.original_entry.title().lower()}] [{result_place.get_five_part_title()}]')
         return sc
-    
-    
+
+
 if __name__ == '__main__':
     unittest.main()

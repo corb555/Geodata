@@ -69,6 +69,8 @@ class GeoSearch:
         """
         self.start = time.time()
         place.result_type = Result.STRONG_MATCH
+        best_score = MatchScore.Score.VERY_POOR
+
         # target_feature = place.place_type
 
         # Lookup Place based on Place Type
@@ -88,27 +90,22 @@ class GeoSearch:
             # General search 
             # self.logger.debug('general look up')
             place.georow_list.clear()
-
             place.result_type = self._search(georow_list=place.georow_list, name=place.city, admin1_id=place.admin1_id,
                                              admin2_id=place.admin2_id, iso=place.country_iso, feature=place.feature, sdx=get_soundex(place.city))
             # self.logger.debug(f'lookup result {place.georow_list}')
-                
-            if len(place.georow_list) < 10:
-                # Get more results unless we have a high score
-                if len(place.georow_list) > 0:
-                    best_score = self.assign_scores(georow_list=place.georow_list, place=place, target_feature=place.feature,
-                                       fast=False, quiet=False)
-                else:
-                    best_score = MatchScore.Score.VERY_POOR
 
-                # Not enough matches found.  Try soundex search
-                if best_score > MatchScore.Score.VERY_GOOD and place.feature not in ['ADM0', 'ADM1']:
-                    # self.logger.debug('soundex/combination look up')
-                    row_list = []
-                    self.search_for_combinations(row_list, place.city, place, 'main.geodata')
-                    if len(row_list) > 0:
-                        place.georow_list.extend(row_list)
-                    # self.logger.debug(f'lookup result place:[{place.georow_list}] rowlist:[{row_list}]')
+            if len(place.georow_list) > 0:
+                best_score = self.assign_scores(georow_list=place.georow_list, place=place, target_feature=place.feature,
+                                                fast=False, quiet=False)
+                
+            if best_score >= MatchScore.Score.POOR and place.feature not in ['ADM0', 'ADM1']:
+                # Get more results unless we have a high score
+                # self.logger.debug('soundex/combination look up')
+                row_list = []
+                self.search_for_combinations(row_list, place.city, place, 'main.geodata')
+                if len(row_list) > 0:
+                    place.georow_list.extend(row_list)
+                self.logger.debug(f'Combo result [{row_list}]')
 
         if len(place.georow_list) > 0:
             self.assign_scores(georow_list=place.georow_list, place=place, target_feature=place.feature,
@@ -355,8 +352,9 @@ class GeoSearch:
         sdx = get_soundex(country_name) + '*'
 
         place.result_type = self._search(georow_list=georow_list, name=country_name, admin1_id='', admin2_id='', iso='', feature='ADM0', sdx='')
-        self.assign_scores(georow_list, place, 'ADM0', fast=False, quiet=True)
-        # self.logger.debug(georow_list[0])
+        self.assign_scores(georow_list, place, 'ADM0', fast=False, quiet=False)
+        #if len(georow_list) > 0:
+        #    self.logger.debug(georow_list[0])
 
         if place.result_type == Result.STRONG_MATCH:
             iso = georow_list[0][Entry.ISO]
@@ -364,7 +362,7 @@ class GeoSearch:
         else:
             place.result_type = self._search(georow_list=georow_list, name='', admin1_id='', admin2_id='', iso='', feature='ADM0',
                                              sdx=sdx)
-            self.assign_scores(georow_list, place, 'ADM0', fast=False, quiet=True)
+            self.assign_scores(georow_list, place, 'ADM0', fast=False, quiet=False)
             if place.result_type == Result.STRONG_MATCH:
                 iso = georow_list[0][Entry.ISO]
                 place.country_name = georow_list[0][Entry.NAME]
@@ -378,7 +376,7 @@ class GeoSearch:
     def search_for_combinations(self, row_list, target, place, table):
         """
         Search for soundex of combinations of words in target
-        Words are sorted and then searched with every combination of one word missing
+        Words are sorted and then Soundex searched with every combination of one word missing
         Args:
             row_list: 
             target: 
@@ -395,9 +393,9 @@ class GeoSearch:
             # append wildcard
             sdx += '%'
 
-            word_list = sdx.split(' ')
+            sdx_word_list = sdx.split(' ')
 
-            if len(word_list) == 1:
+            if len(sdx_word_list) == 1:
                 if place.feature:
                     query_list.append(Query(where="sdx like ? AND country = ? AND feature = ?",
                                             args=(sdx, place.country_iso, place.feature,),
@@ -408,9 +406,9 @@ class GeoSearch:
                                             result=Result.SOUNDEX_MATCH))
             else:
                 # Try every combination with a single word removed
-                for ignore_word_idx in range(0, len(word_list)):
+                for ignore_word_idx in range(0, len(sdx_word_list)):
                     pattern = ''
-                    for idx, word in enumerate(word_list):
+                    for idx, word in enumerate(sdx_word_list):
                         if idx != ignore_word_idx:
                             if len(pattern) == 0:
                                 pattern += word
@@ -425,13 +423,15 @@ class GeoSearch:
                         query_list.append(Query(where="sdx like ? AND country = ?",
                                                 args=(pattern, place.country_iso,),
                                                 result=Result.SOUNDEX_MATCH))
-                pattern = word_list[0] + '%'
+
+                # Also try search for soundex of just first term
+                pattern = sdx_word_list[0] + '%'
                 query_list.append(Query(where="sdx like ? AND country = ?",
                                         args=(pattern, place.country_iso,),
                                         result=Result.SOUNDEX_MATCH))
 
             place.result_type = self.geodb.process_query_list(result_list=row_list, select_fields=self.select_str,
-                                                              from_tbl=table, query_list=query_list)
+                                                              from_tbl=table, query_list=query_list, debug=True)
 
     def lookup_geoid(self, georow_list, geoid, place: Loc, admin=False) -> None:
         """
@@ -456,12 +456,10 @@ class GeoSearch:
         self.geodb.process_query_list(result_list=georow_list, select_fields=self.select_str,
                                       from_tbl=table, query_list=query_list)
         if georow_list:
-            #self.logger.debug(georow_list[0])
+            # self.logger.debug(georow_list[0])
             self.assign_scores(georow_list=place.georow_list, place=place, target_feature=place.feature,
                                fast=False, quiet=False)
-            #self.copy_georow_to_place(georow_list[0], place, fast=True)
-        else:
-            self.logger.debug('no match')
+            # self.copy_georow_to_place(georow_list[0], place, fast=True)
 
     def lookup_dbid(self, georow_list, dbid, place: Loc, admin=False) -> None:
         """
@@ -502,7 +500,6 @@ class GeoSearch:
         #Returns:   
             None.  Place instance is updated with data from georow   
         """
-        # self.logger.debug(f'>>>>  COPY GEOROW {row} ')
         place.admin1_id = ''
         place.admin2_id = ''
         place.admin1_name = ''
@@ -514,6 +511,7 @@ class GeoSearch:
         place.lat = row[Entry.LAT]
         place.lon = row[Entry.LON]
         place.feature = str(row[Entry.FEAT])
+        #self.logger.debug(f'feat={place.feature}')
         place.geoid = str(row[Entry.ID])
         place.prefix = row[Entry.PREFIX]
         place.place_type = Loc.PlaceType.CITY
@@ -554,7 +552,8 @@ class GeoSearch:
         except IndexError:
             pass
 
-        # self.logger.debug(f'<<<<< COPY DONE:  A1 [{place.admin1_name}] A2 [{place.admin2_name}] count [{place.country_name}]')
+        #self.logger.debug(f'<<<<< COPY DONE:  A1 [{place.admin1_name}] A2 [{place.admin2_name}] cty [{place.country_name}]'
+        #                  f'lat [{place.lat}]')
 
     @staticmethod
     def create_wildcard(pattern):
@@ -617,11 +616,11 @@ class GeoSearch:
         """
         place_lang = Country.Country.get_lang(temp_place.country_iso)
         res, lang = self.get_alternate_name(temp_place.geoid)
-        if res != '': # and (lang == place_lang or lang == 'ut8'):
+        if res != '':  # and (lang == place_lang or lang == 'ut8'):
             temp_place.city = res
 
         res, lang = self.get_admin1_alternate_name(temp_place.city, temp_place)
-        if res != '': # and (lang == place_lang or lang == 'ut8'):
+        if res != '':  # and (lang == place_lang or lang == 'ut8'):
             temp_place.admin1_name = res
 
     def debugZZZ(self, text):
@@ -641,7 +640,7 @@ class GeoSearch:
                                     result=Result.WORD_MATCH))
             self.logger.debug(f'Add Feature query [{targ}] {group}')
 
-    def assign_scores(self, georow_list, place, target_feature, fast, quiet)->float:
+    def assign_scores(self, georow_list, place, target_feature, fast=False, quiet=False) -> float:
         """
                     Assign match score to each result in list   
         Args:
@@ -671,6 +670,11 @@ class GeoSearch:
             # self.logger.debug(rw)
             self.copy_georow_to_place(row=rw, place=result_place, fast=fast)
             result_place.original_entry = result_place.get_long_name(None)
+            #self.logger.debug(f'plac feat=[{place.feature}] targ=[{target_feature}]')
+            if result_place.feature == target_feature:
+                bonus = 10.0
+            else:
+                bonus = 0
 
             if len(place.prefix) > 0 and result_place.prefix == '':
                 result_place.prefix = ' '
@@ -685,7 +689,7 @@ class GeoSearch:
             else:
                 place.updated_entry = place.get_long_name(None)
 
-            score = self.match.match_score(target_place=place, result_place=result_place)
+            score = self.match.match_score(target_place=place, result_place=result_place) - bonus
             min_score = min(min_score, score)
 
             # Convert row tuple to list and extend so we can assign score
@@ -699,7 +703,9 @@ class GeoSearch:
             georow_list[idx] = tuple(update)  # Convert back from list to tuple
             # self.logger.debug(f'{update[GeoUtil.Entry.SCORE]:.1f} {update[GeoUtil.Entry.NAME]} [{update[GeoUtil.Entry.PREFIX]}]')
 
-        if min_score < MatchScore.Score.VERY_GOOD + 2:
+        #if len(georow_list) > 0:
+        #    self.logger.debug(f'min={min_score} {georow_list[0]}')
+        if min_score < MatchScore.Score.STRONG_CUTOFF:
             place.result_type = GeoUtil.Result.STRONG_MATCH
 
         # Restore logging level
@@ -738,4 +744,4 @@ def get_soundex(text) -> str:
     res = ' '.join(sdx)
     if len(res) == 0:
         res = text
-    return res
+    return res.lower()

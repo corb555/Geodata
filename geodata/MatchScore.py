@@ -21,16 +21,21 @@ import copy
 import logging
 
 # import python-Levenshtein 
+
+import time
+
 from rapidfuzz import fuzz
+
 
 from geodata import Loc, Normalize, Geodata, GeoUtil, GeoSearch
 
 
 class Score:
-    VERY_GOOD = 12
+    VERY_GOOD = 4
+    STRONG_CUTOFF = VERY_GOOD + 8
     GOOD = 35
-    POOR = 77
-    VERY_POOR = 105
+    POOR = 65
+    VERY_POOR = 90
 
 
 COUNTRY_IDX = 4
@@ -53,10 +58,10 @@ class MatchScore:
 
         # Weighting for each input term match -  adm2, adm1, country
         token_weights = [.2, .3, .5]
-        self.set_weighting(token_weight=token_weights, prefix_weight=4.0, feature_weight=0.05)
+        self.set_weighting(token_weight=token_weights, prefix_weight=5.0, feature_weight=0.05)
 
         # Weighting for each part of score
-        self.wildcard_penalty = -20.0
+        self.wildcard_penalty = 8.0
 
     def _calculate_wildcard_score(self, original_entry) -> float:
         if '*' in original_entry:
@@ -130,6 +135,7 @@ class MatchScore:
             score
         """
         self.score_diags = ''  # Diagnostic text for scoring
+        self.timing = 0
         save_prefix = target_place.prefix
         #self.logger.debug(f'pref={target_place.prefix}')
 
@@ -160,7 +166,7 @@ class MatchScore:
         #self.logger.debug(self.score_diags)
         target_place.prefix = save_prefix
 
-        return score
+        return score + 8
 
     def _calculate_weighted_score(self, target_tokens: [], result_tokens: []) -> float:
         # Get score with tokens as is
@@ -196,36 +202,47 @@ class MatchScore:
         # Each segment can have a different weighting.  e.g. county can have lower weighting
         for idx, segment in enumerate(target_tokens):
             if idx < len(result_tokens) and idx > 0:
+                #self.logger.debug(f'{idx}) Targ [{target_tokens[idx]}] Res [{result_tokens[idx]}]')
+                
                 if len(target_tokens[idx]) > 0:
                     # Calculate fuzzy Levenstein distance between words, smaller is better
+                    start = time.time()
                     fz = 100.0 - fuzz.ratio(target_tokens[idx], result_tokens[idx])
+                    self.timing += (time.time() - start)
                     # Calculate fuzzy Levenstein distance between Soundex of words
                     sd = 100.0 - fuzz.ratio(GeoSearch.get_soundex(target_tokens[idx]), GeoSearch.get_soundex(result_tokens[idx]))
                     value = fz * 0.6 + sd * 0.4
+                    #self.logger.debug(f'    Val={value} Fuzz Text={fz:.1f} SDX={sd:.1f}')
                     # Extra bonus for good match
                     if value < 10:
-                        value -= 10
+                        #self.logger.debug('   Good match -10')
+                        value -= 6
                     if target_tokens[idx][0:5] == result_tokens[idx][0:5]:
                         # Bonus if first letters match
-                        value -= 5
+                        #self.logger.debug('   First letter match -5')
+                        value -= 3
                 elif len(result_tokens[idx]) > 0:
                     # Target had no entry for this term
                     # Give a penalty if target didn't have country 
                     if idx == COUNTRY_IDX:
-                        value = 10.0
+                        value = 15.0
                     elif idx == ADMIN1_IDX:
                         # Give a penalty if target didn't have state/province
-                        value = 40.0
+                        value = 5.0
                     else:
-                        value = 20.0
+                        value = 5.0
+                    #self.logger.debug(txt)
                 else:
                     if idx == COUNTRY_IDX:
-                        value = 10.0
+                        value = 15.0
                     elif idx == ADMIN1_IDX:
                         # Give a penalty if target didn't have state/province
-                        value = 40.0
+                        value = 5.0
                     else:
                         value = 0
+
+                    #self.logger.debug(txt)
+
                     
                 #if  idx >0:
                 #    self.logger.debug(f'  {idx})  [{target_tokens[idx]}] [{result_tokens[idx]}]  val={value}')

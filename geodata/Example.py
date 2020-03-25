@@ -126,10 +126,12 @@ if __name__ == "__main__":
         "Pembroke Castle, Pembrokeshire, Wales, United Kingdom",
         "Neufchatel-sur-Aisne,,,France",
         "L'École des Rêves,,,Canada",
+        "boreham wood,,england",
         ]
 
     dbg_locations = [
-        "Hoxa ,Ronaldsay,  scotland"        ]
+        "boreham wood,,england",
+        ]
     
     ex.lookup_places()
 
