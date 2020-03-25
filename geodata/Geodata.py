@@ -434,14 +434,24 @@ Provide a place lookup gazeteer based on files from geonames.org
 
         # Remove duplicate locations in list (have same name and lat/lon)
         self.remove_duplicates(place)
+        if len(place.georow_list ) == 0:
+            self.logger.error(f'georow_list = 0')
+            return ResultFlags(limited=limited_flag, filtered=date_filtered)
 
         gap_threshold = 0
         score = 0
 
         # Sort places in match_score order
         new_list = sorted(place.georow_list, key=itemgetter(GeoUtil.Entry.SCORE, GeoUtil.Entry.ADM1))
-        for item in new_list:
-            self.logger.debug(item)
+        if len(new_list ) == 0:
+            self.logger.error(f'new_list = 0')
+            return ResultFlags(limited=limited_flag, filtered=date_filtered)
+
+        if len(new_list[0]) < GeoUtil.Entry.SCORE + 1  
+            self.logger.debug(f'len = {len(new_list[0])}')
+            self.logger.debug(f'[{new_list[0]}]')
+            return ResultFlags(limited=limited_flag, filtered=date_filtered)
+
         min_score = new_list[0][GeoUtil.Entry.SCORE]
         place.georow_list.clear()
 
