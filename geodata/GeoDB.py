@@ -186,7 +186,8 @@ class GeoDB:
         except IndexError:
             pass
 
-    def process_query_list(self, result_list, select_fields, from_tbl: str, query_list: [Query], stop_on_match=False):
+    def process_query_list(self, result_list, select_fields, from_tbl: str, query_list: [Query], 
+                           stop_on_match=False, debug=False):
         """
 
         Args:
@@ -205,11 +206,13 @@ class GeoDB:
 
         for idx, query in enumerate(query_list):
             start = time.time()
-            #self.logger.debug(f'{idx}) SELECT from {from_tbl} where {query.where} val={query.args} ')
+
             row_list = self.db.select(select_fields, query.where, from_tbl,
                                       query.args)
-            #for row in row_list:
-            #    self.logger.debug(f'   FOUND {row}')
+            #if debug:
+                #self.logger.debug(f'{idx}) SELECT from {from_tbl} where {query.where} val={query.args} ')
+                #for row in row_list:
+                #    self.logger.debug(f'   FOUND {row}')
             result_list.extend(row_list)
 
             if len(result_list) > 0:

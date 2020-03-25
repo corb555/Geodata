@@ -169,6 +169,7 @@ class Loc:
                 token_count = len(tokens)
                 self.result_type = GeoUtil.Result.NO_COUNTRY
                 self.country_name = ''
+            #self.logger.debug(f'ISO =[{self.country_iso}]')
         if token_count > 1:
             #  See if 2nd to last token is Admin1
             val = tokens[-2]

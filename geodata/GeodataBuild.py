@@ -520,29 +520,29 @@ class GeodataBuild:
         """
         Create database indices for GEOID
         """
-        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS geoid_idx ON geodata(geoid COLLATE BINARY)')
-        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS admgeoid_idx ON admin(geoid COLLATE BINARY)')
-        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS altnamegeoid_idx ON altname(geoid COLLATE BINARY)')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS geoid_idx ON geodata(geoid  )')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS admgeoid_idx ON admin(geoid  )')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS altnamegeoid_idx ON altname(geoid  )')
 
     def create_main_indices(self):
         """
         Create indices for geoname database
         """
         # Indices for geodata table
-        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS name_idx ON geodata(name COLLATE BINARY, country COLLATE BINARY)')
-        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS admin1_idx ON geodata(admin1_id COLLATE BINARY )')
-        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS sdx_idx ON geodata(sdx COLLATE BINARY, country COLLATE BINARY )')
-        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_admin2_idx ON geodata(admin1_id COLLATE BINARY, feature COLLATE BINARY, '
-                                                    'admin2_id COLLATE BINARY)')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS name_idx ON geodata(name  , country, admin1_id  )')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS admin1_idx ON geodata(admin1_id   )')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS sdx_idx ON geodata(sdx  , country   )')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_admin2_idx ON geodata(admin1_id  , feature  , '
+                                                    'admin2_id  )')
 
         # Indices for admin table
-        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_name_idx ON admin(name COLLATE BINARY, country COLLATE BINARY)')
-        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_admin1_idx ON admin(admin1_id COLLATE BINARY, feature COLLATE BINARY)')
-        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_country_idx ON admin(country COLLATE BINARY, feature COLLATE BINARY)')
-        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_sdx_idx ON admin(sdx COLLATE BINARY)')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_name_idx ON admin(name  , country  )')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_admin1_idx ON admin(admin1_id  , feature  )')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_country_idx ON admin(country  , feature  )')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_sdx_idx ON admin(sdx  )')
 
     def create_alt_indices(self):
         # Indices for altname table
         self.logger.debug('create alt index')
-        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS alt_sdx_idx ON altname(sdx COLLATE BINARY)')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS alt_sdx_idx ON altname(sdx  )')
 

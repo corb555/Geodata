@@ -1,18 +1,7 @@
 
-result_list = []
+from fuzzywuzzy import fuzz
 
-georow_list = ['rome', 'ny', 'seattle']
-result_list.extend(georow_list)
 
-georow_list.clear()
-#georow_list = ['boston', 'LA', 'denver']
-georow_list = []
-result_list.extend(georow_list)
-
-georow_list.clear()
-georow_list.extend(result_list)
-
-print(georow_list)
-
+val =  fuzz.token_sort_ratio(text1, text2)
 
 
