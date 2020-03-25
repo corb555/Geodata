@@ -240,6 +240,9 @@ feature_mapping = {
     'krankenhaus'  : 'HSP',
     'ospedale'     : 'HSP',
 
+    'palace'        : 'PAL',
+    'palais': 'PAL',
+
     'county'       : 'ADM2',
     'island'       : 'ISL',
 

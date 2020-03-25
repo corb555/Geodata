@@ -282,7 +282,7 @@ class DB:
 
         cur = self.conn.cursor()
         sql = f"SELECT {select_str} FROM {from_tbl} WHERE {where} {self.order_string} {self.limit_string} COLLATE BINARY"
-        self.logger.debug(f'select {sql} val={args}')
+        #self.logger.debug(f'select {sql} val={args}')
         try:
             cur.execute(sql, args)
             result_list = cur.fetchall()
