@@ -440,7 +440,8 @@ Provide a place lookup gazeteer based on files from geonames.org
 
         # Sort places in match_score order
         new_list = sorted(place.georow_list, key=itemgetter(GeoUtil.Entry.SCORE, GeoUtil.Entry.ADM1))
-        #self.logger.debug(new_list[0])
+        for item in new_list:
+            self.logger.debug(item)
         min_score = new_list[0][GeoUtil.Entry.SCORE]
         place.georow_list.clear()
 
