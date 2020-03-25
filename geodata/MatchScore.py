@@ -21,9 +21,10 @@ import copy
 import logging
 
 # import python-Levenshtein 
+
 import time
 
-from fuzzywuzzy import fuzz
+from rapidfuzz import fuzz
 
 
 from geodata import Loc, Normalize, Geodata, GeoUtil, GeoSearch
