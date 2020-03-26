@@ -433,29 +433,29 @@ class GeodataBuild:
         # name, country, admin1_id, admin2_id, lat, lon, feature, geoid
         sql_geodata_table = """CREATE TABLE IF NOT EXISTS geodata    (
                 id           integer primary key autoincrement not null,
-                name     text COLLATE BINARY,
-                country     text COLLATE BINARY,
-                admin1_id     text COLLATE BINARY,
-                admin2_id text COLLATE BINARY,
+                name     text COLLATE NOCASE,
+                country     text COLLATE NOCASE,
+                admin1_id     text COLLATE NOCASE,
+                admin2_id text COLLATE NOCASE,
                 lat      text  ,
                 lon       text ,
-                feature      text COLLATE BINARY,
-                geoid      text COLLATE BINARY,
-                sdx     text COLLATE BINARY
+                feature      text COLLATE NOCASE,
+                geoid      text COLLATE NOCASE,
+                sdx     text COLLATE NOCASE
                                     );"""
 
         # name, country, admin1_id, admin2_id, lat, lon, feature, geoid
         sql_admin_table = """CREATE TABLE IF NOT EXISTS admin    (
                 id           integer primary key autoincrement not null,
-                name     text COLLATE BINARY,
-                country     text COLLATE BINARY,
-                admin1_id     text COLLATE BINARY,
-                admin2_id text COLLATE BINARY,
+                name     text COLLATE NOCASE,
+                country     text COLLATE NOCASE,
+                admin1_id     text COLLATE NOCASE,
+                admin2_id text COLLATE NOCASE,
                 lat      text  ,
                 lon       text ,
-                feature      text COLLATE BINARY,
-                geoid      text COLLATE BINARY,
-                sdx     text COLLATE BINARY
+                feature      text COLLATE NOCASE,
+                geoid      text COLLATE NOCASE,
+                sdx     text COLLATE NOCASE
                                     );"""
 
         # name, lang, geoid
@@ -463,8 +463,8 @@ class GeodataBuild:
                 id           integer primary key autoincrement not null,
                 name     text,
                 lang     text,
-                geoid      text COLLATE BINARY,
-                sdx     text COLLATE BINARY
+                geoid      text COLLATE NOCASE,
+                sdx     text COLLATE NOCASE
                                     );"""
 
         # version

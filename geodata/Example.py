@@ -57,7 +57,7 @@ class Example:
                                         supported_countries_dct={'fr', 'gb', 'ca', 'us','nl','de'})
 
         # Open Geoname database - city names, lat/long, etc.  Create database if not found
-        error = self.geodata.open(repair_database=True, query_limit=105)
+        error = self.geodata.open(repair_database=True, query_limit=85)
         if error:
             print(f"Missing geoname Files in {directory}: download gb.txt or allcountries.txt from geonames.org")
             raise ValueError('Missing files from geonames.org')
@@ -126,6 +126,7 @@ if __name__ == "__main__":
         "Pembroke Castle, Pembrokeshire, Wales, United Kingdom",
         "Neufchatel-sur-Aisne,,,France",
         "L'École des Rêves,,,Canada",
+        "Isle Of Rhoads",
         "boreham wood,,england",
         ]
 

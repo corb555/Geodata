@@ -209,10 +209,10 @@ class GeoDB:
 
             row_list = self.db.select(select_fields, query.where, from_tbl,
                                       query.args)
-            #if debug:
-                #self.logger.debug(f'{idx}) SELECT from {from_tbl} where {query.where} val={query.args} ')
-                #for row in row_list:
-                #    self.logger.debug(f'   FOUND {row}')
+            if debug:
+                self.logger.debug(f'{idx}) SELECT from {from_tbl} where {query.where} val={query.args} ')
+                for row in row_list:
+                    self.logger.debug(f'   FOUND {row}')
             result_list.extend(row_list)
 
             if len(result_list) > 0:
@@ -225,14 +225,13 @@ class GeoDB:
             elapsed = time.time() - start
             self.total_time += elapsed
             self.total_lookups += 1
-            if elapsed > .1:
-                self.logger.debug(f'Slow lookup. Time={elapsed:.4f}  '
+            if elapsed > .01:
+                self.logger.info(f'Slow lookup. Time={elapsed:.4f}  '
                                   f'len {len(result_list)} from {from_tbl} '
                                   f'where {query.where} val={query.args} ')
 
             if len(result_list) > self.max_query_results:
                 self.logger.debug('MAX QUERIES HIT')
-                break
 
         return result_type
 

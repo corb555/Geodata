@@ -396,6 +396,7 @@ class GeoSearch:
             sdx_word_list = sdx.split(' ')
 
             if len(sdx_word_list) == 1:
+                #  one word - lookup as is
                 if place.feature:
                     query_list.append(Query(where="sdx like ? AND country = ? AND feature = ?",
                                             args=(sdx, place.country_iso, place.feature,),
@@ -405,7 +406,7 @@ class GeoSearch:
                                             args=(sdx, place.country_iso,),
                                             result=Result.SOUNDEX_MATCH))
             else:
-                # Try every combination with a single word removed
+                # Multiple words - Try every combination with a single word removed
                 for ignore_word_idx in range(0, len(sdx_word_list)):
                     pattern = ''
                     for idx, word in enumerate(sdx_word_list):
@@ -430,6 +431,9 @@ class GeoSearch:
                                         args=(pattern, place.country_iso,),
                                         result=Result.SOUNDEX_MATCH))
 
+            #for qr in query_list:
+            #    self.logger.debug(f'where {qr.where} arg={qr.args} ')
+                
             place.result_type = self.geodb.process_query_list(result_list=row_list, select_fields=self.select_str,
                                                               from_tbl=table, query_list=query_list, debug=True)
 

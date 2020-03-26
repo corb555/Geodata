@@ -281,7 +281,7 @@ class DB:
         self.err = ''
 
         cur = self.conn.cursor()
-        sql = f"SELECT {select_str} FROM {from_tbl} WHERE {where} {self.order_string} {self.limit_string} COLLATE BINARY"
+        sql = f"SELECT {select_str} FROM {from_tbl} WHERE {where} {self.order_string} {self.limit_string} COLLATE NOCASE"
         #self.logger.debug(f'select {sql} val={args}')
         try:
             cur.execute(sql, args)
@@ -379,7 +379,7 @@ class DB:
                     'PRAGMA journal_mode = off',
                     'PRAGMA locking_mode = exclusive',
                     'PRAGMA synchronous = 0',
-                    'PRAGMA case_sensitive_like = ON'
+                    #'PRAGMA case_sensitive_like = ON'
                     ]:
             self.set_pragma(txt)
 

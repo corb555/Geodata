@@ -38,6 +38,7 @@ Provides a place lookup gazeteer based on files from geonames.org.
 import collections
 import copy
 import logging
+import traceback
 from operator import itemgetter
 
 from geodata import GeoUtil, GeodataBuild, Loc, MatchScore, GeoSearch
@@ -92,6 +93,7 @@ Provide a place lookup gazeteer based on files from geonames.org
 
         self.is_country_valid(place)
         if place.result_type == GeoUtil.Result.NOT_SUPPORTED:
+            place.georow_list.clear()
             return place.result_type
 
         # Create full entry text
@@ -523,7 +525,7 @@ Provide a place lookup gazeteer based on files from geonames.org
             place.result_type = GeoUtil.Result.NO_COUNTRY
             is_valid = False
         elif place.country_iso not in self.geo_build.supported_countries_dct:
-            self.logger.debug(f'[{place.country_iso}] not supported')
+            self.logger.debug(f'Country [{place.country_iso}] not supported')
             place.result_type = GeoUtil.Result.NOT_SUPPORTED
             place.place_type = Loc.PlaceType.COUNTRY
             is_valid = False
