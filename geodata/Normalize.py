@@ -72,13 +72,13 @@ phrase_cleanup = [
     (r'cimetiere', 'cemetery'),  # cimetière
     (r'begraafplaats', 'cemetery'),  # 
     ('  +', ' '),  # Strip multiple space
-    ('county of ([^,]+)', r'\g<1> county'),  # Normalize 'Township of X' to 'X Township'
-    ('township of ([^,]+)', r'\g<1> township'),  # Normalize 'Township of X' to 'X Township'
-    ('cathedral of ([^,]+)', r'\g<1> cathedral'),  # Normalize 'Township of X' to 'X Township'
-    ('palace of ([^,]+)', r'\g<1> palace'),  # Normalize 'Township of X' to 'X Township'
-    ('castle of ([^,]+)', r'\g<1> castle'),  # Normalize 'Township of X' to 'X Township'
-    (r',castle', ' castle'),  # -  remove extra comma
-    (r',palace', ' palace'),  # -  remove extra comma
+    ('([^,]+) of ([^,]+)', r'\g<2> g<1>'),  # Normalize 'XYZ of X' to 'X XYZ'. eg. 'Township of X' to 'X Township'
+    #('township of ([^,]+)', r'\g<1> township'),  # Normalize 'Township of X' to 'X Township'
+    #('cathedral of ([^,]+)', r'\g<1> cathedral'),  # Normalize 'cath of X' to 'X cath'
+    #('palace of ([^,]+)', r'\g<1> palace'),  # Normalize 'palace of X' to 'X palace'
+    #('castle of ([^,]+)', r'\g<1> castle'),  # Normalize 'castle of X' to 'X castle'
+    #(r',castle', ' castle'),  # -  remove extra comma
+    #(r',palace', ' palace'),  # -  remove extra comma
     (r"'(\w{2,})'",r"\g<1>"), # remove single quotes around word
     ]
 
