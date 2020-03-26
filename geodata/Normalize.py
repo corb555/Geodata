@@ -325,6 +325,10 @@ def normalize_features(feature, name, pop:int):
     elif pop > 10000 and 'PP' in feature:
         feat = 'P10K'
     
+    if feature == 'AREA':
+        if 'island' in name:
+            feat = 'ISL'
+    
     # Set feature type for Abbey/Priory, Castle, and Church if RUIN or HSTS
     if feature == 'HSTS' or feature == 'RUIN':
         if 'abbey' in name or 'priory' in name:
