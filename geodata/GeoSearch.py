@@ -735,6 +735,7 @@ def get_soundex(text) -> str:
     # Remove l' and d' from soundex 
     text = re.sub(r"l\'", "", text)
     text = re.sub(r"d\'", "", text)
+    text = re.sub('([^,]+) of ([^,]+)', r'\g<2> \g<1>', text)
 
     # Force special terms to sort at end of list so wildcard will find phrases without them  (East, West, North, South)
     # North Haden becomes Haden North and Haden% will match it.

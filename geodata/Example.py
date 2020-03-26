@@ -35,7 +35,7 @@ class Example:
     """
 
     def __init__(self):
-        self.dbg = False
+        self.dbg = True
         # Set up standard logging.  
         logging.getLogger(__name__)
         fmt = "%(levelname)s %(name)s.%(funcName)s %(lineno)d: %(message)s"
@@ -131,7 +131,7 @@ if __name__ == "__main__":
         ]
 
     dbg_locations = [
-        "boreham wood,,england",
+        "Isle Of Rhoads",
         ]
     
     ex.lookup_places()
