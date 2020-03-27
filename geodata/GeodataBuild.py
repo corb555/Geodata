@@ -108,6 +108,7 @@ class GeodataBuild:
                                                              progress_bar=self.progress_bar, prefix="Step 3 of 4) " , filename='alternateNamesV2.txt',
                                                              lang_list=self.lang_list)
 
+
     def create_geonames_database(self)->bool:
         """
         Create geonames database from geonames.org files.
