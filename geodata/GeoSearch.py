@@ -71,20 +71,13 @@ class GeoSearch:
         place.result_type = Result.STRONG_MATCH
         best_score = MatchScore.Score.VERY_POOR
 
-        # target_feature = place.place_type
-
-        # Lookup Place based on Place Type
-        # if place.admin1_id:
-        # admin1 was already looked up 
-        # self.logger.debug('admin1  already looked up')
-        # return
         if place.place_type == Loc.PlaceType.COUNTRY:
             self.logger.debug('country look up')
 
             if place.georow_list:
                 place.country_name = self.get_country_name(place.country_name, place.georow_list)
         elif place.place_type == Loc.PlaceType.ADMIN1:
-            self.logger.debug('admin1 look up')
+            self.logger.debug('admin1 look up ignored')
             pass
         else:
             # General search 
@@ -97,15 +90,6 @@ class GeoSearch:
             if len(place.georow_list) > 0:
                 best_score = self.assign_scores(georow_list=place.georow_list, place=place, target_feature=place.feature,
                                                 fast=False, quiet=False)
-                
-            if best_score >= MatchScore.Score.POOR and place.feature not in ['ADM0', 'ADM1']:
-                # Get more results unless we have a high score
-                # self.logger.debug('soundex/combination look up')
-                row_list = []
-                self.search_for_combinations(row_list, place.city, place, 'main.geodata')
-                if len(row_list) > 0:
-                    place.georow_list.extend(row_list)
-                self.logger.debug(f'Combo result [{row_list}]')
 
         if len(place.georow_list) > 0:
             self.assign_scores(georow_list=place.georow_list, place=place, target_feature=place.feature,
@@ -115,6 +99,39 @@ class GeoSearch:
         else:
             # self.logger.debug(f'LOOKUP. No match:for  nm=[{place.get_five_part_title()}]\n')
             pass
+
+    def deep_lookup(self, place: Loc) -> []:
+        """
+        Do a lookup based on soundex and combinations of words
+        Args:
+            place: 
+
+        Returns:
+
+        """
+        # Get more results unless we have a high score
+        # self.logger.debug('soundex/combination look up')
+        best = MatchScore.Score.VERY_POOR
+        row_list = []
+        self.search_for_combinations(row_list, place.city, place, 'main.geodata')
+        if len(row_list) > 0:
+            place.georow_list.extend(row_list)
+        self.logger.debug(f'Combo result [{row_list}]')
+
+        if len(place.georow_list) > 0:
+            best = self.assign_scores(georow_list=row_list, place=place, target_feature=place.feature,
+                                      fast=False, quiet=False)
+
+        if best > MatchScore.Score.VERY_POOR - 10:
+            # Search each term
+            row_list = []
+            self.search_each_term(row_list, place.city, place, 'main.geodata')
+            if len(row_list) > 0:
+                place.georow_list.extend(row_list)
+                
+        if len(place.georow_list) > 0:
+            best = self.assign_scores(georow_list=row_list, place=place, target_feature=place.feature,
+                                      fast=False, quiet=False)
 
     def _search(self, georow_list, name, admin1_id, admin2_id, iso, feature, sdx=''):
         """
@@ -353,7 +370,7 @@ class GeoSearch:
 
         place.result_type = self._search(georow_list=georow_list, name=country_name, admin1_id='', admin2_id='', iso='', feature='ADM0', sdx='')
         self.assign_scores(georow_list, place, 'ADM0', fast=False, quiet=False)
-        #if len(georow_list) > 0:
+        # if len(georow_list) > 0:
         #    self.logger.debug(georow_list[0])
 
         if place.result_type == Result.STRONG_MATCH:
@@ -372,8 +389,8 @@ class GeoSearch:
         # self.logger.debug(f'found iso [{iso}]')
 
         return iso
-
-    def search_for_combinations(self, row_list, target, place, table):
+    
+    def search_each_term(self, row_list, target, place, table):
         """
         Search for soundex of combinations of words in target
         Words are sorted and then Soundex searched with every combination of one word missing
@@ -388,15 +405,53 @@ class GeoSearch:
         """
         query_list = []
         sdx = get_soundex(target)
+        if len(sdx) > 3:
+            sdx_word_list = sdx.split(' ')
+        else:
+            sdx_word_list = ['']
+
+        if len(sdx_word_list) > 1 and len(place.country_iso) > 0:
+            #  Try each word 
+            self.logger.debug(f'Search EACH {sdx_word_list}')
+            for idx, word in enumerate(sdx_word_list):
+                pattern = word[0:4] + '%'
+                self.logger.debug(f' {pattern}')
+                if place.feature:
+                    query_list.append(Query(where="sdx like ? AND country = ? AND feature = ?",
+                                            args=(pattern, place.country_iso, place.feature,),
+                                            result=Result.SOUNDEX_MATCH))
+                else:
+                    query_list.append(Query(where="sdx like ? AND country = ?",
+                                            args=(pattern, place.country_iso,),
+                                            result=Result.SOUNDEX_MATCH))
+
+            place.result_type = self.geodb.process_query_list(result_list=row_list, select_fields=self.select_str,
+                                                              from_tbl=table, query_list=query_list, debug=True)
+
+    def search_for_combinations(self, row_list, target, place, table):
+        """
+        Search for soundex of combinations of words in target
+        Words are sorted and then Soundex searched of every combination with one word missing
+        Args:
+            row_list: 
+            target: 
+            place: 
+            table: 
+
+        Returns:
+
+        """
+        query_list = []
+        sdx = get_soundex(target)
 
         if len(sdx) > 3 and len(place.country_iso) > 0:
-            # append wildcard
-            sdx += '%'
-
             sdx_word_list = sdx.split(' ')
+            self.logger.debug(f'COMBO SEARCH {sdx_word_list}')
 
             if len(sdx_word_list) == 1:
                 #  one word - lookup as is
+                sdx += '%'
+
                 if place.feature:
                     query_list.append(Query(where="sdx like ? AND country = ? AND feature = ?",
                                             args=(sdx, place.country_iso, place.feature,),
@@ -415,7 +470,8 @@ class GeoSearch:
                                 pattern += word
                             else:
                                 pattern += ' ' + word
-                    # self.logger.debug(f'{ignore_word_idx}) {pattern}')
+                    pattern += '%'
+                    self.logger.debug(f'{ignore_word_idx}) {pattern}')
                     if place.feature:
                         query_list.append(Query(where="sdx like ? AND country = ? AND feature = ?",
                                                 args=(pattern, place.country_iso, place.feature,),
@@ -425,15 +481,6 @@ class GeoSearch:
                                                 args=(pattern, place.country_iso,),
                                                 result=Result.SOUNDEX_MATCH))
 
-                # Also try search for soundex of just first term
-                pattern = sdx_word_list[0] + '%'
-                query_list.append(Query(where="sdx like ? AND country = ?",
-                                        args=(pattern, place.country_iso,),
-                                        result=Result.SOUNDEX_MATCH))
-
-            #for qr in query_list:
-            #    self.logger.debug(f'where {qr.where} arg={qr.args} ')
-                
             place.result_type = self.geodb.process_query_list(result_list=row_list, select_fields=self.select_str,
                                                               from_tbl=table, query_list=query_list, debug=True)
 
@@ -515,7 +562,7 @@ class GeoSearch:
         place.lat = row[Entry.LAT]
         place.lon = row[Entry.LON]
         place.feature = str(row[Entry.FEAT])
-        #self.logger.debug(f'feat={place.feature}')
+        # self.logger.debug(f'feat={place.feature}')
         place.geoid = str(row[Entry.ID])
         place.prefix = row[Entry.PREFIX]
         place.place_type = Loc.PlaceType.CITY
@@ -556,7 +603,7 @@ class GeoSearch:
         except IndexError:
             pass
 
-        #self.logger.debug(f'<<<<< COPY DONE:  A1 [{place.admin1_name}] A2 [{place.admin2_name}] cty [{place.country_name}]'
+        # self.logger.debug(f'<<<<< COPY DONE:  A1 [{place.admin1_name}] A2 [{place.admin2_name}] cty [{place.country_name}]'
         #                  f'lat [{place.lat}]')
 
     @staticmethod
@@ -636,7 +683,7 @@ class GeoSearch:
         word, group = GeoUtil.get_feature_group(target)
         if word != '':
             if 'st ' not in word:
-                targ = '%' + re.sub(word, '', target).strip(' ') + '%'
+                targ = re.sub(word, '', target).strip(' ') + '%'
             else:
                 targ = target
             query_list.append(Query(where="name LIKE ? AND country = ? AND feature like ?",
@@ -674,7 +721,7 @@ class GeoSearch:
             # self.logger.debug(rw)
             self.copy_georow_to_place(row=rw, place=result_place, fast=fast)
             result_place.original_entry = result_place.get_long_name(None)
-            #self.logger.debug(f'plac feat=[{place.feature}] targ=[{target_feature}]')
+            # self.logger.debug(f'plac feat=[{place.feature}] targ=[{target_feature}]')
             if result_place.feature == target_feature:
                 bonus = 10.0
             else:
@@ -682,16 +729,8 @@ class GeoSearch:
 
             if len(place.prefix) > 0 and result_place.prefix == '':
                 result_place.prefix = ' '
-                # result_place.prefix_commas = ','
             else:
                 result_place.prefix = ''
-
-            # Remove items in prefix that are in result
-            if place.place_type != Loc.PlaceType.ADVANCED_SEARCH:
-                result_name = result_place.get_long_name(None)
-                place.prefix = Loc.Loc.prefix_cleanup(place.prefix, result_name)
-            else:
-                place.updated_entry = place.get_long_name(None)
 
             score = self.match.match_score(target_place=place, result_place=result_place) - bonus
             min_score = min(min_score, score)
@@ -707,7 +746,7 @@ class GeoSearch:
             georow_list[idx] = tuple(update)  # Convert back from list to tuple
             # self.logger.debug(f'{update[GeoUtil.Entry.SCORE]:.1f} {update[GeoUtil.Entry.NAME]} [{update[GeoUtil.Entry.PREFIX]}]')
 
-        #if len(georow_list) > 0:
+        # if len(georow_list) > 0:
         #    self.logger.debug(f'min={min_score} {georow_list[0]}')
         if min_score < MatchScore.Score.STRONG_CUTOFF:
             place.result_type = GeoUtil.Result.STRONG_MATCH
@@ -717,29 +756,14 @@ class GeoSearch:
         return min_score
 
 
-def special_terms_last(item):
-    """  key function - return key with special terms forced to sort last"""
-    special = {'east': 1, 'west': 1, 'north': 1, 'south': 1}
-    if special.get(item):
-        # Force special term to sort last.  { will sort last
-        return '{' + item
-    return item
-
-
 def get_soundex(text) -> str:
     """
     Returns: Phonetics Double Metaphone Soundex code for sorted words in text  
+    Words are alpha sorted but stop words are forced to end
     First two actual letters of word are prepended
     """
-    sdx = []
-    # Remove l' and d' from soundex 
-    text = re.sub(r"l\'", "", text)
-    text = re.sub(r"d\'", "", text)
-    text = re.sub('([^,]+) of ([^,]+)', r'\g<2> \g<1>', text)
-
-    # Force special terms to sort at end of list so wildcard will find phrases without them  (East, West, North, South)
-    # North Haden becomes Haden North and Haden% will match it.
-    word_list = sorted(text.split(' '), key=special_terms_last)
+    sdx = []    
+    word_list = Normalize.sorted_normalize(text)
 
     for word in word_list:
         if len(word) > 1:

@@ -35,7 +35,7 @@ class Example:
     """
 
     def __init__(self):
-        self.dbg = True
+        self.dbg = False
         # Set up standard logging.  
         logging.getLogger(__name__)
         fmt = "%(levelname)s %(name)s.%(funcName)s %(lineno)d: %(message)s"
@@ -53,14 +53,14 @@ class Example:
                                        show_message=True, exit_on_error=True,
                                        languages_list_dct={'en'},
                                        feature_code_list_dct=features,
-                                        #supported_countries_dct={'gb',})
-                                        supported_countries_dct={'fr', 'gb', 'ca', 'us','nl','de'})
+                                        supported_countries_dct={'gb',})
+                                        #supported_countries_dct={'fr', 'gb', 'ca', 'us','nl','de'})
 
         # Open Geoname database - city names, lat/long, etc.  Create database if not found
         error = self.geodata.open(repair_database=True, query_limit=85)
-        if error:
-            print(f"Missing geoname Files in {directory}: download gb.txt or allcountries.txt from geonames.org")
-            raise ValueError('Missing files from geonames.org')
+        #if error:
+        #    print(f"Missing geoname Files in {directory}: download gb.txt or allcountries.txt from geonames.org")
+        #    raise ValueError('Missing files from geonames.org')
         
     def lookup_places(self):
         if self.dbg:
@@ -83,7 +83,7 @@ class Example:
             print(f'   Best match for {location_name}:\n {nm}  Prefix=[{place.prefix}{place.prefix_commas}] Score= {place.score:.1f}\n')
         else:
             if place.result_type == Geodata.GeoUtil.Result.NOT_SUPPORTED:
-                print(f'   NO match for {location_name}:\n Country {place.country_name} not in supported country list')
+                print(f'   NO match for {location_name}:\n Country NOT SUPPORTED: {place.country_name} \n')
             else:
                 print(f'   NO match for {location_name}:\n')
 
@@ -109,7 +109,7 @@ if __name__ == "__main__":
         'Saint-Denis-le-Ferment,,normandie,france',  #  
         'cairo,egypt',    #  
         'tiverton',     # 
-        'Thetford Abbey, , england',   # 
+        'Thetford Abbey, , england',   # ZZZZ
         'tretwr, llnfhngl cwm du, breconshire, wales,',
         'kathedrale winchester,england',
         'bemposta palace,paris,france',
@@ -120,7 +120,7 @@ if __name__ == "__main__":
         'St Filbert,Manchester,,england',
         "boston,,ma, united states",
         "l'aisne, Hauts-de-France, france",
-        "Hoxa, South Ronaldsay, Scotland, United Kingdom",
+        "Hoxa, South Ronaldsay, Scotland, United Kingdom",  # ZZZZ
         "Baden-Württemberg Region, Germany",
         "Hoxa ,Ronaldsay,  scotland",
         "Pembroke Castle, Pembrokeshire, Wales, United Kingdom",
@@ -131,7 +131,7 @@ if __name__ == "__main__":
         ]
 
     dbg_locations = [
-        "Isle Of Rhoads",
+        'kathedrale winchester,england',
         ]
     
     ex.lookup_places()

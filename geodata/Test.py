@@ -1,7 +1,10 @@
+import re
 
-from fuzzywuzzy import fuzz
+names = [
+    'mt kisco',
+    'kamtown',
+    ]
 
-
-val =  fuzz.token_sort_ratio(text1, text2)
-
-
+for text in names:
+    text = re.sub(r'^mt ', 'mount ', text)
+    print (text)

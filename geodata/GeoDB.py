@@ -211,8 +211,8 @@ class GeoDB:
                                       query.args)
             if debug:
                 self.logger.debug(f'{idx}) SELECT from {from_tbl} where {query.where} val={query.args} ')
-                for row in row_list:
-                    self.logger.debug(f'   FOUND {row}')
+                #for row in row_list:
+                #    self.logger.debug(f'   FOUND {row}')
             result_list.extend(row_list)
 
             if len(result_list) > 0:

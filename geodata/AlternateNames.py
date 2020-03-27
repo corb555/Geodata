@@ -35,7 +35,7 @@ class AlternateNames(FileReader.FileReader):
     If the entrie's lang is in the lang_list and the ID is ALREADY in our geonames dictionary, we add this as an alternative name
     """
 
-    def __init__(self, directory: str, filename: str, progress_bar, geo_build: GeodataBuild, lang_list):
+    def __init__(self, directory: str, filename: str, progress_bar, prefix, geo_build: GeodataBuild, lang_list):
         """
             Read in geonames alternate names file and add to geodata database in alt_names table
         # Args:
@@ -45,7 +45,7 @@ class AlternateNames(FileReader.FileReader):
             geo_files: GeodataFiles instance
             lang_list: List of ISO languages we want to support, e.g. ['fr', 'es']
         """
-        super().__init__(directory, filename, progress_bar)
+        super().__init__(directory, filename, progress_bar, prefix=prefix)
         self.sub_dir = GeoUtil.get_cache_directory(directory)
         self.geo_build: GeodataBuild.GeodataBuild = geo_build
         self.lang_list = lang_list

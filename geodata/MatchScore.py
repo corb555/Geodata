@@ -139,6 +139,14 @@ class MatchScore:
         save_prefix = target_place.prefix
         #self.logger.debug(f'pref={target_place.prefix}')
 
+        # Remove items in prefix that are in result
+        if target_place.place_type != Loc.PlaceType.ADVANCED_SEARCH:
+            target_place.prefix = Normalize.normalize_for_scoring(target_place.prefix, target_place.country_iso)
+            result_name = result_place.get_long_name(None)
+            target_place.prefix = Loc.Loc.prefix_cleanup(target_place.prefix, result_name)
+        else:
+            target_place.updated_entry = target_place.get_long_name(None)
+
         # Create full, normalized titles (prefix,city,county,state,country)
         result_title, result_tokens, target_title, target_tokens = _prepare_input(target_place, result_place)
         #self.logger.debug(f'Res [{result_tokens}] Targ [{target_tokens}] ')
@@ -281,12 +289,12 @@ def _calculate_prefix_penalty(prefix):
             penalty *= 0.2
     else:
         penalty =  0
+        
     return penalty
 
 
 def _prepare_input(target_place: Loc, result_place: Loc):
     # Create full, normalized  title (prefix,city,county,state,country)
-
     result_title = full_normalized_title(result_place)
     target_title = full_normalized_title(target_place)
     target_title, result_title = Normalize.remove_aliase(target_title, result_title)
@@ -300,7 +308,6 @@ def full_normalized_title(place: Loc) -> str:
     #place.prefix = Loc.Loc.matchscore_prefix(place.prefix, place.get_long_name(None))
     title = place.get_five_part_title()
     title = Normalize.normalize_for_scoring(title, place.country_iso)
-
     return title
 
 

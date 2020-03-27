@@ -24,7 +24,7 @@ import os
 
 class FileReader:
 
-    def __init__(self, directory: str, filename: str, update_progress):
+    def __init__(self, directory: str, filename: str, update_progress, prefix=''):
         """
         Read a file and call a handler for each line.  Update progress bar if present
         #Args:
@@ -38,6 +38,7 @@ class FileReader:
         self.fname: str = filename
         self.cache_changed = False
         self.count = 0
+        self.prefix = prefix
 
     def read(self) -> bool:
         """
@@ -59,7 +60,7 @@ class FileReader:
                     if line_num % 80000 == 1:
                         # Periodically update progress
                         prog = file_pos * 100 / fsize
-                        self.progress(f"2) Loading {self.fname} {prog:.0f}%", prog)
+                        self.progress(f"{self.prefix} Loading {self.fname} {prog:.0f}%", prog)
 
             self.cache_changed = True
             self.progress("", 100)

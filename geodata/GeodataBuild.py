@@ -105,7 +105,7 @@ class GeodataBuild:
 
         # Support for Geonames AlternateNames file.  Adds alternate names for entries
         self.alternate_names = AlternateNames.AlternateNames(directory=self.directory, geo_build=self,
-                                                             progress_bar=self.progress_bar, filename='alternateNamesV2.txt',
+                                                             progress_bar=self.progress_bar, prefix="Step 3 of 4) " , filename='alternateNamesV2.txt',
                                                              lang_list=self.lang_list)
 
     def create_geonames_database(self)->bool:
@@ -139,7 +139,7 @@ class GeodataBuild:
         file_count = 0
         for fname in ['allCountries.txt', 'ca.txt', 'gb.txt', 'de.txt', 'fr.txt', 'nl.txt']:
             # Read  geoname files
-            error = self._add_geoname_file_to_db(fname)  # Read in info (lat/long) for all places from
+            error = self._add_geoname_file_to_db(fname, 'Step 1 of 4) ')  # Read in info (lat/long) for all places from
             if error:
                 self.logger.warning(f'geoname file {fname} not found')
             else:
@@ -152,7 +152,7 @@ class GeodataBuild:
         self.logger.info(f'Geonames.org files done.  Elapsed ={(time.time() - start_time):.0f} seconds')
         
         # Create Main Indices
-        self.progress("3) Step 3 of 4: Creating Indices for Database...", 95)
+        self.progress("Step 2 of 4) Creating Indices for Database...", 95)
         start_time = time.time()
         self.create_geoid_index()
         self.create_main_indices()
@@ -178,7 +178,7 @@ class GeodataBuild:
         self.insert_version(self.required_db_version)
         return err
 
-    def _add_geoname_file_to_db(self, file) -> bool:
+    def _add_geoname_file_to_db(self, file, prefix) -> bool:
         """
             Read in geonames files and build lookup structure
 
@@ -214,7 +214,7 @@ class GeodataBuild:
                     if self.line_num % 30000 == 0:
                         # Periodically update progress
                         prog = self.line_num * bytes_per_line * 100 / fsize
-                        self.progress(msg=f"1) Building Database from {file}            {prog:.1f}%", val=prog)
+                        self.progress(msg=f"{prefix} Building Database from {file}            {prog:.1f}%", val=prog)
                     try:
                         geoname_row = Geofile_row._make(line)
                     except TypeError:
@@ -376,8 +376,8 @@ class GeodataBuild:
         geo_row[GeoSearch.Entry.ID] = geoname_row.id
             
         # Simplify feature type for Abbey/Priory, Castle, and Church.  Set feature based on population
-        geo_row[GeoSearch.Entry.FEAT] = Normalize.normalize_features(feature=geo_row[GeoSearch.Entry.FEAT],
-                                                                     name=geo_row[GeoSearch.Entry.NAME], pop=int(geoname_row.pop))
+        geo_row[GeoSearch.Entry.FEAT] = Normalize.feature_normalize(feature=geo_row[GeoSearch.Entry.FEAT],
+                                                                    name=geo_row[GeoSearch.Entry.NAME], pop=int(geoname_row.pop))
             
         self.insert(geo_tuple=geo_row, feat_code=geoname_row.feat_code)
 

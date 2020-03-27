@@ -38,7 +38,6 @@ Provides a place lookup gazeteer based on files from geonames.org.
 import collections
 import copy
 import logging
-import traceback
 from operator import itemgetter
 
 from geodata import GeoUtil, GeodataBuild, Loc, MatchScore, GeoSearch
@@ -120,7 +119,6 @@ Provide a place lookup gazeteer based on files from geonames.org
         
         if place.place_type != Loc.PlaceType.COUNTRY and place.place_type != Loc.PlaceType.ADMIN2:
             self.geo_build.geodb.s.lookup_place(place=place)
-            #self.logger.debug(place.georow_list)
             if place.georow_list:
                 result_list.extend(place.georow_list)
             #self.logger.debug(result_list)
@@ -129,16 +127,25 @@ Provide a place lookup gazeteer based on files from geonames.org
             self._restore_fields(place, self.save_place)
     
             # 2) Try second token (Admin2) as a city 
-            if place.admin2_name != '': # and len(result_list) < 9:
+            if place.admin2_name != '': 
                 place.georow_list.clear()
                 self._find_type_as_city(place, Loc.PlaceType.ADMIN2)
-                #self.logger.debug(place.georow_list)
-    
                 if place.georow_list:
                     result_list.extend(place.georow_list)
                     #self.logger.debug(result_list)
                 self._restore_fields(place, self.save_place)
-    
+
+            # See if we found any good scoring matches
+            best_score = self.geo_build.geodb.s.assign_scores(result_list, place, '', fast=False, quiet=True)
+            self.logger.debug(f'best={best_score}')
+            if best_score >= MatchScore.Score.POOR - 20:
+                # No good matches found.  Try a deep search on soundex of combinations of terms
+                self.logger.debug('--- DEEP SEARCH ---')
+                self.geo_build.geodb.s.deep_lookup(place=place)
+                # self.logger.debug(place.georow_list)
+                if place.georow_list:
+                    result_list.extend(place.georow_list)
+                    
             #  Move result_list into place georow list
             place.georow_list.clear()
             place.georow_list.extend(result_list)
@@ -146,8 +153,10 @@ Provide a place lookup gazeteer based on files from geonames.org
         else:
             #self.logger.debug('ignore country, admin2')
             pass
-
+        
         if len(place.georow_list) > 0:
+            best_score = self.geo_build.geodb.s.assign_scores(place.georow_list, place, '', fast=False, quiet=True)
+
             #self.logger.debug('process results')
             self.process_results(place=place, flags=flags)
             flags = self.filter_results(place)
