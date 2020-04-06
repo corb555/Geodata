@@ -379,7 +379,7 @@ class DB:
                     'PRAGMA journal_mode = off',
                     'PRAGMA locking_mode = exclusive',
                     'PRAGMA synchronous = 0',
-                    #'PRAGMA case_sensitive_like = ON'
+                    'PRAGMA case_sensitive_like = OFF'
                     ]:
             self.set_pragma(txt)
 

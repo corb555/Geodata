@@ -22,7 +22,9 @@ import logging
 import os
 import re
 import sys
+import time
 from difflib import SequenceMatcher
+from functools import wraps
 
 
 class Entry:
@@ -188,6 +190,16 @@ def get_feature_group(location: str):
 
     return '', ''
 
+def timeit_wrapper(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()  # Alternatively, you can use time.process_time()
+        func_return_val = func(*args, **kwargs)
+        end = time.perf_counter()
+        print('{0:<10}.{1:<8} : {2:<8}'.format(func.__module__, func.__name__, end - start))
+        return func_return_val
+    return wrapper
+
 
 feature_list = ["ADM1", "ADM2", "ADM3", "ADM4", "ADMF", "AREA", "CH", "CSTL", "CMTY", "EST ", "HSP", "FT",
                 "HSTS", "ISL", "MSQE", "MSTY", "MT", "MUS", "PAL", "PPL", "PPLA", "PPLA2", "PPLA3", "PPLA4",
@@ -216,15 +228,15 @@ feature_mapping = {
     'basilica'                      : 'CH',
     'cattedrale'                    : 'CH',
 
-    'castle'                        : 'CSTL%',
-    'schloss'                       : 'CSTL%',
-    'chateau'                       : 'CSTL%',
-    'castell'                       : 'CSTL%',
-    'castillo'                      : 'CSTL%',
-    'castello'                      : 'CSTL%',
-    'kasteel'                       : 'CSTL%',
-    'zamek'                         : 'CSTL%',
-    'slott'                         : 'CSTL%',
+    'castle'                        : 'CSTL',
+    'schloss'                       : 'CSTL',
+    'chateau'                       : 'CSTL',
+    'castell'                       : 'CSTL',
+    'castillo'                      : 'CSTL',
+    'castello'                      : 'CSTL',
+    'kasteel'                       : 'CSTL',
+    'zamek'                         : 'CSTL',
+    'slott'                         : 'CSTL',
 
     'cemetery'                      : 'CMTY',
     'cimetiere'                     : 'CMTY',
@@ -260,8 +272,8 @@ feature_mapping = {
     'prison'                        : "PRN",
     'square'                        : "SQR",
     'synagogue'                     : "SYG",
-    'abbey'                         : "MSTY%",
-    'priory'                        : "MSTY%",
+    'abbey'                         : "MSTY",
+    'priory'                        : "MSTY",
     }
 
 feature_names = {

@@ -20,7 +20,6 @@
 import logging
 import os
 import sys
-from pathlib import Path
 
 from geodata import Geodata, Loc
 
@@ -30,11 +29,12 @@ class Example:
     Example program for Geodata gazeteer.  
     0. pip3 install geodata
     1. Create folder in home directory:  example/cache  
-    2. Download gb.txt from geonames.org and place in example/cache.  (This just has Great Britain data)  
+    2. Download gb.txt from geonames.org and place in example/cache.  (gb.txt just has Great Britain data)  
     3. Run example.py  
     """
 
     def __init__(self):
+        # If dbg is True then lookup dbg_locations list with DEBUG logging.  Otherwise lookup locations list with INFO logging
         self.dbg = False
         # Set up standard logging.  
         logging.getLogger(__name__)
@@ -46,18 +46,22 @@ class Example:
             logging.basicConfig(level=logging.INFO, stream=sys.stdout, format=fmt)  # Change this to logging.DEBUG for more detail
 
         # Initialize
-        directory = os.path.join(str(Path.home()), "Documents", "geoname_data")
+        #directory = os.path.join(str(Path.home()), "Documents", "geoname_data")
+        os.chdir('/Volumes/DISK2')
+        directory = os.path.join("geoname_data")
+
         #directory = os.path.join(str(Path.home()), "Documents", "geoname_test")
 
         self.geodata = Geodata.Geodata(directory_name=directory, display_progress=None,
                                        show_message=True, exit_on_error=True,
                                        languages_list_dct={'en'},
                                        feature_code_list_dct=features,
-                                        supported_countries_dct={'gb',})
-                                        #supported_countries_dct={'fr', 'gb', 'ca', 'us','nl','de'})
+                                        #supported_countries_dct={'gb',})
+                                        supported_countries_dct={'fr', 'gb', 'ca', 'us','nl','de','no','dk'},
+                                       volume='/Volumes/DISK2')
 
         # Open Geoname database - city names, lat/long, etc.  Create database if not found
-        error = self.geodata.open(repair_database=True, query_limit=85)
+        error = self.geodata.open(repair_database=True, query_limit=50)
         #if error:
         #    print(f"Missing geoname Files in {directory}: download gb.txt or allcountries.txt from geonames.org")
         #    raise ValueError('Missing files from geonames.org')
@@ -122,6 +126,7 @@ if __name__ == "__main__":
         "l'aisne, Hauts-de-France, france",
         "Hoxa, South Ronaldsay, Scotland, United Kingdom",  # ZZZZ
         "Baden-Württemberg Region, Germany",
+        "Germany",
         "Hoxa ,Ronaldsay,  scotland",
         "Pembroke Castle, Pembrokeshire, Wales, United Kingdom",
         "Neufchatel-sur-Aisne,,,France",
@@ -131,9 +136,10 @@ if __name__ == "__main__":
         ]
 
     dbg_locations = [
-        'kathedrale winchester,england',
+        "Alb*el,, Quebec, CanAda", 
         ]
     
     ex.lookup_places()
+    ex.geodata.close()
 
 

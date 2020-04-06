@@ -94,7 +94,7 @@ class TestScoring(unittest.TestCase):
         ("Old Bond Street, London,  , England,United Kingdom", " , London, Greater London, England, United Kingdom", 'PP1M', SC.VERY_GOOD  + 13, 0),  # 18
 
         ("Abc, Halifax, , Nova Scotia, Canada", "Abc, Halifax, , Nova Scotia, Canada", 'XXX', SC.GOOD+10, 0),  # 19
-        ("Holborn, Middlesex, England,", "Holborn, Greater London, England, United Kingdom", 'PP1M', SC.VERY_GOOD, 0),  # 20
+        ("Holborn, Middlesex, England,", "Holborn, Greater London, England, United Kingdom", 'PP1M', SC.VERY_GOOD-4, 0),  # 20
         ("St Quentin, Aisne, Picardy, France", "St Quentin, Departement De L'Aisne, Hauts De France, France", 'PP1M', SC.VERY_GOOD, 0),  # 21
         ("barton, lancashire, england, united kingdom", "barton, lancashire, england, united kingdom", 'PPLL', SC.VERY_GOOD, 0),  # 22
         ("testerton, norfolk, england,", "testerton, norfolk, england,united kingdom", "PPLL", SC.VERY_GOOD, 0),  # 23
@@ -162,12 +162,15 @@ class TestScoring(unittest.TestCase):
         TestScoring.scoring = MatchScore.MatchScore()
 
         # Load test data
-        directory = os.path.join(str(Path.home()), 'Documents', "geoname_data")
+        #directory = os.path.join(str(Path.home()), 'Documents', "geoname_data")
+        os.chdir('/Volumes/DISK2')
+        directory = os.path.join("geoname_data")
         TestScoring.geodata = Geodata.Geodata(directory_name=directory, display_progress=None,
                                               show_message=True, exit_on_error=False,
                                               languages_list_dct={'en'},
                                               feature_code_list_dct=features,
-                                              supported_countries_dct={'fr', 'gb', 'ca', 'de', 'nl', 'us'})
+                                              supported_countries_dct={'fr', 'gb', 'ca', 'de', 'nl', 'us'},
+                                              volume='/Volumes/DISK2')
 
         # Read in Geoname Gazeteer file - city names, lat/long, etc.
         TestScoring.geodata.open(repair_database=False, query_limit=105)

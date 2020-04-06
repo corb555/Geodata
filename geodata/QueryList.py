@@ -17,14 +17,11 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
-""" Build database queries for various lookups """
+""" Build SQL where clause and arg list """
 import re
 
-from geodata import Loc
-from geodata.GeoUtil import Query, Result
 
-
-class Typ:
+class TypZZZZZ:
     ADMIN2 = 1
     COUNTRY = 3
     ADMIN1_ID = 4
@@ -38,15 +35,15 @@ class QueryItem:
         self.where = ''
         self.args = tuple()
         self.table = 'main.geodata'
-        
+
     def clear(self):
         self.where = ''
         self.args = tuple()
 
-    def add_clauses(self, where_clauses:[str], terms:[], table=''):
+    def add_clauses(self, where_clauses: [str], terms: [], table=''):
         """
         Create a Where clause (and args) by appending each item in clause with AND as separator
-        Use equal, unless there is an '*', then use LIKE
+        Use equal, unless there is an '*', then use LIKE type clause
         Args:
             where_clauses: list of column names
             terms: list of values
@@ -55,164 +52,54 @@ class QueryItem:
         """
         if table != '':
             self.table = table
-            
+
         for idx, where_clause in enumerate(where_clauses):
+            # Walk thru the where clauses specified and add each to our query and list of args
             term = terms[idx]
             # If where clause is for feature column and term is ADM0 or ADM1, then we need to look into admin table
             if where_clause == 'feature' and table == '':
                 if 'ADM0' in term or 'ADM1' in term:
                     self.table = 'main.admin'
-                
+
             if len(term) > 0:
                 if len(self.where) > 0:
+                    # There is already text in Where, so add AND
                     self.where += ' AND '
-    
-                if '*' in term:
-                    self.where += f' {where_clause} like ?'
-                    term=self.create_wildcard(term)
+
+                if term[-1] == '*':
+                    # Wildcard search at end of text - Use >= and < (usually gives better performanc than LIKE)
+                    term = self.create_wildcard(term, remove=True)
+                    self.where += f' ({where_clause} >= ? and {where_clause} < ?) '
+                    self.args += (term, inc_key(term),)
+                elif '*' in term:
+                    # Wildcard search in middle or start of search - Use LIKE
+                    term = self.create_wildcard(term, remove=False)
+
+                    self.where += f' ({where_clause} like ?) '
+                    self.args += (term,)
                 else:
                     self.where += f' {where_clause} = ?'
-    
-                self.args += (term,)        
-        
+                    self.args += (term,)
+
     @staticmethod
-    def build_query_list(typ: int, query_list, place: Loc):
+    def create_wildcard(pattern: str, remove: bool):
         """
-        
+        Convert lookup pattern into a SQL lookup (convert * to %)
         Args:
-            typ: 
-            query_list: 
-            place: 
+            pattern: 
+            remove: If True, remove  wildcards
 
         Returns:
 
         """
-        if typ == Typ.COUNTRY:
-            QueryItem.query_list_country(query_list, place)
-        elif typ == Typ.ADMIN1_ID:
-            QueryItem.query_list_admin1_id(query_list, place)
-        elif typ == Typ.ADMIN2_ID:
-            QueryItem.query_list_admin2_id(query_list, place)
-        elif typ == Typ.ADMIN1_ALT_NAME:
-            QueryItem.query_list_admin1_alt_name(query_list, place)
-        elif typ == Typ.GEOID:
-            QueryItem.query_list_geoid(query_list, place)
-
-
-    @staticmethod
-    def query_list_countryZZZ(query_list, place: Loc):
-        """Search for Admin1 entry"""
-        lookup_target = place.country_name
-        sdx = get_soundex(lookup_target)
-        # pattern = QueryList.create_wildcard(lookup_target)
-
-        query_list.append(where="country = ? AND feature = ? ",
-                          args=(place.country_iso, 'ADM0'),
-                          result=Result.STRONG_MATCH)
-
-        if len(sdx) > 3:
-            query_list.append(where="sdx = ?  AND feature=?",
-                              args=(sdx, 'ADM0'),
-                              result=Result.SOUNDEX_MATCH)
-
-    @staticmethod
-    def query_list_admin1_idZZZ(query_list, place: Loc):
-        """Search for Admin1 entry"""
-        # sdx = get_soundex(lookup_target)
-        lookup_target = place.admin1_id
-        pattern = QueryItem.create_wildcard(lookup_target)
-
-        if place.country_iso == '':
-            query_list.append(Query(where="name = ?  AND feature = ? ",
-                                    args=(lookup_target, 'ADM1'),
-                                    result=Result.STRONG_MATCH))
-
-            query_list.append(Query(where="name LIKE ? AND feature = ?",
-                                    args=(pattern, 'ADM1'),
-                                    result=Result.WILDCARD_MATCH))
-        else:
-            query_list.append(Query(where="name = ? AND country = ? AND feature = ? ",
-                                    args=(lookup_target, place.country_iso, 'ADM1'),
-                                    result=Result.STRONG_MATCH))
-            query_list.append(Query(where="name LIKE ? AND country = ?  AND feature = ?",
-                                    args=(pattern, place.country_iso, 'ADM1'),
-                                    result=Result.WILDCARD_MATCH))
-
-        query_list.append(Query(where="name = ?  AND feature = ?",
-                                args=(lookup_target, 'ADM1'),
-                                result=Result.SOUNDEX_MATCH))
-
-    @staticmethod
-    def query_list_admin2_idZZZ(query_list, place: Loc):
-        """Search for Admin2 entry"""
-        # sdx = get_soundex(lookup_target)
-        lookup_target = place.admin2_id
-        pattern = QueryItem.create_wildcard(lookup_target)
-
-        if len(place.admin1_id) > 0:
-            query_list.append(Query(where="name = ? AND country = ? AND admin1_id=? AND feature=?",
-                                    args=(lookup_target, place.country_iso, place.admin1_id, 'ADM2'),
-                                    result=Result.STRONG_MATCH))
-            query_list.append(Query(where="name LIKE ? AND country = ? and admin1_id = ? AND feature=?",
-                                    args=(lookup_target, place.country_iso, place.admin1_id, 'ADM2'),
-                                    result=Result.WILDCARD_MATCH))
-            query_list.append(Query(where="name LIKE ? AND country = ? and admin1_id = ? AND feature=?",
-                                    args=(pattern, place.country_iso, place.admin1_id, 'ADM2'),
-                                    result=Result.WILDCARD_MATCH))
-        else:
-            query_list.append(Query(where="name = ? AND country = ? AND feature=?",
-                                    args=(lookup_target, place.country_iso, 'ADM2'),
-                                    result=Result.STRONG_MATCH))
-            query_list.append(Query(where="name LIKE ? AND country = ? AND feature=?",
-                                    args=(lookup_target, place.country_iso, 'ADM2'),
-                                    result=Result.WILDCARD_MATCH))
-            query_list.append(Query(where="name LIKE ? AND country = ? AND feature=?",
-                                    args=(pattern, place.country_iso, 'ADM2'),
-                                    result=Result.WILDCARD_MATCH))
-
-    @staticmethod
-    def query_list_admin1_alt_nameZZZ(query_list, place: Loc):
-        """Search for Admin1 entry"""
-        lookup_target = place.admin1_id
-        query_list.append(where="admin1_id = ? AND country = ?  AND feature = ? ",
-                          args=(lookup_target, place.country_iso, 'ADM1'),
-                          result=Result.STRONG_MATCH)
-
-    @staticmethod
-    def query_list_geoidZZZ(query_list, place: Loc) -> None:
-        """Search for GEOID"""
-        lookup_target = place.geoid
-        query_list.append(where="geoid = ? ",
-                          args=(lookup_target,),
-                          result=Result.STRONG_MATCH)
-
-    @staticmethod
-    def query_list_admin1_name_directZZZ(query_list, lookup_target, iso):
-        """Search for Admin1 entry"""
-        query_list.append(where="admin1_id = ? AND country = ?  AND feature = ? ",
-                          args=(lookup_target, iso, 'ADM1'),
-                          result=Result.STRONG_MATCH)
-
-    @staticmethod
-    def query_list_admin2_name_directZZZ(query_list, lookup_target, iso, admin1_id):
-        """Search for Admin2 entry"""
-        query_list.append(where="admin2_id = ? AND country = ? AND admin1_id = ?",
-                          args=(lookup_target, iso, admin1_id),
-                          result=Result.STRONG_MATCH)
-
-        query_list.append(where="admin2_id = ? AND country = ?",
-                          args=(lookup_target, iso),
-                          result=Result.PARTIAL_MATCH)
-
-    @staticmethod
-    def create_wildcard(pattern):
-        """
-
-        :param pattern:
-        :return:
-        """
+        
         # Create SQL wildcard pattern (convert * to %).  Add % on end
-        if '*' in pattern:
-            return re.sub(r"\*", "%", pattern)
+        if remove:
+            return re.sub(r"\*", "", pattern)
         else:
-            return f'%{pattern}%'
+            return re.sub(r"\*", "%", pattern)
+
+
+def inc_key(text):
+    """ increment the last letter of text by one.  Used to replace key in SQL LIKE case with less than """
+    return text[0:-1] + chr(ord(text[-1]) + 1)

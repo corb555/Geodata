@@ -45,7 +45,8 @@ class GeodataBuild:
     """
 
     def __init__(self, directory: str, display_progress,
-                 show_message:bool, exit_on_error:bool, languages_list_dct:{}, feature_code_list_dct:{}, supported_countries_dct:{}):
+                 show_message:bool, exit_on_error:bool, languages_list_dct:{}, feature_code_list_dct:{}, 
+                 supported_countries_dct:{},volume=''):
         """
         Read in datafiles needed for geodata, filter them and create a sql db.
         Filter dictionary examples:   
@@ -66,7 +67,8 @@ class GeodataBuild:
         self.show_message = show_message
         self.geoid_main_dict = {}  # Key is GEOID, Value is DB ID for entry
         self.geoid_admin_dict = {}  # Key is GEOID, Value is DB ID for entry
-            
+        self.volume = volume
+
         self.exit_on_error = exit_on_error
         self.required_db_version = 4
         # Message to user upgrading from earlier DB version  
@@ -84,7 +86,9 @@ class GeodataBuild:
 
         for item in self.languages_list_dct:
             self.lang_list.append(item)
-
+            
+        if volume != '':
+            os.chdir(volume)
         if not os.path.exists(sub_dir):
             self.logger.warning(f'Directory] {sub_dir} NOT FOUND')
             if self.show_message:
@@ -121,6 +125,9 @@ class GeodataBuild:
         if self.geodb is None:
             self.logger.error('Cannot create DB: geodb is None')
             return True
+        
+        if self.volume != '':
+            os.chdir(self.volume)
 
         self.create_tables()
         
@@ -199,7 +206,10 @@ class GeodataBuild:
                                  ' admin2_id admin3_id admin4_id pop elev dem timezone mod')
         self.line_num = 0
         self.progress("Reading {}...".format(file), 0)
-        path = os.path.join(self.directory, file)
+        if self.volume != '':
+            os.chdir(self.volume)
+        path = os.path.join(self.volume, self.directory, file)
+        self.logger.info(f'Path = [{path}]')
 
         if os.path.exists(path):
             fsize = os.path.getsize(path)
@@ -438,8 +448,8 @@ class GeodataBuild:
                 country     text COLLATE NOCASE,
                 admin1_id     text COLLATE NOCASE,
                 admin2_id text COLLATE NOCASE,
-                lat      text  ,
-                lon       text ,
+                lat      text  COLLATE NOCASE,
+                lon       text COLLATE NOCASE,
                 feature      text COLLATE NOCASE,
                 geoid      text COLLATE NOCASE,
                 sdx     text COLLATE NOCASE
@@ -452,8 +462,8 @@ class GeodataBuild:
                 country     text COLLATE NOCASE,
                 admin1_id     text COLLATE NOCASE,
                 admin2_id text COLLATE NOCASE,
-                lat      text  ,
-                lon       text ,
+                lat      text  COLLATE NOCASE,
+                lon       text COLLATE NOCASE,
                 feature      text COLLATE NOCASE,
                 geoid      text COLLATE NOCASE,
                 sdx     text COLLATE NOCASE
@@ -462,8 +472,8 @@ class GeodataBuild:
         # name, lang, geoid
         sql_alt_name_table = """CREATE TABLE IF NOT EXISTS altname    (
                 id           integer primary key autoincrement not null,
-                name     text,
-                lang     text,
+                name     text COLLATE NOCASE,
+                lang     text COLLATE NOCASE,
                 geoid      text COLLATE NOCASE,
                 sdx     text COLLATE NOCASE
                                     );"""
@@ -531,10 +541,10 @@ class GeodataBuild:
         """
         # Indices for geodata table
         self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS name_idx ON geodata(name  , country, admin1_id  )')
-        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS admin1_idx ON geodata(admin1_id   )')
-        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS sdx_idx ON geodata(sdx  , country   )')
-        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_admin2_idx ON geodata(admin1_id  , feature  , '
-                                                    'admin2_id  )')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS name_idx2 ON geodata(name  , country, feature  )')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS admin1_idx ON geodata(admin1_id , country  )')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS sdx_idx ON geodata(sdx  , country, feature   )')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS admin2_idx ON geodata(admin1_id  , feature  , admin2_id )')
 
         # Indices for admin table
         self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS adm_name_idx ON admin(name  , country  )')

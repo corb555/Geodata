@@ -51,7 +51,7 @@ Provide a place lookup gazeteer based on files from geonames.org
 
     def __init__(self, directory_name: str, display_progress,
                  show_message: bool, exit_on_error: bool, languages_list_dct, feature_code_list_dct,
-                 supported_countries_dct):
+                 supported_countries_dct, volume=''):
         """
             Init
 
@@ -73,7 +73,8 @@ Provide a place lookup gazeteer based on files from geonames.org
                                                    show_message=show_message, exit_on_error=exit_on_error,
                                                    languages_list_dct=languages_list_dct,
                                                    feature_code_list_dct=feature_code_list_dct,
-                                                   supported_countries_dct=supported_countries_dct)
+                                                   supported_countries_dct=supported_countries_dct,
+                                                   volume=volume)
 
     def find_matches(self, location: str, place: Loc, plain_search) -> GeoUtil.Result:
         """
@@ -97,7 +98,7 @@ Provide a place lookup gazeteer based on files from geonames.org
 
         # Create full entry text
         place.update_names(self.geo_build.output_replace_dct)
-        
+
         flags = ResultFlags(limited=False, filtered=False)
         result_list = []  # We will do different search types and append all results into result_list
 
@@ -115,24 +116,27 @@ Provide a place lookup gazeteer based on files from geonames.org
         # 1) Try lookup based on standard parsing: lookup city, county, state/province, or country as parsed
         self.logger.debug(f'  1) Standard, based on parsing.  pref [{place.prefix}] city [{place.city}]'
                           f' sdx={GeoSearch.get_soundex(place.city)} '
-                          f'feat={place.feature}')
-        
-        if place.place_type != Loc.PlaceType.COUNTRY and place.place_type != Loc.PlaceType.ADMIN2:
+                          f'feat={place.feature} typ=[{place.place_type}]')
+
+        if place.place_type != Loc.PlaceType.COUNTRY and place.place_type != Loc.PlaceType.ADMIN1 \
+                and place.place_type != Loc.PlaceType.ADMIN1:
+            self.logger.debug('find match place is not ADM*  ')
             self.geo_build.geodb.s.lookup_place(place=place)
             if place.georow_list:
                 result_list.extend(place.georow_list)
-            #self.logger.debug(result_list)
+            # self.logger.debug(result_list)
 
             # Restore fields
             self._restore_fields(place, self.save_place)
-    
+
             # 2) Try second token (Admin2) as a city 
-            if place.admin2_name != '': 
+            if place.admin2_name != '':
+                self.logger.debug(f'try 2nd token as city')
                 place.georow_list.clear()
                 self._find_type_as_city(place, Loc.PlaceType.ADMIN2)
                 if place.georow_list:
                     result_list.extend(place.georow_list)
-                    #self.logger.debug(result_list)
+                    # self.logger.debug(result_list)
                 self._restore_fields(place, self.save_place)
 
             # See if we found any good scoring matches
@@ -145,28 +149,31 @@ Provide a place lookup gazeteer based on files from geonames.org
                 # self.logger.debug(place.georow_list)
                 if place.georow_list:
                     result_list.extend(place.georow_list)
-                    
+
             #  Move result_list into place georow list
             place.georow_list.clear()
             place.georow_list.extend(result_list)
-            #self.logger.debug(place.georow_list)
+            # self.logger.debug(place.georow_list)
         else:
-            #self.logger.debug('ignore country, admin2')
-            pass
-        
+            self.logger.debug('not country, adm1, adm2')
+            return place.result_type
+
         if len(place.georow_list) > 0:
             best_score = self.geo_build.geodb.s.assign_scores(place.georow_list, place, '', fast=False, quiet=True)
 
-            #self.logger.debug('process results')
+            # self.logger.debug('process results')
             self.process_results(place=place, flags=flags)
             flags = self.filter_results(place)
-        #self.logger.debug(place.georow_list)
+        # self.logger.debug(place.georow_list)
 
         if len(place.georow_list) == 0:
             # NO MATCH
-            self.logger.debug(f'Not found.')
             if place.result_type != GeoUtil.Result.NO_COUNTRY and place.result_type != GeoUtil.Result.NOT_SUPPORTED:
                 place.result_type = GeoUtil.Result.NO_MATCH
+                self.logger.debug(f'Not found.')
+                place.result_type = GeoUtil.Result.STRONG_MATCH
+            else:
+                self.logger.debug('Found country')
         elif len(place.georow_list) > 1:
             self.logger.debug(f'Success!  {len(place.georow_list)} matches')
             place.result_type = GeoUtil.Result.MULTIPLE_MATCHES
@@ -188,7 +195,7 @@ Provide a place lookup gazeteer based on files from geonames.org
         #  First parse the location into <prefix>, city, <district2>, district1, country.
         #  Then look it up in the place db
 
-        self.find_matches(location, place, plain_search=False)
+        res = self.find_matches(location, place, plain_search=False)
 
         # Clear to just best entry
         flags = self.filter_results(place)
@@ -199,9 +206,15 @@ Provide a place lookup gazeteer based on files from geonames.org
             place.set_place_type()
 
             nm = f'{place.get_long_name(self.geo_build.output_replace_dct)}'
-            print(f'Found pre=[{place.prefix}{place.prefix_commas}] Nam=[{nm}]')
+            place.prefix = place.prefix_cleanup(place.prefix, nm)
             return True
         else:
+            if res in GeoUtil.successful_match:
+                nm = f'{place.get_long_name(self.geo_build.output_replace_dct)}'
+                place.prefix = place.prefix_cleanup(place.prefix, nm)
+                #print(f'Found pre=[{place.prefix}{place.prefix_commas}] Nam=[{nm}]')
+                return True
+
             return False
 
     def find_geoid(self, geoid: str, place: Loc):
@@ -224,10 +237,10 @@ Provide a place lookup gazeteer based on files from geonames.org
         if len(place.georow_list) > 0:
             place.result_type = GeoUtil.Result.STRONG_MATCH
             self.process_results(place=place, flags=flags)
-            #self.logger.debug(f'found geoid {place.georow_list[0]}')
+            # self.logger.debug(f'found geoid {place.georow_list[0]}')
         else:
             place.result_type = GeoUtil.Result.NO_MATCH
-            #self.logger.debug(f'NOT FOUND geoid {geoid}')
+            # self.logger.debug(f'NOT FOUND geoid {geoid}')
 
     def _find_type_as_city(self, place: Loc, typ):
         """
@@ -274,7 +287,6 @@ Provide a place lookup gazeteer based on files from geonames.org
             place.place_type = Loc.PlaceType.CITY
             self.geo_build.geodb.s.lookup_place(place=place)
 
-
     def _lookup_city_as_admin2(self, place: Loc, result_list):
         """
         Lookup place.city as admin2 name   
@@ -307,12 +319,12 @@ Provide a place lookup gazeteer based on files from geonames.org
         self.logger.debug('Feature Search')
         self._find_type_as_city(place, place.place_type)
 
-        #if len(place.georow_list) > 0:
-            # Build list - sort and remove duplicates
-            # self.logger.debug(f'Match {place.georow_list}')
-            #flags = ResultFlags(limited=False, filtered=False)
-            #self.process_results(place=place, flags=flags)
-            #self.filter_results(place)
+        # if len(place.georow_list) > 0:
+        # Build list - sort and remove duplicates
+        # self.logger.debug(f'Match {place.georow_list}')
+        # flags = ResultFlags(limited=False, filtered=False)
+        # self.process_results(place=place, flags=flags)
+        # self.filter_results(place)
 
     def process_results(self, place: Loc, flags) -> None:
         """
@@ -353,7 +365,7 @@ Provide a place lookup gazeteer based on files from geonames.org
 
     def remove_duplicates(self, place):
         # sort list by LON/LAT and score so we can remove dups
-        #for row in place.georow_list:
+        # for row in place.georow_list:
         #    self.logger.debug(row)
         if len(place.georow_list) == 0:
             self.logger.debug('empty')
@@ -445,7 +457,7 @@ Provide a place lookup gazeteer based on files from geonames.org
 
         # Remove duplicate locations in list (have same name and lat/lon)
         self.remove_duplicates(place)
-        if len(place.georow_list ) == 0:
+        if len(place.georow_list) == 0:
             self.logger.error(f'georow_list = 0')
             return ResultFlags(limited=limited_flag, filtered=date_filtered)
 
@@ -454,7 +466,7 @@ Provide a place lookup gazeteer based on files from geonames.org
 
         # Sort places in match_score order
         new_list = sorted(place.georow_list, key=itemgetter(GeoUtil.Entry.SCORE, GeoUtil.Entry.ADM1))
-        if len(new_list ) == 0:
+        if len(new_list) == 0:
             self.logger.error(f'new_list = 0')
             return ResultFlags(limited=limited_flag, filtered=date_filtered)
 
@@ -477,7 +489,7 @@ Provide a place lookup gazeteer based on files from geonames.org
             gap_threshold = base + abs(min_score) * .6
 
             # Range to display when there is a strong match
-            #if (min_score <= base and score > min_score + gap_threshold) or score > MatchScore.Score.VERY_POOR * 1.5:
+            # if (min_score <= base and score > min_score + gap_threshold) or score > MatchScore.Score.VERY_POOR * 1.5:
             if score > min_score + gap_threshold:
 
                 self.logger.debug(f'SKIP Score={score:.1f} Min={min_score:.1f} Gap={gap_threshold:.1f} [{geo_row[GeoUtil.Entry.PREFIX]}]'
@@ -490,7 +502,7 @@ Provide a place lookup gazeteer based on files from geonames.org
                                   f'AD2={geo_row[GeoUtil.Entry.ADM2]},'
                                   f' AD1={geo_row[GeoUtil.Entry.ADM1]} {geo_row[GeoUtil.Entry.ISO]}')
 
-        #self.logger.debug(f'min={min_score:.1f}, gap2={gap_threshold:.1f} strong cutoff={min_score + gap_threshold:.1f}')
+        # self.logger.debug(f'min={min_score:.1f}, gap2={gap_threshold:.1f} strong cutoff={min_score + gap_threshold:.1f}')
 
         if min_score <= MatchScore.Score.VERY_GOOD and len(place.georow_list) == 1 and place.result_type != GeoUtil.Result.NOT_SUPPORTED:
             place.result_type = GeoUtil.Result.STRONG_MATCH

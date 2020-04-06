@@ -53,6 +53,7 @@ class GeoDB:
         self.max_query_results = 50
         self.total_time = 0
         self.total_lookups = 0
+        self.slow_lookup = 0
         #self.select_str = 'name, country, admin1_id, admin2_id, lat, lon, feature, geoid, sdx'
         self.db_path = db_path
 
@@ -211,8 +212,8 @@ class GeoDB:
                                       query.args)
             if debug:
                 self.logger.debug(f'{idx}) SELECT from {from_tbl} where {query.where} val={query.args} ')
-                #for row in row_list:
-                #    self.logger.debug(f'   FOUND {row}')
+                for row in row_list:
+                    self.logger.debug(f'   FOUND {row}')
             result_list.extend(row_list)
 
             if len(result_list) > 0:
@@ -226,6 +227,7 @@ class GeoDB:
             self.total_time += elapsed
             self.total_lookups += 1
             if elapsed > .01:
+                self.slow_lookup += elapsed
                 self.logger.info(f'Slow lookup. Time={elapsed:.4f}  '
                                   f'len {len(result_list)} from {from_tbl} '
                                   f'where {query.where} val={query.args} ')
@@ -248,5 +250,7 @@ class GeoDB:
         """
         self.db.set_optimize_pragma()
         self.logger.info('Closing Database')
+        
+        self.logger.info(f'Total query time = {self.total_time:.2f}\n                  Slow DB query time = {self.slow_lookup:.2f}')
         self.db.conn.close()
 

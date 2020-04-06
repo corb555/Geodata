@@ -23,7 +23,8 @@ This is used by the lookup functions and the database build functions and match 
 noise_words is a list of replacements only used for match scoring   
 phrase_cleanup is a list of replacements for db build, lookup and match scoring   
 """
-import re
+import functools
+from re import sub
 import sys
 
 import unidecode
@@ -31,6 +32,8 @@ import unidecode
 from geodata import GeodataBuild, Loc, GeoUtil
 
 # Todo -  make all of these list driven
+
+CACHE_SIZE = 16384
 
 
 stop_words = {
@@ -55,12 +58,13 @@ stop_words = {
     'little',
     'royal',
     'borough',
-    'department'
+    'department',
+    'region',
     }
 
 scoring_noise_words = [
-    # list of substitutions applied to text for match scoring
-    # list of (Regex, Replacement) - re.sub applied 
+    # apply this list of substitutions before match scoring
+    # list of (Regex, Replacement) - sub applied 
     (r', ', ','),
     (r"normandy american ", 'normandie american '),
     (r'nouveau brunswick', ' '),
@@ -81,6 +85,9 @@ scoring_noise_words = [
     (r'mound', 'mund'),
     (r'ourne', 'orn'),
     (r'ney', 'ny'),
+    (r'region', ' '),
+    (r'abbey', 'abbey'),
+    (r'priory', 'abbey'),
     (r' de ', ' '),
     (r' di ', ' '),
     (r' du ', ' '),
@@ -89,25 +96,25 @@ scoring_noise_words = [
 
 
 phrase_cleanup = [
-    # Phrase cleanup - replacements applied for database build, lookup, and match score 
-    # list of (Regex, Replacement) - re.sub applied 
-    ('  +', ' '),  # Strip multiple space to single space
+    # Phrase cleanup - apply these replacements for database build, lookup, and match score 
+    # list of (Regex, Replacement) - sub applied 
+    (r'  +', ' '),  # Strip multiple space to single space
     (r'^mt ', 'mount '),
-    ('r\.k\. |r k ', 'roman catholic '),
-    ('rooms katholieke ', 'roman catholic '),
-    ('sveti |saints |sainte |sint |saint |sankt |st\. ', 'st '),  # Normalize Saint to St
+    (r'r\.k\. |r k ', 'roman catholic '),
+    (r'rooms katholieke ', 'roman catholic '),
+    (r'sveti |saints |sainte |sint |saint |sankt |st\. ', 'st '),  # Normalize Saint to St
     (r' co\.', ' county'),  # Normalize County
     (r'united states of america', 'usa'),  # Normalize to USA   begraafplaats
     (r'united states', 'usa'),  # Normalize to USA
-    (r'town of ', ''),  # - remove town of
-    (r'city of ', ''),  # - remove city of
     (r'cimetiere', 'cemetery'),  # cimetière
     (r'begraafplaats', 'cemetery'),  # 
-    ('county of ([^,]+)', r'\g<1> county'),  # Normalize 'Township of X' to 'X Township'
-    ('township of ([^,]+)', r'\g<1> township'),  # Normalize 'Township of X' to 'X Township'
-    ('cathedral of ([^,]+)', r'\g<1> cathedral'),  # Normalize 'Township of X' to 'X Township'
-    ('palace of ([^,]+)', r'\g<1> palace'),  # Normalize 'Township of X' to 'X Township'
-    ('castle of ([^,]+)', r'\g<1> castle'),  # Normalize 'Township of X' to 'X Township'
+    (r'town of ', ''),  # - remove town of
+    (r'city of ', ''),  # - remove city of
+    (r'county of ([^,]+)', r'\g<1> county'),  # Normalize 'Township of X' to 'X Township'
+    (r'township of ([^,]+)', r'\g<1> township'),  # Normalize 'Township of X' to 'X Township'
+    (r'cathedral of ([^,]+)', r'\g<1> cathedral'),  # Normalize 'Township of X' to 'X Township'
+    (r'palace of ([^,]+)', r'\g<1> palace'),  # Normalize 'Township of X' to 'X Township'
+    (r'castle of ([^,]+)', r'\g<1> castle'),  # Normalize 'Township of X' to 'X Township'
     (r',castle', ' castle'),  # -  remove extra comma
     (r',palace', ' palace'),  # -  remove extra comma
     (r"'(\w{2,})'", r"\g<1>"),  # remove single quotes around word, but leave apostrophe
@@ -176,9 +183,10 @@ alias_list = {
     }
 
 
+@functools.lru_cache(maxsize=CACHE_SIZE)
 def normalize(text: str, remove_commas: bool) -> str:
     """
-    Normalize text - Convert from UTF-8 to lowercase ascii.  
+    Normalize text - Convert to lowercase ascii, remove most punctuation, apply replacements in phrase_cleanup list
     Remove commas if parameter set.   
     Remove all non alphanumeric except $ and *  
     Then call _phrase_normalize() which normalizes common phrases with multiple spellings, such as saint to st   
@@ -196,22 +204,21 @@ def normalize(text: str, remove_commas: bool) -> str:
 
     # remove all non alphanumeric except $ and * and comma(if flag set)
     if remove_commas:
-        text = re.sub(r"[^a-z0-9 $*']+", " ", text)
+        text = sub(r"[^a-z0-9 $*']+", " ", text)
     else:
-        text = re.sub(r"[^a-z0-9 $*,']+", " ", text)
+        text = sub(r"[^a-z0-9 $*,']+", " ", text)
 
     text = _phrase_normalize(text)
-    return text.strip(' ')
+    return text.strip()
 
 
-def normalize_for_scoring(text: str, iso: str) -> str:
+@functools.lru_cache(maxsize=CACHE_SIZE)
+def normalize_for_scoring(text: str) -> str:
     """
-        Normalize the text we use to determine how close a match we got. 
+        Normalize the text for closeness scoring.  Apply normal normalization and then replacements for scoring_noise_words
 
     #Args:
         text: text to normalize
-        iso: ISO country code
-
     #Returns:
 
     """
@@ -225,7 +232,7 @@ def _phrase_normalize(text: str) -> str:
     # Replacement patterns to clean up entries
 
     for pattern, replace in phrase_cleanup:
-        text = re.sub(pattern, replace, text)
+        text = sub(pattern, replace, text)
 
     return text
 
@@ -234,27 +241,27 @@ def admin1_normalize(admin1_name: str, iso):
     """ Normalize historic or colloquial Admin1 names to current geoname standard """
     admin1_name = normalize(admin1_name, False)
     if iso == 'de':
-        admin1_name = re.sub(r'bayern', 'bavaria', admin1_name)
-        admin1_name = re.sub(r'westphalia', 'westfalen', admin1_name)
+        admin1_name = sub(r'bayern', 'bavaria', admin1_name)
+        admin1_name = sub(r'westphalia', 'westfalen', admin1_name)
     elif iso == 'fr':
-        admin1_name = re.sub(r'normandy', 'normandie', admin1_name)
-        admin1_name = re.sub(r'brittany', 'bretagne', admin1_name)
-        admin1_name = re.sub(r'burgundy', 'bourgogne franche comte', admin1_name)
-        admin1_name = re.sub(r'franche comte', 'bourgogne franche comte', admin1_name)
-        admin1_name = re.sub(r'aquitaine', 'nouvelle aquitaine', admin1_name)
-        admin1_name = re.sub(r'limousin', 'nouvelle aquitaine', admin1_name)
-        admin1_name = re.sub(r'poitou charentes', 'nouvelle aquitaine', admin1_name)
-        admin1_name = re.sub(r'alsace', 'grand est', admin1_name)
-        admin1_name = re.sub(r'champagne ardenne', 'grand est', admin1_name)
-        admin1_name = re.sub(r'lorraine', 'grand est', admin1_name)
-        admin1_name = re.sub(r'languedoc roussillon', 'occitanie', admin1_name)
-        admin1_name = re.sub(r'midi pyrenees', 'occitanie', admin1_name)
-        admin1_name = re.sub(r'nord pas de calais', 'hauts de france', admin1_name)
-        admin1_name = re.sub(r'picardy', 'hauts de france', admin1_name)
-        admin1_name = re.sub(r'auvergne', 'auvergne rhone alpes', admin1_name)
-        admin1_name = re.sub(r'rhone alpes', 'auvergne rhone alpes', admin1_name)
+        admin1_name = sub(r'normandy', 'normandie', admin1_name)
+        admin1_name = sub(r'brittany', 'bretagne', admin1_name)
+        admin1_name = sub(r'burgundy', 'bourgogne franche comte', admin1_name)
+        admin1_name = sub(r'franche comte', 'bourgogne franche comte', admin1_name)
+        admin1_name = sub(r'aquitaine', 'nouvelle aquitaine', admin1_name)
+        admin1_name = sub(r'limousin', 'nouvelle aquitaine', admin1_name)
+        admin1_name = sub(r'poitou charentes', 'nouvelle aquitaine', admin1_name)
+        admin1_name = sub(r'alsace', 'grand est', admin1_name)
+        admin1_name = sub(r'champagne ardenne', 'grand est', admin1_name)
+        admin1_name = sub(r'lorraine', 'grand est', admin1_name)
+        admin1_name = sub(r'languedoc roussillon', 'occitanie', admin1_name)
+        admin1_name = sub(r'midi pyrenees', 'occitanie', admin1_name)
+        admin1_name = sub(r'nord pas de calais', 'hauts de france', admin1_name)
+        admin1_name = sub(r'picardy', 'hauts de france', admin1_name)
+        admin1_name = sub(r'auvergne', 'auvergne rhone alpes', admin1_name)
+        admin1_name = sub(r'rhone alpes', 'auvergne rhone alpes', admin1_name)
     elif iso == 'ca':
-        admin1_name = re.sub(r'brunswick', 'brunswick*', admin1_name)
+        admin1_name = sub(r'brunswick', 'brunswick*', admin1_name)
 
     return admin1_name
 
@@ -275,7 +282,7 @@ def admin2_normalize(admin2_name: str, iso) -> (str, bool):
     mod = False
 
     if iso == 'gb':
-        admin2_name = re.sub(r'breconshire', 'sir powys', admin2_name)
+        admin2_name = sub(r'breconshire', 'sir powys', admin2_name)
         mod = True
 
     return admin2_name, mod
@@ -289,7 +296,7 @@ def country_normalize(country_name) -> (str, bool):
     result - new string
     modified - True if modified
     """
-    country_name = re.sub(r'\.', '', country_name)  # remove .
+    country_name = sub(r'\.', '', country_name)  # remove .
 
     if local_country_names.get(country_name):
         country_name = local_country_names.get(country_name)
@@ -301,29 +308,30 @@ def country_normalize(country_name) -> (str, bool):
 def feature_normalize(feature, name, pop: int):
     # Set city feature based on population and cleanup features for RUIN and HSTS
     feat = feature
-
-    # Create new Feature codes based on city population
-    if pop > 1000000 and 'PP' in feature:
-        feat = 'PP1M'
-    elif pop > 100000 and 'PP' in feature:
-        feat = 'P1HK'
-    elif pop > 10000 and 'PP' in feature:
-        feat = 'P10K'
-
-    if feature == 'AREA':
-        if 'island' in name:
-            feat = 'ISL'
-
-    # Set feature type for Abbey/Priory, Castle, and Church if feature is RUIN or HSTS and name matches
-    if feature == 'HSTS' or feature == 'RUIN':
-        if 'abbey' in name :
-            feat = 'MSTY' 
-        elif 'priory' in name:
-            feat = 'MSTY' 
-        elif 'castle' in name:
-            feat = 'CSTL'
-        elif 'church' in name:
-            feat = 'CH' 
+    if 'PP' == feat[0:2] or feat in {'HSTS', 'RUIN', 'AREA'}:
+        # Create new Feature codes based on city population
+        if pop > 1000000 and 'PP' == feat[0:2]:
+            feat = 'PP1M'
+        elif pop > 100000 and 'PP' == feat[0:2]:
+            feat = 'P1HK'
+        elif pop > 10000 and 'PP' == feat[0:2]:
+            feat = 'P10K'
+    
+        if feat == 'AREA':
+            if 'island' in name:
+                feat = 'ISL'
+    
+        # Set feature type for Abbey/Priory, Castle, and Church if feature is RUIN or HSTS and name matches
+        if feat == 'HSTS' or feat == 'RUIN':
+            if 'abbey' in name :
+                feat = 'MSTY' 
+            elif 'priory' in name:
+                feat = 'MSTY' 
+            elif 'castle' in name:
+                feat = 'CSTL'
+            elif 'church' in name:
+                feat = 'CH' 
+                
     return feat
 
 
@@ -342,14 +350,13 @@ def stop_words_last(item):
         return '{' + item
     return item
 
-
 def sorted_normalize(text):
     # Remove l' and d'  
-    text = re.sub(r"l\'", "", text)
-    text = re.sub(r"d\'", "", text)
+    text = sub(r"l\'", "", text)
+    text = sub(r"d\'", "", text)
 
     # Modify phrase X of Y to be Y X.  County of Whitley becomes Whitley County
-    text = re.sub('([^,]+) of ([^,]+)', r'\g<2> \g<1>', text)
+    text = sub('([^,]+) of ([^,]+)', r'\g<2> \g<1>', text)
 
     # Force stop words to sort at end of list so wildcard will find phrases without them  (East, West, North, South)
     # North Haden becomes Haden North and Haden% will match it.
@@ -360,13 +367,13 @@ def sorted_normalize(text):
 def _remove_noise_words(text: str):
     # Calculate score with noise words removed    
     for pattern, replace in scoring_noise_words:
-        text = re.sub(pattern, replace, text)
+        text = sub(pattern, replace, text)
     return text
 
 
 def remove_aliase(input_words, res_words) -> (str, str):
     if "middlesex" in input_words and "greater london" in res_words:
-        input_words = re.sub('middlesex', 'greater london', input_words)
+        input_words = sub('middlesex', 'greater london', input_words)
     return input_words, res_words
 
 

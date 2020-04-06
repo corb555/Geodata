@@ -1,10 +1,4 @@
-import re
+def inc_key(text):
+    return  text[0:-1] + chr(ord(text[-1]) + 1)
 
-names = [
-    'mt kisco',
-    'kamtown',
-    ]
-
-for text in names:
-    text = re.sub(r'^mt ', 'mount ', text)
-    print (text)
+print(inc_key('apple'))

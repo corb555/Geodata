@@ -19,13 +19,9 @@
 """Calculate a heuristic score for how well a result place name matches a target place name."""
 import copy
 import logging
-
-# import python-Levenshtein 
-
 import time
 
 from rapidfuzz import fuzz
-
 
 from geodata import Loc, Normalize, Geodata, GeoUtil, GeoSearch
 
@@ -97,6 +93,7 @@ class MatchScore:
         if self.feature_weight > 1.0:
             self.logger.error('Feature weight must be less than 1.0')
         self.input_weight = 1.0 - feature_weight
+        
 
     def match_score(self, target_place: Loc, result_place: Loc) -> float:
         """
@@ -141,7 +138,7 @@ class MatchScore:
 
         # Remove items in prefix that are in result
         if target_place.place_type != Loc.PlaceType.ADVANCED_SEARCH:
-            target_place.prefix = Normalize.normalize_for_scoring(target_place.prefix, target_place.country_iso)
+            target_place.prefix = Normalize.normalize_for_scoring(target_place.prefix)
             result_name = result_place.get_long_name(None)
             target_place.prefix = Loc.Loc.prefix_cleanup(target_place.prefix, result_name)
         else:
@@ -286,7 +283,7 @@ def _calculate_prefix_penalty(prefix):
         # reduce penalty if prefix is a street (contains digits or 'street' or 'road')
         penalty = 5 + prefix_len
         if GeoUtil.is_street(prefix):
-            penalty *= 0.2
+            penalty *= 0.1
     else:
         penalty =  0
         
@@ -307,7 +304,7 @@ def full_normalized_title(place: Loc) -> str:
     # Clean up prefix - remove any words that are in city, admin1 or admin2 from Prefix
     #place.prefix = Loc.Loc.matchscore_prefix(place.prefix, place.get_long_name(None))
     title = place.get_five_part_title()
-    title = Normalize.normalize_for_scoring(title, place.country_iso)
+    title = Normalize.normalize_for_scoring(title)
     return title
 
 

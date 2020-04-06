@@ -71,7 +71,7 @@ class Loc:
         self.feature: str = ''  # Geoname feature code
         self.place_type: int = PlaceType.COUNTRY  # Is this a Country , Admin1 ,admin2 or city?
         self.geoid: str = ''  # Geoname GEOID
-        self.enclosed_by = ''   # The entity that encloses this.  E.g United States encloses Texas
+        self.enclosed_by = ''  # The entity that encloses this.  E.g United States encloses Texas
         self.updated_entry = ''
         self.score = 100.0
 
@@ -113,7 +113,7 @@ class Loc:
 
         self.georow_list.clear()
 
-    def parse_place(self, place_name: str, geo_db:GeoDB.GeoDB):
+    def parse_place(self, place_name: str, geo_db: GeoDB.GeoDB):
         """
             Given a comma separated place name,   
             parse into its city, admin1, country and type of entity (city, country etc)   
@@ -152,16 +152,18 @@ class Loc:
             self.logger.debug('filter')
             self.get_filter_parameters(place_name)
             return
-        
+
         if token_count > 0:
             #  COUNTRY - right-most token should be country
             self.country_name = Normalize.normalize(tokens[-1], False)
 
             # Validate country
-            #self.logger.debug(f'1) Find COUNTRY [{self.country_name}] *******')
-            self.country_iso = geo_db.s.get_country_iso(self.georow_list, self.country_name, self)  # Get Country country_iso
+            self.country_iso = geo_db.s.get_country_iso(self.country_name)  # Get Country country_iso
+            self.logger.debug(f'1) Lookup COUNTRY [{self.country_name}] Found ISO [{self.country_iso}] *******')
+
             if self.country_iso != '':
                 self.place_type = PlaceType.COUNTRY
+                self.result_type = GeoUtil.Result.PARTIAL_MATCH
             else:
                 # Last token is not COUNTRY.
                 # Append dummy token  so we now have <tokens>, x
@@ -169,29 +171,33 @@ class Loc:
                 token_count = len(tokens)
                 self.result_type = GeoUtil.Result.NO_COUNTRY
                 self.country_name = ''
-            #self.logger.debug(f'ISO =[{self.country_iso}]')
+            # self.logger.debug(f'ISO =[{self.country_iso}]')
         if token_count > 1:
             #  See if 2nd to last token is Admin1
             val = tokens[-2]
-            #self.logger.debug(f'ADM1 tkn-2 [{val}]')
+            self.logger.debug(f'Get ADM1 from tkn-2 [{val}]')
             self.admin1_name = Normalize.admin1_normalize(val, self.country_iso)
 
             if len(self.admin1_name) > 0:
                 # Lookup Admin1
-                #self.logger.debug(f'2) Find ADMIN1 [{self.admin1_name}] *******')
+                self.logger.debug(f'2) Find ADMIN1 [{self.admin1_name}] *******')
                 row_list = []
-                geo_db.s.get_admin1_id(self.admin1_name, self, row_list)
+                self.admin1_id = geo_db.s.get_admin1_id(self.admin1_name, self.country_iso)
                 if self.admin1_id != '':
                     # Found Admin1
                     self.place_type = PlaceType.ADMIN1
                     self.georow_list = row_list
-                    self.admin1_name = geo_db.s.get_admin1_name(self.admin1_id, self.country_iso)
-                    #self.logger.debug(f'adm1 nm={self.admin1_name}')
+                    # self.admin1_name = geo_db.s.get_admin1_name(self.admin1_id, self.country_iso)
+                    # self.logger.debug(f'adm1 nm=[{self.admin1_name}]\nGet ISO')
+                    self.logger.debug(f'2) Find iso for admin1 id [{self.admin1_id}] *******')
+
+                    self.country_iso = geo_db.s.get_iso_from_admin1_id(self.admin1_id, self.country_iso)
+
                     self.result_type = GeoUtil.Result.PARTIAL_MATCH
                     # Get country if blank
                     row_list = []
                     if self.country_name == '':
-                        self.country_name = geo_db.s.get_country_name(self.country_iso, row_list) 
+                        self.country_name = geo_db.s.get_country_name(self.country_iso, row_list)
                 else:
                     # Last token is not Admin1 - append dummy token so we have <tokens>, admin1, country
                     self.admin1_name = ''
@@ -201,7 +207,7 @@ class Loc:
             else:
                 tokens[-2] = '_'
 
-        # Last two tokens are now Admin1, Country (although they may be '_')
+        # Last two tokens are now Admin1, Country (although they may have dummy value '_')
         # If >2 tokens:  Put first non-blank token in City and in Prefix
         # If >3 tokens:  Put second non-blank token in Admin2 and also append to Prefix
 
@@ -218,10 +224,10 @@ class Loc:
             # Also place token[0] into Prefix
             if '*' not in tokens[0]:
                 self.prefix = str(tokens[0].strip(' '))
-                
+
         if token_count >= 4:
             #  Admin2 is 2nd.  Note -  if Admin2 isnt found, it will look it up as city
-            
+
             if GeoUtil.is_street(tokens[-4].lower()):
                 #  Format: Prefix, City, Admin1, Country
                 self.city = Normalize.normalize(tokens[-3], False)
@@ -229,7 +235,7 @@ class Loc:
                 #  Format: City, Admin2, Admin1, Country
                 self.admin2_name = Normalize.normalize(tokens[-3], False)
                 self.city = Normalize.normalize(tokens[-4], False)
-                
+
             self.place_type = PlaceType.CITY
 
             # put token[0] and  token[1] into Prefix
@@ -268,7 +274,7 @@ class Loc:
         parser.add_argument("-f", "--feature", help=argparse.SUPPRESS)
         parser.add_argument("-i", "--iso", help=argparse.SUPPRESS)
         parser.add_argument("-c", "--country", help=argparse.SUPPRESS)
-        self.logger.debug(f'Args {args}' )
+        self.logger.debug(f'Args {args}')
 
         try:
             options = parser.parse_args(args)
@@ -286,7 +292,7 @@ class Loc:
                 self.logger.debug(f'ft {self.feature}')
         except Exception as e:
             self.logger.debug(e)
-            
+
         self.logger.debug(f"    ======= PARSE ADV: {place_name} \nCity [{self.city}] Adm2 [{self.admin2_name}]"
                           f" Adm1 [{self.admin1_name}] adm1_id [{self.admin1_id}] Cntry [{self.country_name}] Pref=[{self.prefix}]"
                           f" type_id={self.place_type} iso={self.country_iso} feat={self.feature}")
@@ -304,7 +310,7 @@ class Loc:
 
     def add_commas(self, txt) -> str:
         if txt == '':
-                return ''
+            return ''
         else:
             return f'{txt}, '
 
@@ -334,10 +340,13 @@ class Loc:
         #Returns:  
             long name  
         """
+
+        # Put in appropriate commas
         city = self.add_commas(self.city)
         admin2 = self.add_commas(self.admin2_name)
         admin1 = self.add_commas(self.admin1_name)
 
+        # Format name based on place type
         if self.place_type == PlaceType.COUNTRY:
             nm = f"{self.country_name}"
         elif self.place_type == PlaceType.ADMIN1:
@@ -347,7 +356,7 @@ class Loc:
         else:
             nm = f"{city}{admin2}{admin1}{str(self.country_name)}"
 
-        # normalize prefix
+        # Normalize prefix
         self.prefix = Normalize.normalize(self.prefix, False)
 
         if len(self.prefix) > 0:
@@ -363,7 +372,7 @@ class Loc:
                 nm = re.sub(key, replace_dct[key], nm)
 
         return nm
-    
+
     def get_display_name(self, replace_dct) -> str:
         """
         Take the fields in a Place and build full name.  See if alternate name is available
@@ -374,10 +383,10 @@ class Loc:
         #Returns:  
             long name  
         """
-        
+
         # See if there is an alternate name for this
-        #city, lang = self.geo_db.s.get_alternate_name(self.geoid)
-        #if city == '':
+        # city, lang = self.geo_db.s.get_alternate_name(self.geoid)
+        # if city == '':
         city = self.city
         city = self.add_commas(city)
         admin2 = self.add_commas(self.admin2_name)
@@ -583,9 +592,11 @@ class Loc:
             nm = ''
         return nm
 
-    def update_names(self,  dct):
+    def update_names(self, dct):
+        self.logger.debug(f'pref bef=[{self.prefix}]')
         prfx = self.prefix_cleanup(self.prefix, self.get_long_name(dct))
         self.updated_entry = GeoUtil.capwords(prfx) + self.get_long_name(dct)
+        self.logger.debug(f'updated_entry=[{self.updated_entry}]')
 
 
 def remove_item(pattern, text) -> str:
