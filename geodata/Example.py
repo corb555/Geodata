@@ -35,7 +35,7 @@ class Example:
 
     def __init__(self):
         # If dbg is True then lookup dbg_locations list with DEBUG logging.  Otherwise lookup locations list with INFO logging
-        self.dbg = True
+        self.dbg = False
         # Set up standard logging.  
         logging.getLogger(__name__)
         fmt = "%(levelname)s %(name)s.%(funcName)s %(lineno)d: %(message)s"

@@ -82,8 +82,17 @@ class MultiRegex():
         patt = '|'.join(expression)
         # print(f'patt = {patt}')
         self.patt = re.compile(f"{patt}")
-
+        
     def sub(self, text: str, lower=True, set_ascii=True):
+        attempts = 3
+        while attempts > 0:
+            no_match, text = self._sub(text, lower, set_ascii)
+            attempts -= 1
+            if no_match:
+                break
+        return text
+
+    def _sub(self, text: str, lower=True, set_ascii=True):
         """
         Apply regex substitutions in list
         Args:
@@ -91,8 +100,9 @@ class MultiRegex():
             lower: If True,  convert to lowercase before Regex
             set_ascii: If True, Convert unicode characters to ascii
         Returns:
-            text as modified by Regex in dictionary
+            (no_match, text) - no_match==True if no match.  text as modified by Regex in dictionary
         """
+        no_match = True
         if set_ascii:
             text = unidecode.unidecode(text)
 
@@ -105,11 +115,11 @@ class MultiRegex():
                 for g in m.groupdict():
                     if m.group(g):
                         idx = int(g[1:])
-                        # print(f'{self.rgx[idx]} {m.group(g)}')
                         # Re found a match, perform the substitution
                         text = re.sub(self.rgx[idx][0], self.rgx[idx][1], text)
+                        no_match = False
             # print(m.groupdict())
-        return text
+        return no_match, text
 
 
 def get_directory_name() -> str:
@@ -257,7 +267,6 @@ feature_list = ["ADM1", "ADM2", "ADM3", "ADM4", "ADMF", "AREA", "CH", "CSTL", "C
 
 feature_mapping = {
     # If location has item below, then derive its feature type
-    'st'                            : 'RLG',
     'kapelle'                       : 'RLG',
     'chapel'                        : 'RLG',
     'kirche'                        : 'RLG',
@@ -280,6 +289,7 @@ feature_mapping = {
     'monastery'                     : "RLG",
     'synagogue'                     : "RLG",
     'abbey'                         : "RLG",
+    'abbaye'                        : "RLG",
     'priory'                        : "RLG",
 
     'castle'                        : 'CSTL',

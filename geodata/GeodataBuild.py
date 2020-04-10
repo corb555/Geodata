@@ -273,8 +273,6 @@ class GeodataBuild:
             # Add name to dictionary.  Used by AlternateNames for faster lookup during DB build
             self.geoid_main_dict[geo_tuple[Entry.ID]] = row_id
 
-        if 'beconshire' in geo_tuple:
-            self.logger.debug(f'insert [{sql}] [{geo_tuple}')
         return row_id
         
     def open_geodb(self, repair_database: bool, query_limit:int) -> bool:
@@ -362,9 +360,16 @@ class GeodataBuild:
         """
         if normalize:
             geo_row[GeoSearch.Entry.NAME] = self.norm.normalize(name, remove_commas=True)
+            # todo remove test
+            #if 'saint ' in geo_row[GeoSearch.Entry.NAME]:
+            #    print(geo_row)
+            #    xx = xyz
         else:
             geo_row[GeoSearch.Entry.NAME] = name.lower()
-
+            #if 'saint ' in geo_row[GeoSearch.Entry.NAME]:
+            #    print(geo_row)
+            #    xx = xyz
+            
         geo_row[GeoSearch.Entry.SDX] = GeoSearch.get_soundex(geo_row[GeoSearch.Entry.NAME])
 
     def insert_georow(self, geoname_row):
@@ -379,7 +384,6 @@ class GeodataBuild:
         """
         geo_row = [None] * GeoSearch.Entry.MAX
         self.update_geo_row_name(geo_row=geo_row, name=geoname_row.name)
-
         geo_row[GeoSearch.Entry.ISO] = geoname_row.iso.lower()
         geo_row[GeoSearch.Entry.ADM1] = geoname_row.admin1_id
         geo_row[GeoSearch.Entry.ADM2] = geoname_row.admin2_id

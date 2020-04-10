@@ -1,10 +1,10 @@
-from geodata import GeoUtil
+from geodata import GeoUtil, Normalize
 
 places = [
     '12 baker st, Man!@#%^&(chester, , England',  # punctuation
     'department kathedrale of westphalia kommune ',  # normandie
-    'calhoun co.',
-    'county of sveti westphalia',  # county of
+    'archipel de saint augustin',
+    'Le Mont Saint Michel',  # county of
     ]
 
 
@@ -14,7 +14,7 @@ noise_words = [
     (r'normandy american '                     , 'normandie american '),
     (r'nouveau brunswick'                      , ' '),
     (r'westphalia'                             , 'westfalen'),
-    (r' departement'                           , ' department'),
+    (r'departement'                            , 'department'),
     (r'royal borough of windsor and maidenhead', 'berkshire'),
     (r'regional municipality'                  , 'county'),
     (r'kathedrale'                             , 'cathedral'),
@@ -70,6 +70,18 @@ phrase_cleanup = [
 
     (r"'(\w{2,})'"                                      , r"\g<1>"),  # remove single quotes around word, but leave apostrophes
     ]
+
+
+no_punc_remove_commas = [
+    # Regex to remove most punctuation including commas
+    (r"[^a-z0-9 $*']+", " ")
+    ]
+
+no_punc_keep_commas = [
+    # Regex to remove most punctuation but keep commas
+    (r"[^a-z0-9 $*,']+" , " ")
+    ]
+
 """
     r"[^a-z0-9 $*,']+" , " "
 
@@ -81,8 +93,15 @@ phrase_cleanup = [
 # noise_rgx  - Combine phrase dictionary with Noise words dictionary and compile regex (this is used for match scoring)
 # keys = sorted(dct.keys(), key=len, reverse=True)
 
-noise_rgx = GeoUtil.MultiRegex(phrase_cleanup + noise_words)
+phrase_rgx_keep_commas = GeoUtil.MultiRegex(no_punc_keep_commas + phrase_cleanup)
+phrase_rgx_remove_commas = GeoUtil.MultiRegex(no_punc_remove_commas + phrase_cleanup)
+
+
+#noise_rgx = GeoUtil.MultiRegex(phrase_cleanup + noise_words)
+norm = Normalize.Normalize()
 
 for txt in places:
     print(f'==== {txt} ====')
-    print(f'  RESULT {noise_rgx.sub(txt, lower=True, set_ascii=True)}')
+    print(f'  RESULT {phrase_rgx_remove_commas.sub(txt, lower=True, set_ascii=True)}')
+    print(f' RESULT2 {norm.normalize(txt, False)}')
+    

@@ -45,6 +45,8 @@ stop_words = {
     'south',
     'the',
     'of',
+    'de',
+    'du',
     'town',
     'city',
     'county',
@@ -70,7 +72,7 @@ noise_words = [
     (r'normandy american '                     , 'normandie american '),
     (r'nouveau brunswick'                      , ' '),
     (r'westphalia'                             , 'westfalen'),
-    (r' departement'                           , ' department'),
+    (r'departement'                            , 'department'),
     (r'royal borough of windsor and maidenhead', 'berkshire'),
     (r'regional municipality'                  , 'county'),
     (r'kathedrale'                             , 'cathedral'),
@@ -228,18 +230,12 @@ class Normalize:
             Normalized text
     
         """
-        
-        # Convert UT8 to ascii
-        #text = unidecode.unidecode(text)
-        #text = str(text).lower()
     
         # remove all non alphanumeric except $ and * and comma(if flag set)
         if remove_commas:
             text = self.phrase_rgx_remove_commas.sub(text)
         else:
             text = self.phrase_rgx_keep_commas.sub(text)
-
-        #text = self._phrase_normalize(text)
         
         return text.strip()
     
