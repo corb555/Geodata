@@ -28,11 +28,12 @@ from geodata import Loc, Normalize, Geodata, GeoUtil, GeoSearch
 
 class Score:
     VERY_GOOD = 4
-    STRONG_CUTOFF = VERY_GOOD + 8
     GOOD = 35
     POOR = 65
     VERY_POOR = 90
-
+    
+    STRONG_CUTOFF = VERY_GOOD + 8
+    POOR_CUTOFF = POOR - 20
 
 COUNTRY_IDX = 4
 ADMIN1_IDX = 3
@@ -54,10 +55,11 @@ class MatchScore:
 
         # Weighting for each input term match -  adm2, adm1, country
         token_weights = [.2, .3, .5]
-        self.set_weighting(token_weight=token_weights, prefix_weight=5.0, feature_weight=0.05)
+        self.set_weighting(token_weight=token_weights, prefix_weight=6.0, feature_weight=0.3)
 
         # Weighting for each part of score
         self.wildcard_penalty = 8.0
+        self.norm = Normalize.Normalize()
 
     def _calculate_wildcard_score(self, original_entry) -> float:
         if '*' in original_entry:
@@ -94,8 +96,19 @@ class MatchScore:
             self.logger.error('Feature weight must be less than 1.0')
         self.input_weight = 1.0 - feature_weight
         
+    def fast_score(self, target_place: Loc, result_place: Loc) -> float:
+        # Get a rough, fast score for similarity between target and result.  O is best.  100 is worst
+        result_title = result_place.get_five_part_title()  
+        target_title = target_place.get_five_part_title()  
+        #self.logger.debug(f'F Score  Result [{result_title}] targ [{target_title}] ')
 
-    def match_score(self, target_place: Loc, result_place: Loc) -> float:
+        sc = 100 - fuzz.token_sort_ratio(result_title, target_title)
+        
+        #self.logger.debug(f'F Score={sc:.2f} Result [{result_title}] targ [{target_title}] ')
+        return sc
+        
+
+    def match_score(self, target_place: Loc, result_place: Loc, fast=False) -> float:
         """
             Calculate a heuristic score for how well a result place name matches a target place name.  The score is based on
             percent of characters that didnt match in input and output (plus other items described below).
@@ -105,7 +118,7 @@ class MatchScore:
 
             A) Heuristic:
             1) Create 5 part title (prefix, city, county, state/province, country)
-            2) Normalize text - Normalize.normalize_for_scoring()
+            2) Normalize text - self.norm.normalize_for_scoring()
             3) Remove sequences of 2 chars or more that match in target and result
             4) Calculate inscore - percent of characters in input that didn't match result.  Weight by term (city,,county,state,ctry)
                     Exact match of city term gets a bonus
@@ -131,6 +144,9 @@ class MatchScore:
         # Returns:
             score
         """
+        if fast:
+            return self.fast_score(target_place, result_place)
+
         self.score_diags = ''  # Diagnostic text for scoring
         self.timing = 0
         save_prefix = target_place.prefix
@@ -138,14 +154,14 @@ class MatchScore:
 
         # Remove items in prefix that are in result
         if target_place.place_type != Loc.PlaceType.ADVANCED_SEARCH:
-            target_place.prefix = Normalize.normalize_for_scoring(target_place.prefix)
+            target_place.prefix = self.norm.normalize_for_scoring(target_place.prefix)
             result_name = result_place.get_long_name(None)
-            target_place.prefix = Loc.Loc.prefix_cleanup(target_place.prefix, result_name)
+            target_place.prefix = Loc.Loc.fast_prefix(target_place.prefix, result_name)
         else:
             target_place.updated_entry = target_place.get_long_name(None)
 
         # Create full, normalized titles (prefix,city,county,state,country)
-        result_title, result_tokens, target_title, target_tokens = _prepare_input(target_place, result_place)
+        result_title, result_tokens, target_title, target_tokens = self._prepare_input(target_place, result_place)
         #self.logger.debug(f'Res [{result_tokens}] Targ [{target_tokens}] ')
         
         # Calculate Prefix score.  Prefix is not used in search and longer is generally worse 
@@ -164,11 +180,11 @@ class MatchScore:
         score: float = in_score * self.input_weight + feature_score * self.feature_weight + \
                        prefix_score * self.prefix_weight + wildcard_score
 
-        #self.logger.debug(f'SCORE {score:.1f} res=[{result_title}] pref=[{target_place.prefix}]'   
-        #                  f'inSc={in_score * self.input_weight:.1f}% feat={feature_score * self.feature_weight:.1f} {result_place.feature}  '
-        #                  f'wild={wildcard_score} pref={prefix_score * self.prefix_weight:.1f}')
+        self.logger.debug(f'SCORE {score:.1f} res=[{result_title}] pref=[{target_place.prefix}]'   
+                          f'inSc={in_score * self.input_weight:.1f}% feat={feature_score * self.feature_weight:.1f} {result_place.feature}  '
+                          f'wild={wildcard_score} pref={prefix_score * self.prefix_weight:.1f}')
 
-        #self.logger.debug(self.score_diags)
+        self.logger.debug(self.score_diags)
         target_place.prefix = save_prefix
 
         return score + 8
@@ -176,7 +192,9 @@ class MatchScore:
     def _calculate_weighted_score(self, target_tokens: [], result_tokens: []) -> float:
         # Get score with tokens as is
         sc = self._weighted_score(target_tokens, result_tokens)
+        return sc
 
+        """ 
         # Get score with city and admin2 reversed
         sc2 = 1000.0
 
@@ -188,6 +206,7 @@ class MatchScore:
     
             sc2 = self._weighted_score(target_tokens, result_tokens) + 5.0
         return min(sc, sc2)
+        """
 
     def _weighted_score(self, target_tokens: [], result_tokens: []) -> float:
         num_inp_tokens = 0.0
@@ -246,18 +265,9 @@ class MatchScore:
                     else:
                         value = 0
 
-                    #self.logger.debug(txt)
-
-                    
-                #if  idx >0:
-                #    self.logger.debug(f'  {idx})  [{target_tokens[idx]}] [{result_tokens[idx]}]  val={value}')
-                
-                #if '*' in segment:
-                    # Add penalty if wildcard is in segment
-                    #value += 100.0
                 score += value * token_weight[idx]
                 num_inp_tokens += token_weight[idx]
-                self.score_diags += f'  {idx}) {value} [{result_tokens[idx]}]'
+                self.score_diags += f'  {idx}) {value:.1f} [{result_tokens[idx]}]'
             else:
                 #self.logger.warning(f'Short Result len={len(result_tokens)} targ={target_tokens[idx]}')
                 pass
@@ -275,6 +285,23 @@ class MatchScore:
         # Currently just pass thru score
         return score
 
+    def full_normalized_title(self, place: Loc) -> str:
+        # Create a full normalized five part title (includes prefix)
+        # Clean up prefix - remove any words that are in city, admin1 or admin2 from Prefix
+        # place.prefix = Loc.Loc.matchscore_prefix(place.prefix, place.get_long_name(None))
+        title = place.get_five_part_title()
+        title = self.norm.normalize_for_scoring(title)
+        return title
+
+    def _prepare_input(self, target_place: Loc, result_place: Loc):
+        # Create full, normalized  title (prefix,city,county,state,country)
+        result_title = self.full_normalized_title(result_place)
+        target_title = self.full_normalized_title(target_place)
+        target_title, result_title = self.norm.remove_aliase(target_title, result_title)
+        result_tokens = result_title.split(',')
+        target_tokens = target_title.split(',')
+        return result_title, result_tokens, target_title, target_tokens
+
 
 def _calculate_prefix_penalty(prefix):
     # If the location has a prefix, it is not as good a match
@@ -288,25 +315,6 @@ def _calculate_prefix_penalty(prefix):
         penalty =  0
         
     return penalty
-
-
-def _prepare_input(target_place: Loc, result_place: Loc):
-    # Create full, normalized  title (prefix,city,county,state,country)
-    result_title = full_normalized_title(result_place)
-    target_title = full_normalized_title(target_place)
-    target_title, result_title = Normalize.remove_aliase(target_title, result_title)
-    result_tokens = result_title.split(',')
-    target_tokens = target_title.split(',')
-    return result_title, result_tokens, target_title, target_tokens
-
-def full_normalized_title(place: Loc) -> str:
-    # Create a full normalized five part title (includes prefix)
-    # Clean up prefix - remove any words that are in city, admin1 or admin2 from Prefix
-    #place.prefix = Loc.Loc.matchscore_prefix(place.prefix, place.get_long_name(None))
-    title = place.get_five_part_title()
-    title = Normalize.normalize_for_scoring(title)
-    return title
-
 
 def remove_if_input_empty(target_tokens, res_tokens):
     # Remove terms in Result if input for that term was empty

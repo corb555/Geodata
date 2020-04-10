@@ -21,15 +21,6 @@
 import re
 
 
-class TypZZZZZ:
-    ADMIN2 = 1
-    COUNTRY = 3
-    ADMIN1_ID = 4
-    ADMIN2_ID = 5
-    ADMIN1_ALT_NAME = 6
-    GEOID = 7
-
-
 class QueryItem:
     def __init__(self):
         self.where = ''
@@ -42,7 +33,7 @@ class QueryItem:
 
     def add_clauses(self, where_clauses: [str], terms: [], table=''):
         """
-        Create a Where clause (and args) by appending each item in clause with AND as separator
+        Create a Where clause (and args list) by appending each item in clause with AND as separator
         Use equal, unless there is an '*', then use LIKE type clause
         Args:
             where_clauses: list of column names
@@ -67,6 +58,7 @@ class QueryItem:
                     self.where += ' AND '
 
                 if term[-1] == '*':
+                    # TODO handle case with multiple wildcards with one at end
                     # Wildcard search at end of text - Use >= and < (usually gives better performanc than LIKE)
                     term = self.create_wildcard(term, remove=True)
                     self.where += f' ({where_clause} >= ? and {where_clause} < ?) '
@@ -74,7 +66,6 @@ class QueryItem:
                 elif '*' in term:
                     # Wildcard search in middle or start of search - Use LIKE
                     term = self.create_wildcard(term, remove=False)
-
                     self.where += f' ({where_clause} like ?) '
                     self.args += (term,)
                 else:

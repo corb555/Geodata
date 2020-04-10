@@ -26,8 +26,9 @@ import sys
 import time
 from tkinter import messagebox
 
-from geodata import Loc, DB, GeoSearch
+from geodata import Loc, DB, GeoSearch, MatchScore
 from geodata.GeoUtil import Query, Result, Entry
+from geodata import Normalize
 
 
 class GeoDB:
@@ -54,6 +55,9 @@ class GeoDB:
         self.total_time = 0
         self.total_lookups = 0
         self.slow_lookup = 0
+        self.match = MatchScore.MatchScore()
+        self.norm = Normalize.Normalize()
+        
         #self.select_str = 'name, country, admin1_id, admin2_id, lat, lon, feature, geoid, sdx'
         self.db_path = db_path
 
@@ -113,7 +117,7 @@ class GeoDB:
                       result=Result.STRONG_MATCH)]
             select_str = '*'
             row_list = []
-            self.process_query_list(result_list=row_list, select_fields=select_str, from_tbl='main.version', query_list=query_list)
+            self.process_query_list(result_list=row_list, place=None, select_fields=select_str, from_tbl='main.version', query_list=query_list)
             if len(row_list) > 0:
                 ver = int(row_list[0][1])
                 self.logger.debug(f'Database Version = {ver}')
@@ -187,7 +191,7 @@ class GeoDB:
         except IndexError:
             pass
 
-    def process_query_list(self, result_list, select_fields, from_tbl: str, query_list: [Query], 
+    def process_query_list(self, place, result_list, select_fields, from_tbl: str, query_list: [Query],
                            stop_on_match=False, debug=False):
         """
 
@@ -201,25 +205,32 @@ class GeoDB:
 
         """
         # Perform each SQL query in the list
-        result_type = Result.NO_MATCH
+        best_score = 9999
         if result_list is None:
-            return
+            return best_score
 
         for idx, query in enumerate(query_list):
             start = time.time()
 
             row_list = self.db.select(select_fields, query.where, from_tbl,
                                       query.args)
+            
+            if len(row_list) > 0:
+                result_type = query.result
+                if place:
+                    best_score = self._assign_scores(georow_list=row_list, place=place, target_feature=place.feature,
+                                                    fast=True, quiet=False)
+                result_list.extend(row_list)
+
+                if stop_on_match:
+                    break
+                    
             if debug:
                 self.logger.debug(f'{idx}) SELECT from {from_tbl} where {query.where} val={query.args} ')
                 for row in row_list:
                     self.logger.debug(f'   FOUND {row}')
-            result_list.extend(row_list)
 
-            if len(result_list) > 0:
-                result_type = query.result
-                if stop_on_match:
-                    break
+
             #else:
             #    self.logger.debug('     NO MATCH')
 
@@ -234,8 +245,76 @@ class GeoDB:
 
             if len(result_list) > self.max_query_results:
                 self.logger.debug('MAX QUERIES HIT')
+        
+        return best_score
+    
+    def _assign_scores(self, georow_list, place, target_feature, fast=False, quiet=False) -> float:
+        """
+                    Assign match score to each result in list   
+        Args:
+            place: 
+            target_feature: 
+            fast: 
+            quiet: if True, set logging to INFO
 
-        return result_type
+        Returns:
+
+        """
+        result_place: Loc = Loc.Loc()
+        start = time.time()
+
+        best_score = 9999
+        original_prefix = place.prefix
+
+        # If quiet, then only log at INFO level
+        lev = logging.getLogger().getEffectiveLevel()
+        #if quiet:
+        #    logging.getLogger().setLevel(logging.INFO)
+
+        # Add match quality score and prefix to each entry
+        for idx, rw in enumerate(georow_list):
+            place.prefix = original_prefix
+            if len(rw) == 0:
+                continue
+            # self.logger.debug(rw)
+            self.copy_georow_to_place(row=rw, place=result_place, fast=fast)
+            result_place.original_entry = result_place.get_long_name(None)
+            # self.logger.debug(f'plac feat=[{place.feature}] targ=[{target_feature}]')
+            if result_place.feature == target_feature:
+                bonus = 10.0
+            else:
+                bonus = 0
+
+            if len(place.prefix) > 0 and result_place.prefix == '':
+                result_place.prefix = ' '
+            else:
+                result_place.prefix = ''
+
+            score = self.match.match_score(target_place=place, result_place=result_place, fast=fast) - bonus
+            best_score = min(best_score, score)
+
+            # Convert row tuple to list and extend so we can assign score
+            update = list(rw)
+            if len(update) < Entry.SCORE + 1:
+                update.append(1)
+            update[Entry.SCORE] = score
+
+            result_place.prefix = self.norm.normalize(place.prefix, True)
+            update[Entry.PREFIX] = result_place.prefix
+            georow_list[idx] = tuple(update)  # Convert back from list to tuple
+            # self.logger.debug(f'{update[GeoUtil.Entry.SCORE]:.1f} {update[GeoUtil.Entry.NAME]} [{update[GeoUtil.Entry.PREFIX]}]')
+
+        # if len(georow_list) > 0:
+        #    self.logger.debug(f'min={min_score} {georow_list[0]}')
+        if best_score < MatchScore.Score.STRONG_CUTOFF:
+            place.result_type = Result.STRONG_MATCH
+
+        # Restore logging level
+        logging.getLogger().setLevel(lev)
+
+        elapsed = time.time() - start
+        self.logger.debug(f'assign_scores min={best_score} elapsed={elapsed:.3f}')
+        return best_score
 
     def get_row_count(self) -> int:
         """

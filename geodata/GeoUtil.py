@@ -26,6 +26,10 @@ import time
 from difflib import SequenceMatcher
 from functools import wraps
 
+import unidecode
+
+street_patterns = [r'\d', ' street', ' avenue', ' road', 'rue ']
+
 
 class Entry:
     # Database geodata table and admin table entries
@@ -64,6 +68,50 @@ successful_match = [Result.STRONG_MATCH, Result.PARTIAL_MATCH, Result.WILDCARD_M
 Query = collections.namedtuple('Query', 'where args result')
 
 
+class MultiRegex():
+    """
+    list of Regex statements.  MultiRegex.sub(text) will apply all regex substitutions
+    """
+
+    def __init__(self, regex):
+        self.rgx = regex
+        expression = []
+        # Walk thru list and add each pattern as a Regex OR group
+        for idx, item in enumerate(self.rgx):
+            expression.append(f'(?P<G{idx}>{item[0]})')
+        patt = '|'.join(expression)
+        # print(f'patt = {patt}')
+        self.patt = re.compile(f"{patt}")
+
+    def sub(self, text: str, lower=True, set_ascii=True):
+        """
+        Apply regex substitutions in list
+        Args:
+            text: text to be modified
+            lower: If True,  convert to lowercase before Regex
+            set_ascii: If True, Convert unicode characters to ascii
+        Returns:
+            text as modified by Regex in dictionary
+        """
+        if set_ascii:
+            text = unidecode.unidecode(text)
+
+        if lower:
+            text = text.lower()
+
+        for m in self.patt.finditer(text):
+            # print(m)
+            if m.groupdict():
+                for g in m.groupdict():
+                    if m.group(g):
+                        idx = int(g[1:])
+                        # print(f'{self.rgx[idx]} {m.group(g)}')
+                        # Re found a match, perform the substitution
+                        text = re.sub(self.rgx[idx][0], self.rgx[idx][1], text)
+            # print(m.groupdict())
+        return text
+
+
 def get_directory_name() -> str:
     """
     Returns: Name of geodata data directory where geonames.org files are
@@ -80,7 +128,6 @@ def get_cache_directory(basepath):
 
 def is_street(text) -> bool:
     # See if text looks like a street name
-    street_patterns = [r'\d', ' street', ' avenue', ' road', 'rue ']
     for pattern in street_patterns:
         if bool(re.search(pattern, text)):
             return True
@@ -150,7 +197,7 @@ def remove_matching_sequences(text1: str, text2: str, min_len: int) -> (str, str
     # Swap all commas in text2 string to '@'.  This way they will never match comma in text1 string
     # Ensures we don;t remove commas and don't match across tokens
     text2 = re.sub(',', '@', text2)
-    text1, text2 = _remove_matching_seq(text1=text1, text2=text2, attempts=15, min_len=min_len)
+    text1, text2 = _remove_matching_seq(text1=text1, text2=text2, attempts=1, min_len=min_len)
     # Restore commas in text2
     text2 = re.sub('@', ',', text2)
     return text1.strip(' '), text2.strip(' ')
@@ -190,6 +237,7 @@ def get_feature_group(location: str):
 
     return '', ''
 
+
 def timeit_wrapper(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -198,6 +246,7 @@ def timeit_wrapper(func):
         end = time.perf_counter()
         print('{0:<10}.{1:<8} : {2:<8}'.format(func.__module__, func.__name__, end - start))
         return func_return_val
+
     return wrapper
 
 
@@ -208,25 +257,30 @@ feature_list = ["ADM1", "ADM2", "ADM3", "ADM4", "ADMF", "AREA", "CH", "CSTL", "C
 
 feature_mapping = {
     # If location has item below, then derive its feature type
-    'st'                            : 'CH',
-    'kapelle'                       : 'CH',
-    'chapel'                        : 'CH',
-    'kirche'                        : 'CH',
-    'kirke'                         : 'CH',
-    'church'                        : 'CH',
-    'eglise'                        : 'CH',
-    'cathedral'                     : 'CH',
-    'cathedrale'                    : 'CH',
-    'kathedrale'                    : 'CH',
-    'kanisat'                       : 'CH',
-    'iglesia'                       : 'CH',
-    'catedral'                      : 'CH',
-    'parroquia'                     : 'CH',
-    'chapelle'                      : 'CH',
-    'chiesa'                        : 'CH',
-    'cappella'                      : 'CH',
-    'basilica'                      : 'CH',
-    'cattedrale'                    : 'CH',
+    'st'                            : 'RLG',
+    'kapelle'                       : 'RLG',
+    'chapel'                        : 'RLG',
+    'kirche'                        : 'RLG',
+    'kirke'                         : 'RLG',
+    'church'                        : 'RLG',
+    'eglise'                        : 'RLG',
+    'cathedral'                     : 'RLG',
+    'cathedrale'                    : 'RLG',
+    'kathedrale'                    : 'RLG',
+    'kanisat'                       : 'RLG',
+    'iglesia'                       : 'RLG',
+    'catedral'                      : 'RLG',
+    'parroquia'                     : 'RLG',
+    'chapelle'                      : 'RLG',
+    'chiesa'                        : 'RLG',
+    'cappella'                      : 'RLG',
+    'basilica'                      : 'RLG',
+    'cattedrale'                    : 'RLG',
+    'mosque'                        : "RLG",
+    'monastery'                     : "RLG",
+    'synagogue'                     : "RLG",
+    'abbey'                         : "RLG",
+    'priory'                        : "RLG",
 
     'castle'                        : 'CSTL',
     'schloss'                       : 'CSTL',
@@ -257,7 +311,7 @@ feature_mapping = {
     'palais'                        : 'PAL',
 
     'county'                        : 'ADM2',
-    
+
     'island'                        : 'ISL',
     'isle'                          : 'ISL',
     'ile'                           : 'ISL',
@@ -266,14 +320,10 @@ feature_mapping = {
 
     'mountain'                      : "MT",
     'museum'                        : "MUS",
-    'mosque'                        : "MSQE",
-    'monastery'                     : "MSTY",
     'park'                          : "PRK",
     'prison'                        : "PRN",
     'square'                        : "SQR",
-    'synagogue'                     : "SYG",
-    'abbey'                         : "MSTY",
-    'priory'                        : "MSTY",
+
     }
 
 feature_names = {

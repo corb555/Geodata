@@ -48,6 +48,7 @@ class DB:
         self.show_message = show_message
         self.exit_on_error = exit_on_error
         self.err = ''
+        self.collate = 'COLLATE NOCASE'
 
         # create database connection
         self.conn = self._connect(db_filename=db_filename)
@@ -281,7 +282,7 @@ class DB:
         self.err = ''
 
         cur = self.conn.cursor()
-        sql = f"SELECT {select_str} FROM {from_tbl} WHERE {where} {self.order_string} {self.limit_string} COLLATE NOCASE"
+        sql = f"SELECT {select_str} FROM {from_tbl} WHERE {where} {self.order_string} {self.limit_string} {self.collate}"
         #self.logger.debug(f'select {sql} val={args}')
         try:
             cur.execute(sql, args)

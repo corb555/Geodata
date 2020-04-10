@@ -68,6 +68,7 @@ class GeodataBuild:
         self.geoid_main_dict = {}  # Key is GEOID, Value is DB ID for entry
         self.geoid_admin_dict = {}  # Key is GEOID, Value is DB ID for entry
         self.volume = volume
+        self.collate = 'COLLATE NOCASE'
 
         self.exit_on_error = exit_on_error
         self.required_db_version = 4
@@ -83,6 +84,7 @@ class GeodataBuild:
         self.feature_code_list_dct = feature_code_list_dct
         self.supported_countries_dct = supported_countries_dct
         self.lang_list = []
+        self.norm = Normalize.Normalize()
 
         for item in self.languages_list_dct:
             self.lang_list.append(item)
@@ -177,10 +179,10 @@ class GeodataBuild:
             self.logger.info(f'Alternate names done.  Elapsed ={(time.time() - start_time):.0f} seconds')
             
         self.create_alt_indices()
-        self.logger.info(f'Geonames entries = {self.geodb.get_row_count():,}')
+        #self.logger.info(f'Geonames entries = {self.geodb.get_row_count():,}')
 
         # Add aliases
-        Normalize.add_aliases_to_db(self)
+        self.norm.add_aliases_to_db(self)
 
         # Done - Set Database Version
         self.insert_version(self.required_db_version)
@@ -237,7 +239,7 @@ class GeodataBuild:
                     if geoname_row.iso.lower() in self.supported_countries_dct and \
                             geoname_row.feat_code in self.feature_code_list_dct:
                         self.insert_georow(geoname_row)
-                        if geoname_row.name.lower() != Normalize.normalize(geoname_row.name, remove_commas=True):
+                        if geoname_row.name.lower() != self.norm.normalize(geoname_row.name, remove_commas=True):
                             self.insert_alternate_name(geoname_row.name,
                                                              geoname_row.id, 'ut8')
 
@@ -325,10 +327,11 @@ class GeodataBuild:
 
         self.logger.debug(f'{err_msg}')
         if err_msg == '':
+            pass
             # No DB errors detected
-            count = self.geodb.get_row_count()
-            self.logger.info(f'Geoname database has {count:,} entries\n'
-                             f'------------------------------------------------------------\n')
+            #count = self.geodb.get_row_count()
+            #self.logger.info(f'Geoname database has {count:,} entries\n'
+            #                 f'------------------------------------------------------------\n')
         else:
             # DB error detected - rebuild database if flag set
             if self.show_message:
@@ -350,8 +353,7 @@ class GeodataBuild:
                 return self.create_geonames_database()
         return False
 
-    @staticmethod
-    def update_geo_row_name(geo_row:[], name:str, normalize=True):
+    def update_geo_row_name(self, geo_row:[], name:str, normalize=True):
         """
             Update the name entry and soundex entry with a new location name
         #Args:
@@ -359,7 +361,7 @@ class GeodataBuild:
             name: location name
         """
         if normalize:
-            geo_row[GeoSearch.Entry.NAME] = Normalize.normalize(name, remove_commas=True)
+            geo_row[GeoSearch.Entry.NAME] = self.norm.normalize(name, remove_commas=True)
         else:
             geo_row[GeoSearch.Entry.NAME] = name.lower()
 
@@ -387,7 +389,7 @@ class GeodataBuild:
         geo_row[GeoSearch.Entry.ID] = geoname_row.id
             
         # Simplify feature type for Abbey/Priory, Castle, and Church.  Set feature based on population
-        geo_row[GeoSearch.Entry.FEAT] = Normalize.feature_normalize(feature=geo_row[GeoSearch.Entry.FEAT],
+        geo_row[GeoSearch.Entry.FEAT] = self.norm.feature_normalize(feature=geo_row[GeoSearch.Entry.FEAT],
                                                                     name=geo_row[GeoSearch.Entry.NAME], pop=int(geoname_row.pop))
             
         self.insert(geo_tuple=geo_row, feat_code=geoname_row.feat_code)
@@ -442,9 +444,9 @@ class GeodataBuild:
         Create all the tables needed for the geoname database
         """
         # name, country, admin1_id, admin2_id, lat, lon, feature, geoid
-        sql_geodata_table = """CREATE TABLE IF NOT EXISTS geodata    (
+        sql_geodata_table = f"""CREATE TABLE IF NOT EXISTS geodata    (
                 id           integer primary key autoincrement not null,
-                name     text COLLATE NOCASE,
+                name     text {self.collate},
                 country     text COLLATE NOCASE,
                 admin1_id     text COLLATE NOCASE,
                 admin2_id text COLLATE NOCASE,
@@ -498,7 +500,7 @@ class GeodataBuild:
         #Returns: None   
 
         """
-        sdx = GeoSearch.get_soundex(Normalize.normalize(alternate_name, True))
+        sdx = GeoSearch.get_soundex(self.norm.normalize(alternate_name, True))
         row = (alternate_name, lang, geoid, sdx)
         sql = ''' INSERT OR IGNORE INTO altname(name,lang, geoid, sdx)
                   VALUES(?,?,?,?) '''

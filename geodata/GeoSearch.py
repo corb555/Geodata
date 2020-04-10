@@ -27,12 +27,12 @@ import time
 
 import phonetics
 
-from geodata import GeoUtil, Loc, Country, MatchScore, Normalize, QueryList
-from geodata.GeoUtil import Query, Result, Entry
+from geodata import Loc, Country, MatchScore, Normalize, QueryList
+from geodata.GeoUtil import Query, Result, Entry, get_feature_group
 
 FUZZY_LOOKUP = [Result.WILDCARD_MATCH, Result.WORD_MATCH, Result.SOUNDEX_MATCH]
-CACHE_SIZE = 16384
-COUNTRY_CACHE = 1024
+CACHE_SIZE = 32768
+COUNTRY_CACHE = 2048
 
 
 class GeoSearch:
@@ -44,13 +44,15 @@ class GeoSearch:
         self.logger = logging.getLogger(__name__)
         self.detailed_debug = True
         self.start = 0
-        self.match = MatchScore.MatchScore()
         self.use_wildcards = True
         self.total_lookups = 0
         self.cache = {}
         self.place_type = ''
         self.select_str = 'name, country, admin1_id, admin2_id, lat, lon, feature, geoid, sdx'
         self.geodb = geodb
+        self.match = MatchScore.MatchScore()
+        self.norm = Normalize.Normalize()
+        self.place = Loc.Loc()
 
     def lookup_place(self, place: Loc) -> []:
         """
@@ -68,42 +70,22 @@ class GeoSearch:
             Each entry has: Lat, Long, districtID (County or State or Province ID), and a match quality score  
 
         """
-        self.start = time.time()
-        start = self.start
         place.result_type = Result.STRONG_MATCH
         best_score = MatchScore.Score.VERY_POOR
 
         if place.place_type == Loc.PlaceType.COUNTRY:
-            self.logger.debug('country look up')
-
+            # Country
             if place.georow_list:
-                place.country_name = self.get_country_name(place.country_name, place.georow_list)
+                place.country_name = self.get_country_name(place.country_name)
                 best_score = MatchScore.Score.VERY_GOOD
         else:
             # General search 
-            # self.logger.debug('general look up')
             if place.place_type == Loc.PlaceType.ADMIN1:
                 place.feature = "ADM1"
             place.georow_list.clear()
-            place.result_type = self._search(georow_list=place.georow_list, name=place.city, admin1_id=place.admin1_id,
-                                             admin2_id=place.admin2_id, iso=place.country_iso, feature=place.feature, sdx=get_soundex(place.city))
-            # self.logger.debug(f'lookup result {place.georow_list}')
-
-            if len(place.georow_list) > 0:
-                best_score = self.assign_scores(georow_list=place.georow_list, place=place, target_feature=place.feature,
-                                                fast=False, quiet=False)
-
-        if len(place.georow_list) > 0:
-            best_score = self.assign_scores(georow_list=place.georow_list, place=place, target_feature=place.feature,
-                                            fast=False, quiet=False)
-            # self.logger.debug(f'Found: {len(place.georow_list)} matches  '
-            #                  f' [{place.georow_list}]\n')
-        else:
-            # self.logger.debug(f'LOOKUP. No match:for  nm=[{place.get_five_part_title()}]\n')
-            pass
-
-        elapsed = time.time() - start
-        self.logger.debug(f'**LOOKUP PLACE = {elapsed:.3f} score={best_score}')
+            best_score = self._search(place=place, georow_list=place.georow_list, name=place.city, admin1_id=place.admin1_id,
+                                      admin2_id=place.admin2_id, iso=place.country_iso, feature=place.feature, sdx=get_soundex(place.city))
+        self.logger.debug(f'**LOOKUP PLACE  score={best_score}')
         return best_score
 
     def deep_lookup(self, place: Loc) -> []:
@@ -116,74 +98,17 @@ class GeoSearch:
 
         """
         # Get more results unless we have a high score
-        # self.logger.debug('soundex/combination look up')
-        best = MatchScore.Score.VERY_POOR
         row_list = []
-        self.search_for_combinations(row_list, place.city, place, 'main.geodata')
+        best_score = self.search_for_combinations(row_list, place.city, place, 'main.geodata')
         if len(row_list) > 0:
             place.georow_list.extend(row_list)
-        self.logger.debug(f'Combo result [{row_list}]')
-
-        if len(place.georow_list) > 0:
-            best = self.assign_scores(georow_list=row_list, place=place, target_feature=place.feature,
-                                      fast=False, quiet=False)
-
-        if best > MatchScore.Score.VERY_POOR - 10:
-            # Search each term
+        if best_score > MatchScore.Score.VERY_POOR - 10:
+            # Search for each term in name
             row_list = []
-            self.search_each_term(row_list, place.city, place, 'main.geodata')
+            best_score = self.search_each_term(row_list, place.city, place, 'main.geodata')
             if len(row_list) > 0:
                 place.georow_list.extend(row_list)
-
-        if len(place.georow_list) > 0:
-            best = self.assign_scores(georow_list=row_list, place=place, target_feature=place.feature,
-                                      fast=False, quiet=False)
-        return best
-
-    def _search(self, georow_list, name, admin1_id, admin2_id, iso, feature, sdx=''):
-        """
-
-        Args:
-            georow_list: Returns list of matching georows
-            name: name of location to lookup
-            admin1_id: admin1_id of location (if available, otherwise '')
-            admin2_id: 
-            iso: country iso of location (if available,  otherwise '')
-            feature: feature code of location (if available, otherwise '')
-
-        Returns: result_type
-
-        """
-        query_list = []
-        # self.logger.debug(f'** SEARCH  name=[{name}] adm1 id=[{admin1_id}]'
-        #                  f' adm2 id=[{admin2_id}] iso=[{iso}] feat=[{feature}] sdx=[{sdx}]')
-
-        # Put together where clauses with all non-blank fields 
-        if len(name + admin2_id + admin2_id + admin1_id + iso) == 0:
-            return GeoUtil.Result.NO_MATCH
-
-        start = time.time()
-
-        ql = QueryList.QueryItem()
-        where_clauses = ["name", "country", "admin1_id", "admin2_id", "feature"]
-        terms = [name, iso, admin1_id, admin2_id, feature]
-        ql.add_clauses(where_clauses=where_clauses, terms=terms)  # add 
-        query_list.append(Query(where=ql.where, args=ql.args, result=Result.PARTIAL_MATCH))
-        ql.clear()
-        if len(sdx) > 0:
-            where_clauses = ["country", "feature", "sdx"]
-            terms = [iso, feature, sdx]
-            ql.add_clauses(where_clauses=where_clauses, terms=terms)  # add 
-            query_list.append(Query(where=ql.where, args=ql.args, result=Result.PARTIAL_MATCH))
-
-        # See if we can determine feature type from name and lookup by that
-        self.add_feature_query(query_list, name, iso)
-
-        res = self.geodb.process_query_list(result_list=georow_list, select_fields=self.select_str, from_tbl=ql.table,
-                                            query_list=query_list, debug=True)
-        elapsed = time.time() - start
-        #self.logger.debug(f'_search elapsed = {elapsed:.3f}')
-        return res
+        return best_score
 
     def get_admin2_name(self, admin1_id, admin2_id, iso) -> str:
         """
@@ -197,10 +122,7 @@ class GeoSearch:
         # Returns:
             Admin2 name
         """
-        if len(admin2_id) > 0:
-            return self._get_name(admin1_id=admin1_id, admin2_id=admin2_id, iso=iso, feature='ADM2')
-        else:
-            return ''
+        return self._get_name(admin1_id=admin1_id, admin2_id=admin2_id, iso=iso, feature='ADM2')
 
     def get_admin1_name(self, admin1_id, iso) -> str:
         """
@@ -213,12 +135,9 @@ class GeoSearch:
         # Returns:
             Admin1 name.   
         """
-        if len(admin1_id) > 0:
-            return self._get_name(admin1_id=admin1_id, admin2_id='', iso=iso, feature='ADM1')
-        else:
-            return ''
+        return self._get_name(admin1_id=admin1_id, admin2_id='', iso=iso, feature='ADM1')
 
-    def get_country_name(self, iso: str, row_list) -> str:
+    def get_country_name(self, iso: str) -> str:
         """
              return country name for specified ISO code 
         # Args:   
@@ -244,14 +163,12 @@ class GeoSearch:
         if len(admin1_id + admin2_id + iso) == 0:
             return ''
 
-        self._search(georow_list=row_list, name='', admin1_id=admin1_id, admin2_id=admin2_id, iso=iso, feature=feature, sdx=sdx)
+        self._search(georow_list=row_list, place=None, name='', admin1_id=admin1_id, admin2_id=admin2_id, iso=iso, feature=feature, sdx=sdx)
 
         if len(row_list) > 0:
-            # self.logger.debug(f'GET NAME for {feature} ID: 1[{admin1_id}] 2[{admin2_id}] iso[{iso}] RES=[{row_list[0][Entry.NAME]}]')
             self.cache[key] = row_list[0][Entry.NAME]
             return row_list[0][Entry.NAME]
         else:
-            # self.logger.debug(f'GET NAME for ID 1[{admin1_id}] 2[{admin2_id}] iso[{iso}] RES=[NO MATCH]')
             return ''
 
     def get_admin1_alternate_name(self, admin1_id, place: Loc) -> (str, str):
@@ -265,14 +182,12 @@ class GeoSearch:
             (admin1 name, lang)  place.admin2_id is updated with best match 
         """
         # self.logger.debug('GET ADMIN1 ALT NAME')
-
-        # target = place.admin1_id
         if len(admin1_id) == 0:
             return '', ''
 
         # Find GEOID for admin1_id and then get alternate name for GEOID
         row_list = []
-        self._search(georow_list=row_list, name='', admin1_id=admin1_id, admin2_id='', iso=place.country_iso, feature='ADM1')
+        self._search(georow_list=row_list, place=None, name='', admin1_id=admin1_id, admin2_id='', iso=place.country_iso, feature='ADM1')
         if len(row_list) > 0:
             row = row_list[0]
             # Get alternate name for this GEOID
@@ -299,7 +214,7 @@ class GeoSearch:
                   result=Result.STRONG_MATCH)]
         select = 'name, lang'
         row_list = []
-        self.geodb.process_query_list(result_list=row_list, select_fields=select, from_tbl='main.altname', query_list=query_list)
+        self.geodb.process_query_list(result_list=row_list, place=None, select_fields=select, from_tbl='main.altname', query_list=query_list)
         if len(row_list) > 0:
             return row_list[0][0], row_list[0][1]
         else:
@@ -318,36 +233,12 @@ class GeoSearch:
                     admin1_id
                 """
         row_list = []
-        place = Loc.Loc()
-        # place.admin1_name = admin1_name
-        place.country_iso = country_iso
-        # admin1_name = Normalize.admin1_normalize(admin1_name, country_iso)
         self.logger.debug(f'GET ISO ID for adm1 id [{admin1_id}]')
-
-        # result_place = copy.copy(place)
-        # sdx = get_soundex(admin1_name)
-
-        self._search(georow_list=row_list, name='', admin1_id=admin1_id, admin2_id='', iso=country_iso, feature='ADM1', sdx='')
-
-        if len(row_list) == 0:
-            # Nothing found.  Try deeper search
-            self.logger.debug(f'adm1 id Not found {admin1_id}')
-            # self.search_for_combinations(row_list=row_list, target=admin1_name, place=place, table='main.admin')
-        else:
-            self.logger.debug(f'found {row_list}')
-            pass
-
+        self._search(georow_list=row_list, place=None, name='', admin1_id=admin1_id, admin2_id='', iso=country_iso, feature='ADM1', sdx='')
         if len(row_list) > 0:
-            # self.assign_scores(row_list, place, 'ADM1', fast=False, quiet=False)
-            # sorted_list = sorted(row_list, key=itemgetter(GeoUtil.Entry.SCORE))
             country_iso = row_list[0][Entry.ISO]
-
-            self.logger.debug(f'SEARCH for country ID DONE -- Found country id = [{country_iso}] row={row_list[0]} ')
-            # Fill in Country ISO
-            # country_iso = sorted_list[0][Entry.ISO]
         else:
             country_iso = ''
-            self.logger.debug(f'SEARCH country ID DONE -- NO MATCH SEARCH  adm1 name = {admin1_id}  ')
         return country_iso
 
     @functools.lru_cache(maxsize=CACHE_SIZE)
@@ -363,37 +254,25 @@ class GeoSearch:
             admin1_id
         """
         row_list = []
-        place = Loc.Loc()
-        place.admin1_name = admin1_name
-        place.country_iso = country_iso
-        admin1_name = Normalize.admin1_normalize(admin1_name, country_iso)
+        self.place.clear()
+        self.place.admin1_name = admin1_name
+        self.place.country_iso = country_iso
+        admin1_name = self.norm.admin1_normalize(admin1_name, country_iso)
         self.logger.debug(f'GET ADMIN1 ID from [{admin1_name}]')
-
-        # result_place = copy.copy(place)
-        sdx = get_soundex(admin1_name)
-
-        self._search(georow_list=row_list, name=admin1_name, admin1_id='', admin2_id='', iso=country_iso, feature='ADM1', sdx='')
+        self._search(georow_list=row_list, place=None, name=admin1_name, admin1_id='', admin2_id='', iso=country_iso, feature='ADM1', sdx='')
 
         if len(row_list) == 0:
             # Nothing found.  Try deeper search
             self.logger.debug(f'not found - search for combo [{admin1_name}]')
-            #self._search(georow_list=row_list, name='', admin1_id='', admin2_id='', iso=country_iso, feature='ADM1', sdx=sdx)
-            self.search_for_combinations(row_list=row_list, target=admin1_name, place=place, table='main.admin')
+            self.search_for_combinations(row_list=row_list, target=admin1_name, place=self.place, table='main.admin')
         else:
             self.logger.debug(f'found {row_list}')
             pass
 
         if len(row_list) > 0:
-            # self.assign_scores(row_list, place, 'ADM1', fast=False, quiet=False)
-            # sorted_list = sorted(row_list, key=itemgetter(GeoUtil.Entry.SCORE))
             admin1_id = row_list[0][Entry.ADM1]
-
-            # self.logger.debug(f'SEARCH for ADMIN1 ID DONE -- Found adm1 id = [{place.admin1_id}] row={sorted_list[0]} ')
-            # Fill in Country ISO
-            # country_iso = sorted_list[0][Entry.ISO]
         else:
             admin1_id = ''
-            self.logger.debug(f'SEARCH ADMIN1 ID DONE -- NO MATCH SEARCH  adm1 name = {admin1_name}  ')
         return admin1_id
 
     @functools.lru_cache(maxsize=COUNTRY_CACHE)
@@ -407,50 +286,79 @@ class GeoSearch:
         # Returns:   
             Country ISO or ''.     
         """
-        # self.logger.debug(f'GET COUNTRY ISO for [{country_name}]')
-
         row_list = []
-        place = Loc.Loc()
-        place.country_name = country_name
+        self.place.clear()
+        self.place.country_name = country_name
 
-        country_name, modified = Normalize.country_normalize(country_name)
+        country_name, modified = self.norm.country_normalize(country_name)
         if len(country_name) == 0:
             return ''
         sdx = get_soundex(country_name) + '*'
 
-        self._search(georow_list=row_list, name=country_name, admin1_id='', admin2_id='', iso='', feature='ADM0', sdx='')
-        self.assign_scores(row_list, place, 'ADM0', fast=False, quiet=False)
-        # if len(georow_list) > 0:
-        #    self.logger.debug(georow_list[0])
+        best = self._search(georow_list=row_list, place=self.place, name=country_name, admin1_id='', admin2_id='', iso='', feature='ADM0', sdx='')
 
-        if place.result_type == Result.STRONG_MATCH:
+        if self.place.result_type == Result.STRONG_MATCH:
             iso = row_list[0][Entry.ISO]
-            place.country_name = row_list[0][Entry.NAME]
+            self.place.country_name = row_list[0][Entry.NAME]
         else:
-            place.result_type = self._search(georow_list=row_list, name='', admin1_id='', admin2_id='', iso='', feature='ADM0',
-                                             sdx=sdx)
-            self.assign_scores(row_list, place, 'ADM0', fast=False, quiet=False)
-            if place.result_type == Result.STRONG_MATCH:
+            # Lookup by soundex
+            best = self._search(georow_list=row_list, place=self.place, name='', admin1_id='', admin2_id='', iso='', feature='ADM0',
+                                sdx=sdx)
+            if self.place.result_type == Result.STRONG_MATCH:
                 iso = row_list[0][Entry.ISO]
-                place.country_name = row_list[0][Entry.NAME]
+                self.place.country_name = row_list[0][Entry.NAME]
             else:
                 iso = ''
-
-        # self.logger.debug(f'found iso [{iso}]')
-
         return iso
 
     def update_names(self, place):
         # Use ID fields to fill in  missing names for admin1, admin2, and country
-        row_list = []
-
         if place.admin1_id != '':
             if place.admin1_name == '':
                 place.admin1_name = self.get_admin1_name(place.admin1_id, place.country_iso)
             if place.admin2_name == '':
                 place.admin2_name = self.get_admin2_name(place.admin1_id, place.admin2_id, place.country_iso)
-        place.country_name = str(self.get_country_name(place.country_iso, row_list))
-        
+        place.country_name = str(self.get_country_name(place.country_iso))
+
+    def _search(self, georow_list, place, name, admin1_id, admin2_id, iso, feature, sdx=''):
+        """
+
+        Args:
+            georow_list: Returns list of matching georows
+            name: name of location to lookup
+            admin1_id: admin1_id of location (if available, otherwise '')
+            admin2_id: 
+            iso: country iso of location (if available,  otherwise '')
+            feature: feature code of location (if available, otherwise '')
+
+        Returns: result_type
+
+        """
+        query_list = []
+
+        # Put together where clauses with all non-blank fields 
+        if len(name + admin2_id + admin2_id + admin1_id + iso) == 0:
+            return Result.NO_MATCH
+        ql = QueryList.QueryItem()
+
+        where_clauses = ["name", "country", "admin1_id", "admin2_id", "feature"]
+        terms = [name, iso, admin1_id, admin2_id, feature]
+        ql.add_clauses(where_clauses=where_clauses, terms=terms)  # add 
+        query_list.append(Query(where=ql.where, args=ql.args, result=Result.PARTIAL_MATCH))
+
+        ql.clear()
+        if len(sdx) > 0:
+            where_clauses = ["country", "feature", "sdx"]
+            terms = [iso, feature, sdx]
+            ql.add_clauses(where_clauses=where_clauses, terms=terms)  # add 
+            query_list.append(Query(where=ql.where, args=ql.args, result=Result.PARTIAL_MATCH))
+
+        # See if we can determine feature type from name and lookup by that
+        self.add_feature_query(query_list, name, iso)
+
+        best = self.geodb.process_query_list(result_list=georow_list, place=place, select_fields=self.select_str, from_tbl=ql.table,
+                                             query_list=query_list, debug=True)
+        return best
 
     def search_each_term(self, row_list, target, place, table):
         """
@@ -466,7 +374,7 @@ class GeoSearch:
 
         """
         query_list = []
-        start = time.time()
+        best = 999
 
         sdx = get_soundex(target)
         if len(sdx) > 3:
@@ -478,29 +386,30 @@ class GeoSearch:
             #  Try each word 
             self.logger.debug(f'Search EACH {sdx_word_list}')
             for idx, word in enumerate(sdx_word_list):
-                pattern = word[0:4] 
+                if len(word) == 0:
+                    continue
+                pattern = word[0:4]
                 self.logger.debug(f' {pattern}')
                 if place.feature:
-                    search, pattern, pattern2 = search_like(term_name='sdx', pattern=pattern)
+                    search, pattern, pattern2 = convert_like(column_name='sdx', pattern=pattern)
                     where = f'{search} AND  country = ? AND feature = ?'
                     if pattern2:
                         args = (pattern, pattern2, place.country_iso, place.feature,)
                     else:
                         args = (pattern, place.country_iso, place.feature,)
-                    query_list.append(Query(where=where,args=args,result=Result.SOUNDEX_MATCH))
+                    query_list.append(Query(where=where, args=args, result=Result.SOUNDEX_MATCH))
                 else:
-                    search, pattern, pattern2 = search_like(term_name='sdx', pattern=pattern)
+                    search, pattern, pattern2 = convert_like(column_name='sdx', pattern=pattern)
                     where = f'{search} AND  country = ? '
                     if pattern2:
-                        args = (pattern, pattern2, place.country_iso, )
+                        args = (pattern, pattern2, place.country_iso,)
                     else:
-                        args = (pattern, place.country_iso, )
+                        args = (pattern, place.country_iso,)
                     query_list.append(Query(where=where, args=args, result=Result.SOUNDEX_MATCH))
 
-            place.result_type = self.geodb.process_query_list(result_list=row_list, select_fields=self.select_str,
-                                                              from_tbl=table, query_list=query_list, debug=True)
-        elapsed = time.time() - start
-        self.logger.debug(f'search_each_term elapsed = {elapsed:.3f}')
+            best = self.geodb.process_query_list(result_list=row_list, place=place, select_fields=self.select_str,
+                                                 from_tbl=table, query_list=query_list, debug=True)
+        return best
 
     def search_for_combinations(self, row_list, target, place, table):
         """
@@ -516,7 +425,7 @@ class GeoSearch:
 
         """
         query_list = []
-        start = time.time()
+        best = 999
 
         sdx = get_soundex(target)
 
@@ -525,9 +434,6 @@ class GeoSearch:
             self.logger.debug(f'COMBO SEARCH {sdx_word_list}')
 
             if len(sdx_word_list) == 1:
-                #  one word - lookup as is
-                #sdx += '%'
-
                 if place.feature:
                     query_list.append(Query(where="(sdx >= ? and sdx < ?) AND country = ? AND feature = ?",
                                             args=(sdx, inc_key(sdx), place.country_iso, place.feature,),
@@ -546,7 +452,7 @@ class GeoSearch:
                                 pattern += word
                             else:
                                 pattern += ' ' + word
-                    #pattern += '%'
+                    # pattern += '%'
                     self.logger.debug(f'{ignore_word_idx}) {pattern}')
                     if place.feature:
                         query_list.append(Query(where="(sdx >= ? and sdx < ?) AND country = ? AND feature = ?",
@@ -557,11 +463,11 @@ class GeoSearch:
                                                 args=(pattern, inc_key(pattern), place.country_iso,),
                                                 result=Result.SOUNDEX_MATCH))
 
-            place.result_type = self.geodb.process_query_list(result_list=row_list, select_fields=self.select_str,
-                                                              from_tbl=table, query_list=query_list, debug=True)
+            best = self.geodb.process_query_list(result_list=row_list, place=place, select_fields=self.select_str,
+                                                 from_tbl=table, query_list=query_list, debug=True)
 
-            elapsed = time.time() - start
-            self.logger.debug(f'search_for_combos = {elapsed:.3f}')
+            self.logger.debug(f'search_for_combos ')
+        return best
 
     def lookup_geoid(self, georow_list, geoid, place: Loc, admin=False) -> None:
         """
@@ -583,13 +489,8 @@ class GeoSearch:
                   args=(geoid,),
                   result=Result.STRONG_MATCH)
             ]
-        self.geodb.process_query_list(result_list=georow_list, select_fields=self.select_str,
+        self.geodb.process_query_list(result_list=georow_list, place=None, select_fields=self.select_str,
                                       from_tbl=table, query_list=query_list)
-        if georow_list:
-            # self.logger.debug(georow_list[0])
-            self.assign_scores(georow_list=place.georow_list, place=place, target_feature=place.feature,
-                               fast=False, quiet=False)
-            # self.copy_georow_to_place(georow_list[0], place, fast=True)
 
     def lookup_dbid(self, georow_list, dbid, place: Loc, admin=False) -> None:
         """
@@ -611,7 +512,7 @@ class GeoSearch:
                   args=(dbid,),
                   result=Result.STRONG_MATCH)
             ]
-        self.geodb.process_query_list(result_list=georow_list, select_fields=self.select_str,
+        self.geodb.process_query_list(result_list=georow_list, place=None, select_fields=self.select_str,
                                       from_tbl=table, query_list=query_list)
         if georow_list:
             # self.logger.debug(georow_list[0])
@@ -637,7 +538,6 @@ class GeoSearch:
         place.city = ''
 
         place.country_iso = str(row[Entry.ISO])
-        row_list = []
         place.lat = row[Entry.LAT]
         place.lon = row[Entry.LON]
         place.feature = str(row[Entry.FEAT])
@@ -666,7 +566,7 @@ class GeoSearch:
                 place.admin1_name = self.get_admin1_name(place.admin1_id, place.country_iso)
             if place.admin2_name == '':
                 place.admin2_name = self.get_admin2_name(place.admin1_id, place.admin2_id, place.country_iso)
-        place.country_name = str(self.get_country_name(row[Entry.ISO], row_list))
+        place.country_name = str(self.get_country_name(row[Entry.ISO]))
 
         if place.admin2_name is None:
             place.admin2_name = ''
@@ -681,9 +581,6 @@ class GeoSearch:
             place.score = row[Entry.SCORE]
         except IndexError:
             pass
-
-        # self.logger.debug(f'<<<<< COPY DONE:  A1 [{place.admin1_name}] A2 [{place.admin2_name}] cty [{place.country_name}]'
-        #                  f'lat [{place.lat}]')
 
     @staticmethod
     def create_wildcard(pattern):
@@ -758,85 +655,18 @@ class GeoSearch:
             self.logger.debug(text)
 
     def add_feature_query(self, query_list, target, iso):
+        # todo use ql.add instead
         # Scan target to see if we can determine what feature type it is
-        word, group = GeoUtil.get_feature_group(target)
+        word, group = get_feature_group(target)
         if word != '':
             if 'st ' not in word:
-                targ = re.sub(word, '', target).strip(' ') 
+                targ = re.sub(word, '', target).strip(' ')
             else:
                 targ = target
             query_list.append(Query(where="(name >= ? and name < ?) AND country = ? AND feature = ?",
                                     args=(targ, inc_key(targ), iso, group),
                                     result=Result.WORD_MATCH))
             self.logger.debug(f'Add Feature query [{targ}] {group}')
-
-    def assign_scores(self, georow_list, place, target_feature, fast=False, quiet=False) -> float:
-        """
-                    Assign match score to each result in list   
-        Args:
-            place: 
-            target_feature: 
-            fast: 
-            quiet: if True, set logging to INFO
-
-        Returns:
-
-        """
-        result_place: Loc = Loc.Loc()
-        start = time.time()
-
-        min_score = 9999
-        original_prefix = place.prefix
-
-        # If quiet, then only log at INFO level
-        lev = logging.getLogger().getEffectiveLevel()
-        if quiet:
-            logging.getLogger().setLevel(logging.INFO)
-
-        # Add match quality score and prefix to each entry
-        for idx, rw in enumerate(georow_list):
-            place.prefix = original_prefix
-            if len(rw) == 0:
-                continue
-            # self.logger.debug(rw)
-            self.copy_georow_to_place(row=rw, place=result_place, fast=fast)
-            result_place.original_entry = result_place.get_long_name(None)
-            # self.logger.debug(f'plac feat=[{place.feature}] targ=[{target_feature}]')
-            if result_place.feature == target_feature:
-                bonus = 10.0
-            else:
-                bonus = 0
-
-            if len(place.prefix) > 0 and result_place.prefix == '':
-                result_place.prefix = ' '
-            else:
-                result_place.prefix = ''
-
-            score = self.match.match_score(target_place=place, result_place=result_place) - bonus
-            min_score = min(min_score, score)
-
-            # Convert row tuple to list and extend so we can assign score
-            update = list(rw)
-            if len(update) < GeoUtil.Entry.SCORE + 1:
-                update.append(1)
-            update[GeoUtil.Entry.SCORE] = score
-
-            result_place.prefix = Normalize.normalize(place.prefix, True)
-            update[GeoUtil.Entry.PREFIX] = result_place.prefix
-            georow_list[idx] = tuple(update)  # Convert back from list to tuple
-            # self.logger.debug(f'{update[GeoUtil.Entry.SCORE]:.1f} {update[GeoUtil.Entry.NAME]} [{update[GeoUtil.Entry.PREFIX]}]')
-
-        # if len(georow_list) > 0:
-        #    self.logger.debug(f'min={min_score} {georow_list[0]}')
-        if min_score < MatchScore.Score.STRONG_CUTOFF:
-            place.result_type = GeoUtil.Result.STRONG_MATCH
-
-        # Restore logging level
-        logging.getLogger().setLevel(lev)
-
-        elapsed = time.time() - start
-        self.logger.debug(f'assign_scores min={min_score} elapsed={elapsed:.3f}')
-        return min_score
 
 
 def get_soundex(text) -> str:
@@ -863,23 +693,44 @@ def get_word_soundex(word):
         return word[0:2] + phonetics.dmetaphone(word)[0]
     else:
         return phonetics.dmetaphone(word)[0]
-    
-def search_like(pattern, term_name):
-    # See if SQL search pattern has % at end.  If so create a xx>= and yy< search term, otherwise use LIKE
+
+
+def convert_like(pattern, column_name):
+    """
+    Convert SQL LIKE search to comparison if has % at end.  
+
+    Args:
+        pattern: 
+        column_name: the column name for the search
+    Returns: (txt, pattern, pattern2)
+        1)  if % is not at end returns:
+            txt is term like ?
+            pattern1 is pattern
+            pattern2 is ''
+        or
+        2) an equivalent SQL comparison if % at end:  
+            txt is term >= ? and term < ?
+            pattern1 is pattern
+            pattern2 is term with last letter incremented
+    """
     pattern2 = ''
     if pattern[-1] == '%':
         # Wildcard at end - Use  xx>= and yy< instead of LIKE to ensure Index can be used
-        txt = f'({term_name} >= ? and {term_name} < ?)'
+        txt = f'({column_name} >= ? and {column_name} < ?)'
         pattern2 = inc_key(pattern)
     elif '%' in pattern:
         # Wildcard in middle - use LIKE
-        txt = f'{term_name} LIKE ?'
+        txt = f'{column_name} LIKE ?'
     else:
-        txt = f'{term_name} = ?'
-        
-    #print(f'[{txt}] ')
+        txt = f'{column_name} = ?'
+
+    # print(f'[{txt}] ')
     return txt, pattern, pattern2
-    
+
+
 def inc_key(text):
     """ increment the last letter of text by one.  Used to replace key in SQL LIKE case with less than """
-    return  text[0:-1] + chr(ord(text[-1]) + 1)
+    if len(text) > 0:
+        return text[0:-1] + chr(ord(text[-1]) + 1)
+    else:
+        return text
