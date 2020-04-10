@@ -186,9 +186,15 @@ class GeoDB:
         if place.city is None:
             place.city = ''
 
+        update = list(row)
+        if len(update) < Entry.SCORE + 1:
+            update.append(1)
+            row = tuple(update)
+
         try:
             place.score = row[Entry.SCORE]
         except IndexError:
+            
             pass
 
     def process_query_list(self, place, result_list, select_fields, from_tbl: str, query_list: [Query],
