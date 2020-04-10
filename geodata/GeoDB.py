@@ -218,8 +218,11 @@ class GeoDB:
             
             if len(row_list) > 0:
                 result_type = query.result
-                #if place:
-                best_score = self._assign_scores(georow_list=row_list, place=place, target_feature=place.feature,
+                if place:
+                    feat = place.feature
+                else:
+                    feat = ''
+                best_score = self._assign_scores(georow_list=row_list, place=place, target_feature=feat,
                                                     fast=True, quiet=False)
                 result_list.extend(row_list)
 
