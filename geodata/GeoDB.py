@@ -186,11 +186,6 @@ class GeoDB:
         if place.city is None:
             place.city = ''
 
-        update = list(row)
-        if len(update) < Entry.SCORE + 1:
-            update.append(1)
-            row = tuple(update)
-
         try:
             place.score = row[Entry.SCORE]
         except IndexError:
@@ -223,8 +218,8 @@ class GeoDB:
             
             if len(row_list) > 0:
                 result_type = query.result
-                if place:
-                    best_score = self._assign_scores(georow_list=row_list, place=place, target_feature=place.feature,
+                #if place:
+                best_score = self._assign_scores(georow_list=row_list, place=place, target_feature=place.feature,
                                                     fast=True, quiet=False)
                 result_list.extend(row_list)
 
@@ -270,7 +265,16 @@ class GeoDB:
         start = time.time()
 
         best_score = 9999
-        original_prefix = place.prefix
+        if place:
+            original_prefix = place.prefix
+        else:
+            # Add dummy match quality score  to each entry
+            for idx, rw in enumerate(georow_list):
+                update = list(rw)
+                if len(update) < Entry.SCORE + 1:
+                    update.append(1)
+                    georow_list[idx] = tuple(update)
+            return 999.0
 
         # If quiet, then only log at INFO level
         lev = logging.getLogger().getEffectiveLevel()
@@ -279,6 +283,13 @@ class GeoDB:
 
         # Add match quality score and prefix to each entry
         for idx, rw in enumerate(georow_list):
+            if not place:
+                update = list(rw)
+                if len(update) < Entry.SCORE + 1:
+                    update.append(1)
+                    georow_list[idx] = tuple(update)
+                continue
+                    
             place.prefix = original_prefix
             if len(rw) == 0:
                 continue
