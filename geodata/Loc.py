@@ -405,7 +405,8 @@ class Loc:
             nm = f"{city}{admin2}{admin1}{str(self.country_name)}"
 
         # normalize prefix
-        self.prefix = self.norm.normalize(self.prefix, False)
+        #self.prefix = self.norm.normalize(self.prefix, False)
+        self.prefix_cleanup(self.prefix, nm)
 
         if len(self.prefix) > 0:
             self.prefix_commas = ', '
@@ -555,7 +556,8 @@ class Loc:
 
         res = re.sub('[,]', '', new_prfx)
         res = res.strip(' ')
-        return res.strip(',')
+        res = res.strip(',')
+        return res
 
     @staticmethod
     def fast_prefix(pref: str, result: str) -> str:

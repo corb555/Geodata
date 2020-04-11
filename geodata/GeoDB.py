@@ -266,18 +266,18 @@ class GeoDB:
         """
         result_place: Loc = Loc.Loc()
         start = time.time()
-
-        best_score = 9999
-        if place:
-            original_prefix = place.prefix
-        else:
-            # Add dummy match quality score  to each entry
+        best_score = 999.9
+        
+        if  place == None:            
+        # Add dummy match quality score  to each entry
             for idx, rw in enumerate(georow_list):
                 update = list(rw)
                 if len(update) < Entry.SCORE + 1:
                     update.append(1)
                     georow_list[idx] = tuple(update)
-            return 999.0
+            return best_score
+
+        original_prefix = place.prefix
 
         # If quiet, then only log at INFO level
         lev = logging.getLogger().getEffectiveLevel()
@@ -286,13 +286,6 @@ class GeoDB:
 
         # Add match quality score and prefix to each entry
         for idx, rw in enumerate(georow_list):
-            if not place:
-                update = list(rw)
-                if len(update) < Entry.SCORE + 1:
-                    update.append(1)
-                    georow_list[idx] = tuple(update)
-                continue
-                    
             place.prefix = original_prefix
             if len(rw) == 0:
                 continue

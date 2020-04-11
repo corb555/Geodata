@@ -55,7 +55,7 @@ class MatchScore:
 
         # Weighting for each input term match -  adm2, adm1, country
         token_weights = [.2, .3, .5]
-        self.set_weighting(token_weight=token_weights, prefix_weight=6.0, feature_weight=0.3)
+        self.set_weighting(token_weight=token_weights, prefix_weight=6.0, feature_weight=0.15)
 
         # Weighting for each part of score
         self.wildcard_penalty = 8.0
