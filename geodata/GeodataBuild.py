@@ -61,12 +61,14 @@ class GeodataBuild:
             languages_list_dct: dictionary containing the ISO-2 languages  to load from alternateNames
             feature_code_list_dct: dictionary containing the Geonames.org feature codes to load
             supported_countries_dct: dictionary containing the ISO-2 countries to load
+            volume: disk volume to use - e.g. C: for Windows or /Volumes/xyz for OSX, /media/xyz for linux
         """
         self.logger = logging.getLogger(__name__)
         self.geodb:[GeoDB.GeoDB, None] = None
         self.show_message = show_message
         self.geoid_main_dict = {}  # Key is GEOID, Value is DB ID for entry
         self.geoid_admin_dict = {}  # Key is GEOID, Value is DB ID for entry
+        # TODO fix volume handling
         self.volume = volume
         self.collate = 'COLLATE NOCASE'
 
@@ -234,14 +236,12 @@ class GeodataBuild:
                         self.logger.error(f'Unable to parse geoname location info in {file}  line {self.line_num}')
                         continue
 
-                    # Only handle line if it's for a country we follow and its
-                    # for a Feature tag we're interested in
+                    # Only handle line if it's for a country and Feature tag we are interested in
                     if geoname_row.iso.lower() in self.supported_countries_dct and \
                             geoname_row.feat_code in self.feature_code_list_dct:
                         self.insert_georow(geoname_row)
-                        if geoname_row.name.lower() != self.norm.normalize(geoname_row.name, remove_commas=True):
-                            self.insert_alternate_name(geoname_row.name,
-                                                             geoname_row.id, 'ut8')
+                        #if geoname_row.name.lower() != self.norm.normalize(geoname_row.name, remove_commas=True):
+                        self.insert_alternate_name(geoname_row.name, geoname_row.id, 'ut8')
 
             self.progress("Write Database", 90)
             self.geodb.db.commit()
@@ -548,7 +548,7 @@ class GeodataBuild:
         # Indices for geodata table
         self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS name_idx ON geodata(name  , country, admin1_id  )')
         self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS name_idx2 ON geodata(name  , country, feature  )')
-        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS admin1_idx ON geodata(admin1_id , country  )')
+        self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS admin1_idx ON geodata(admin1_id , country, feature  )')
         self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS sdx_idx ON geodata(sdx  , country, feature   )')
         self.geodb.db.create_index(create_index_sql='CREATE INDEX IF NOT EXISTS admin2_idx ON geodata(admin1_id  , feature  , admin2_id )')
 

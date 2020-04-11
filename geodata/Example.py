@@ -57,7 +57,7 @@ class Example:
                                        languages_list_dct={'en'},
                                        feature_code_list_dct=features,
                                         #supported_countries_dct={'gb',})
-                                        supported_countries_dct={'fr', 'gb', 'ca', 'us','nl','de','no','dk'},
+                                        supported_countries_dct={'fr', 'gb', 'ca', 'us','nl','de','no','dk','at'},
                                        volume='/Volumes/DISK2')
 
         # Open Geoname database - city names, lat/long, etc.  Create database if not found
@@ -136,7 +136,7 @@ if __name__ == "__main__":
         ]
 
     dbg_locations = [
-        "l'aisne, Hauts-de-France, france"   ,
+        "Gößnitz,,,austria"   ,
         ]
     
     ex.lookup_places()

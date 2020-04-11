@@ -63,7 +63,8 @@ stop_words = {
     'regional',
     'region',
     'district',
-    'central,'
+    'central,',
+    'village',
     }
 
 noise_words = [
@@ -120,6 +121,7 @@ phrase_cleanup = [
     (r'town of '                                        , ' '),  # - remove town of
     (r'city of '                                        , ' '),  # - remove city of
 
+    (r'village of ([^,]+)', r'\g<1> village'),  # Normalize 'Village of X' to 'X Village'
     (r'county of ([^,]+)'                               , r'\g<1> county'),  # Normalize 'Township of X' to 'X Township'
     (r'township of ([^,]+)'                             , r'\g<1> township'),  # Normalize 'Township of X' to 'X Township'
     (r'cathedral of ([^,]+)'                            , r'\g<1> cathedral'),  # Normalize 'Township of X' to 'X Township'

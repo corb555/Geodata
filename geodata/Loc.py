@@ -387,12 +387,13 @@ class Loc:
         """
 
         # See if there is an alternate name for this
-        # city, lang = self.geo_db.s.get_alternate_name(self.geoid)
-        # if city == '':
-        city = self.city
+        city, lang = self.geo_db.s.get_alternate_name(self.geoid)
+        if city == '':
+            city = self.city
         city = self.add_commas(city)
         admin2 = self.add_commas(self.admin2_name)
-        admin1 = self.add_commas(self.admin1_name)
+        adm1_nm, lg = self.geo_db.s.get_admin1_alternate_name(self.admin1_id, self)
+        admin1 = self.add_commas(adm1_nm)
 
         if self.place_type == PlaceType.COUNTRY:
             nm = f"{self.country_name}"

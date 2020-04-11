@@ -23,7 +23,6 @@ Provides a number of methods to lookup locations by name, feature, admin ID, etc
 import functools
 import logging
 import re
-import time
 
 import phonetics
 
