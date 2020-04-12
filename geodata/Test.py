@@ -1,3 +1,6 @@
+# Temporary python file for testing things
+import queue
+
 from geodata import GeoUtil, Normalize
 
 places = [
@@ -93,8 +96,20 @@ no_punc_keep_commas = [
 # noise_rgx  - Combine phrase dictionary with Noise words dictionary and compile regex (this is used for match scoring)
 # keys = sorted(dct.keys(), key=len, reverse=True)
 
-phrase_rgx_keep_commas = GeoUtil.MultiRegex(no_punc_keep_commas + phrase_cleanup)
-phrase_rgx_remove_commas = GeoUtil.MultiRegex(no_punc_remove_commas + phrase_cleanup)
+
+substitutions = queue.PriorityQueue()
+
+for val, idx in ([('blueberry',2), ('apple',1), ('cherry',3)]):
+    substitutions.put((idx, val))
+
+while not substitutions.empty():
+    idx, val = substitutions.get()
+    print(f'idx={idx} val={val}')
+
+""" 
+
+phrase_rgx_keep_commas = GeoUtil.RegexList(no_punc_keep_commas + phrase_cleanup)
+phrase_rgx_remove_commas = GeoUtil.RegexList(no_punc_remove_commas + phrase_cleanup)
 
 
 #noise_rgx = GeoUtil.MultiRegex(phrase_cleanup + noise_words)
@@ -104,4 +119,6 @@ for txt in places:
     print(f'==== {txt} ====')
     print(f'  RESULT {phrase_rgx_remove_commas.sub(txt, lower=True, set_ascii=True)}')
     print(f' RESULT2 {norm.normalize(txt, False)}')
+    
+"""
     

@@ -209,13 +209,13 @@ class Normalize:
         # Build compiled lists of regex statements that will be used for normalization
         
         # phrase_rgx_remove_commas - Combine phrase dictionary and no punctuation_remove_commas and compile regex
-        self.phrase_rgx_remove_commas = GeoUtil.MultiRegex(no_punc_remove_commas + phrase_cleanup+ noise_words)
+        self.phrase_rgx_remove_commas = GeoUtil.RegexList(no_punc_remove_commas + phrase_cleanup + noise_words)
 
         # phrase_rgx_keep_commas - Combine phrase dictionary and no punctuation_keep_commas and compile regex
-        self.phrase_rgx_keep_commas = GeoUtil.MultiRegex(no_punc_keep_commas + phrase_cleanup+ noise_words)
+        self.phrase_rgx_keep_commas = GeoUtil.RegexList(no_punc_keep_commas + phrase_cleanup + noise_words)
 
         # noise_rgx  - Combine phrase dictionary with Noise words dictionary and compile regex (this is used for match scoring)
-        self.noise_rgx = GeoUtil.MultiRegex(no_punc_keep_commas + phrase_cleanup + noise_words)
+        self.noise_rgx = GeoUtil.RegexList(no_punc_keep_commas + phrase_cleanup + noise_words)
     
     @functools.lru_cache(maxsize=CACHE_SIZE)
     def normalize(self,text: str, remove_commas: bool) -> str:

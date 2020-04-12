@@ -20,6 +20,7 @@
 import collections
 import logging
 import os
+import queue
 import re
 import sys
 import time
@@ -68,58 +69,81 @@ successful_match = [Result.STRONG_MATCH, Result.PARTIAL_MATCH, Result.WILDCARD_M
 Query = collections.namedtuple('Query', 'where args result')
 
 
-class MultiRegex():
+class RegexList():
     """
-    list of Regex statements.  MultiRegex.sub(text) will apply all regex substitutions
+    Regex substitution using a list of Regex statements.  RegexList.sub(text) will apply all regex substitutions in list
     """
+    PATT = 0
+    SUB = 1
+    PRIORITY = 2
 
-    def __init__(self, regex):
-        self.rgx = regex
-        expression = []
-        # Walk thru list and add each pattern as a Regex OR group
-        for idx, item in enumerate(self.rgx):
-            expression.append(f'(?P<G{idx}>{item[0]})')
-        patt = '|'.join(expression)
-        # print(f'patt = {patt}')
-        self.patt = re.compile(f"{patt}")
-        
-    def sub(self, text: str, lower=True, set_ascii=True):
-        attempts = 3
-        while attempts > 0:
-            no_match, text = self._sub(text, lower, set_ascii)
-            attempts -= 1
-            if no_match:
-                break
-        return text
+    def __init__(self, regex_list: list):
+        """
+        Args:
+            regex_list: list of regex tuples to apply.  Tuple is (pattern, substitution, priority)
+            priority of 0 - apply immediately, 1- queue and apply after priority 0.
+        """
+        self.rgx_list = []
+        self.pattern = []
 
-    def _sub(self, text: str, lower=True, set_ascii=True):
+        # Build list for phase1
+        self.rgx_list.append([rgx for rgx in regex_list if rgx[RegexList.PRIORITY] < 50])
+        groups = [f'(?P<G{idx}>{rgx[RegexList.PATT]})' for idx, rgx in enumerate(self.rgx_list[0])]
+        self.pattern.append(re.compile('|'.join(groups)))
+
+        # Build list for phase2
+        self.rgx_list.append([rgx for rgx in regex_list if rgx[RegexList.PRIORITY] >= 50])
+        groups = [f'(?P<G{idx}>{rgx[RegexList.PATT]})' for idx, rgx in enumerate(self.rgx_list[1])]
+        self.pattern.append(re.compile('|'.join(groups)))
+
+        # Create list of Regex named groups, e.g. (?P<G2>pattern)
+        # Use an OR to join all groups in list  - (?P<G0>patt) | (?P<G1>patt) and compile pattern
+        self.substitutions = queue.PriorityQueue()
+
+    def sub(self, text: str, lower=True, set_ascii=True, passes=9):
         """
         Apply regex substitutions in list
         Args:
             text: text to be modified
             lower: If True,  convert to lowercase before Regex
-            set_ascii: If True, Convert unicode characters to ascii
+            set_ascii: If True, convert unicode characters to ascii
+            passes: number of times to do substitutions
         Returns:
-            (no_match, text) - no_match==True if no match.  text as modified by Regex in dictionary
+            (match_found, text) - match_found==True if match found.  text as modified by Regex in dictionary
         """
-        no_match = True
         if set_ascii:
             text = unidecode.unidecode(text)
-
         if lower:
             text = text.lower()
 
-        for m in self.patt.finditer(text):
-            # print(m)
-            if m.groupdict():
-                for g in m.groupdict():
-                    if m.group(g):
-                        idx = int(g[1:])
-                        # Re found a match, perform the substitution
-                        text = re.sub(self.rgx[idx][0], self.rgx[idx][1], text)
-                        no_match = False
-            # print(m.groupdict())
-        return no_match, text
+        for phase in range(0, 1):
+            pattern = self.pattern[phase]
+
+            # Keep applying substitutions until no match or we run out of passes
+            for i in range(1, passes):
+                no_match = True
+
+                # Iterate through all regex matches and apply substitution
+                for m in pattern.finditer(text):
+                    if m.groupdict():
+                        for g in m.groupdict():
+                            if m.group(g):
+                                idx = int(g[1:])  # Get group index
+                                # found a match, put the substitution for this match in priority queue
+                                self.substitutions.put((self.rgx_list[phase][idx][RegexList.PRIORITY], idx))
+                                no_match = False
+
+                if no_match:
+                    break
+
+                # Apply all substitutions for this pass in priority order
+                while not self.substitutions.empty():
+                    pri, idx = self.substitutions.get()
+                    #print(f'pri={pri} idx={idx} patt=[{self.rgx_list[phase][idx][RegexList.PATT]}] text bef=[{text}]')
+                    text = re.sub(self.rgx_list[phase][idx][RegexList.PATT], self.rgx_list[phase][idx][RegexList.SUB], text)
+                    #print(f'text aft=[{text}]')
+
+        return text
 
 
 def get_directory_name() -> str:

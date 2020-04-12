@@ -655,11 +655,12 @@ class GeoSearch:
 
     def add_feature_query(self, query_list, target, iso):
         # todo use ql.add instead
-        # Scan target to see if we can determine what feature type it is
-        word, group = get_feature_group(target)
-        if word != '':
-            if 'st ' not in word:
-                targ = re.sub(word, '', target).strip(' ')
+        # Scan target to see if we can determine what feature type it is -e.g. church is RLG
+        category_word_found, group = get_feature_group(target)
+        if category_word_found != '':
+            if 'st ' not in category_word_found:
+                # Remove the word that matched the category
+                targ = re.sub(category_word_found, '', target).strip(' ')
             else:
                 targ = target
             query_list.append(Query(where="(name >= ? and name < ?) AND country = ? AND feature = ?",

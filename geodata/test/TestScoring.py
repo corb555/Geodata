@@ -19,7 +19,6 @@
 import logging
 import os
 import unittest
-from pathlib import Path
 
 from geodata import GeoUtil, Geodata, Loc, MatchScore
 from geodata.MatchScore import Score as SC
