@@ -4,10 +4,10 @@ Geodata provides a placename lookup gazeteer utilizing a local database of the 2
 <a name="features"></a>
 ## Features  
 * Builds a local sqlite3 database of geoname.org data.   
-* Provides powerful search routines   
+* Provides powerful search routines:   
 * Word search   
 * Wildcard search   
-* Phonetic search using Double Metaphone  
-* Search by feature type.  E.g. all mountains starting with Be in Germany
+* Phonetic search   
+* Feature type search.  E.g. mountains, small cities, large cities, churches, etc. 
    
 [See User Guide Wiki for details](https://github.com/corb555/Geodata/wiki/User-Guide)
