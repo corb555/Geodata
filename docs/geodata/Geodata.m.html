@@ -4,7 +4,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 
     <title>geodata.Geodata API documentation</title>
-    <meta name="description" content="Provides a place lookup gazeteer based on files from geonames.org.   
+    <meta name="description" content="Provides a place lookup gazeteer using global place name data from geonames.org.   
   Provides the location lookup..." />
 
   <link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,300' rel='stylesheet' type='text/css'>
@@ -1096,23 +1096,23 @@ table {
 
   <header id="section-intro">
   <h1 class="title"><span class="name">geodata.Geodata</span> module</h1>
-  <p>Provides a place lookup gazeteer based on files from geonames.org. <br />
+  <p>Provides a placename lookup gazeteer based on placename data from geonames.org. <br />
   Provides the location lookup methods for the geodata package.  </p>
 <ul>
 <li>Creates a local sqlite3 place database of geonames.org data  </li>
 <li>Parses lookup text and returns multiple matches ranked by closeness to lookup term  </li>
 <li>Provides latitude/longitude  </li>
-<li>Supports Wildcard search, Phonetic/Soundex search, and Word search of place database names  </li>
-<li>Search by feature type (e.g. mountain, cemetery, palace, etc)  </li>
+<li>Supports Wildcard search, Phonetic/Soundex search, and Word search of place names  </li>
+<li>Provides search by feature type (e.g. mountain, cemetery, palace, etc)  </li>
 <li>Database can be filtered to only include specified countries, languages, and feature types   </li>
 </ul>
 <p>Main routines for Geodata package: <br />
     example.py - a sample demonstrating place lookups using geodata <br />
-    geodata.open - open database.  create DB if missing <br />
-    geodata.find_best_match - parse location and provide the best match <br />
-    geodata.find_matches - parse location and provide a ranked list of matches <br />
-    geodata.find_feature - lookup location by feature type and provide a ranked list of matches <br />
-    normalize.py - Normalize text for lookup</p>
+    geodata.open - opens the database.  creates the database if missing <br />
+    geodata.find_best_match - provides the best match for the requested location name<br />
+    geodata.find_matches - provides a ranked list of matches for the requested location name <br />
+    geodata.find_feature - provides a lookup by feature type and returns a ranked list of matches <br />
+    normalize.py - Attempts to normalize text into streetname, town, county, state, country</p>
   
 
   </header>
@@ -1159,7 +1159,7 @@ table {
       <p id="geodata.Geodata.Geodata" class="name">class <span class="ident">Geodata</span></p>
       
   
-    <div class="desc"><p>Provide a place lookup gazeteer based on files from geonames.org</p></div>
+    <div class="desc"><p>Provide a place lookup gazeteer based on data from geonames.org</p></div>
   <div class="source_cont">
 </div>
 
