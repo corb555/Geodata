@@ -8,6 +8,6 @@ Geodata provides a placename lookup gazeteer utilizing a local database of the 2
 * Word search   
 * Wildcard search   
 * Phonetic search   
-* Feature type search.  E.g. mountains, small cities, large cities, churches, etc. 
+* Feature search.  E.g. mountains, small cities, large cities, churches, etc. 
    
 [See User Guide Wiki for details](https://github.com/corb555/Geodata/wiki/User-Guide)
