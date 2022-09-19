@@ -72,6 +72,7 @@ class GeodataBuild:
         self.volume = volume
         self.collate = 'COLLATE NOCASE'
 
+
         self.exit_on_error = exit_on_error
         self.required_db_version = 4
         # Message to user upgrading from earlier DB version  
