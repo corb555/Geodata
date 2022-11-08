@@ -1,5 +1,5 @@
 # Geodata 
-Geodata provides a placename lookup gazeteer utilizing a local database of the 20M entry geonames.org data.   
+Provides place name lookups using a local database of the 20M entry geonames.org database.   
 
 <a name="features"></a>
 ## Features  
