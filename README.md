@@ -1,5 +1,5 @@
 # Geodata 
-Provides place name lookups using a local database of the 20M entry geonames.org database.   
+Provides a programmitic interface that does place name lookups using a local database of the 20M entry geonames.org database.   
 
 <a name="features"></a>
 ## Features  
